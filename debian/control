@@ -1,0 +1,19 @@
+Source: pkg-kde-tools
+Section: devel
+Priority: extra
+Maintainer: Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>
+Build-Depends: debhelper (>= 5)
+Standards-Version: 3.8.0
+Uploaders: Sune Vuorela <debian@pusling.com>
+
+Package: pkg-kde-tools
+Architecture: all
+Suggests: debhelper, cdbs
+Description: common makesnippets and other build scripts for KDE4 related packages
+ This package contains makefiles setting the default build arguments for KDE4 
+ packages.
+ .
+ Currently, it is only a few makesnippets, but it will grow larger in the future.
+ .
+ NOTE: if you use cdbs or debhelper, you need to build-depend on those as well,
+ as this package is expected to be useful in cases without debhelper or cdbs.

@@ -1,0 +1,30 @@
+#!/usr/bin/make -f
+build: 
+	#nop - just a set of scripts.
+
+clean: 
+	dh_testdir
+	dh_testroot
+	dh_clean 
+
+binary-arch: 
+	#policy requires this.
+
+binary-indep:
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs 
+	dh_installdocs
+	dh_installexamples
+	dh_install
+	dh_link
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-indep
+.PHONY: clean binary-indep binary-arch binary build

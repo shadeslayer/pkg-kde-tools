@@ -1,0 +1,38 @@
+pkg-kde-tools for Debian
+------------------------
+
+ These snippets should be universal usable. If your package uses cdbs, you should be able to just
+ include the kde4.mk file.
+ If you use other tools, include the variables.mk file and run cmake with $(DEB_CMAKE_KDE4_FLAGS) to get 
+ the kde4 default vars.
+
+Examples:
+
+A cdbs using package:
+
+#!/usr/bin/make -f
+
+include /usr/share/pkg-kde-tools/makefiles/1/cdbs/kde.mk
+include /usr/share/cdbs/1/rules/debhelper.mk
+
+#end makefile
+
+A non-cdbs-using package could start with something like the following and end up like any other cmake using package.
+
+#!/usr/bin/make -f
+
+include /usr/share/pkg-kde-tools/makefiles/1/variables.mk
+
+builddir/Makefile:
+        mkdir -p builddir
+	cd builddir && cmake .. $(DEB_CMAKE_KDE4_FLAGS)
+
+build-stamp: builddir/Makefile
+	$(MAKE) -C builddir
+	touch $@
+
+#end snippet
+
+
+
+ -- Sune Vuorela <debian@pusling.com>  Thu, 18 Sep 2008 21:39:35 +0200
