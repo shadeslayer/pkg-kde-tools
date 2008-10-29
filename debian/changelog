@@ -1,3 +1,11 @@
+pkg-kde-tools (0.2) unstable; urgency=low
+
+  * The no .svn dir in release release.
+  * Add a way to set --as-needed during build.
+  * there was a reference to ENABLE_FINAL in variables.mk. Kill it.
+
+ -- Sune Vuorela <debian@pusling.com>  Wed, 29 Oct 2008 17:35:13 +0100
+
 pkg-kde-tools (0.1) unstable; urgency=low
 
   * Initial Release.
