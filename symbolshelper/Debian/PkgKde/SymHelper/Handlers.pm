@@ -1,0 +1,368 @@
+package Debian::PkgKde::SymHelper::Handlers;
+
+use strict;
+use warnings;
+use File::Temp qw(tempfile);
+use Debian::PkgKde::SymHelper::Handler::VirtTable;
+use Debian::PkgKde::SymHelper::Handler::size_t;
+use Debian::PkgKde::SymHelper::Handler::ssize_t;
+use Debian::PkgKde::SymHelper::Handler::qreal;
+use Debian::PkgKde::SymHelper::Symbol;
+use Debian::PkgKde::SymHelper::Symbol2;
+use Debian::PkgKde::SymHelper qw(info error warning);
+
+sub new {
+    my $cls = shift;
+    my @standalone_substitution = (
+        new Debian::PkgKde::SymHelper::Handler::VirtTable,
+    );
+    my @substitution = (
+        @standalone_substitution,
+        new Debian::PkgKde::SymHelper::Handler::size_t,
+        new Debian::PkgKde::SymHelper::Handler::ssize_t,
+        new Debian::PkgKde::SymHelper::Handler::qreal,
+    );
+    return bless { subst => \@substitution,
+                   standalone_subst => \ @standalone_substitution }, $cls;
+}
+
+sub load_symbol_files {
+    my $self = shift;
+    my $files = shift;
+
+    return 0 if (exists $self->{symfiles});
+
+    while (my ($arch, $file) = each(%$files)) {
+        $self->add_symbol_file(new Debian::PkgKde::SymHelper::SymbFile($file), $arch);
+    }
+
+    # Set main architecture
+    $self->set_main_arch();
+
+    return scalar(keys %{$self->{symfiles}});
+}
+
+sub add_symbol_file {
+    my ($self, $symfile, $arch) = @_;
+    $arch = Debian::PkgKde::SymHelper::Handler::Base::get_host_arch() unless (defined $arch);
+
+    $self->{symfiles}{$arch} = $symfile;
+    $self->{main_arch} = $arch unless ($self->{main_arch});
+}
+
+sub get_main_arch {
+    my $self = shift;
+    return (exists $self->{main_arch}) ? $self->{main_arch} : undef;
+}
+
+sub set_main_arch {
+    my ($self, $arch) = @_;
+    $arch = Debian::PkgKde::SymHelper::Handler::Base::get_host_arch() unless defined $arch;
+    $self->{main_arch} = $arch if ($self->get_symfile($arch));
+}
+
+sub get_symfile {
+    my ($self, $arch) = @_;
+    if (exists $self->{symfiles}) {
+        $arch = $self->get_main_arch() unless defined $arch;
+        return (exists $self->{symfiles}{$arch}) ? $self->{symfiles}{$arch} : undef;
+    } else {
+        return undef;
+    }
+}
+
+sub cppfilt {
+    my $self = shift;
+    my @symfiles;
+
+    if (!@_) {
+        return 0 if (!exists $self->{symfiles} || exists $self->{cppfilt});
+        push @symfiles, values %{$self->{symfiles}};
+    } else {
+        push @symfiles, @_;
+    }
+
+    # Open temporary file
+    my ($fh, $filename) = File::Temp::tempfile();
+    if (defined $fh) {
+        # Dump cpp symbols to the temporary file
+        foreach my $symfile (@symfiles) {
+            $symfile->dump_cpp_symbols($fh);
+        }
+        close($fh);
+
+        # c++filt the symbols and load them
+        open(CPPFILT, "cat '$filename' | c++filt |") or main::error("Unable to run c++filt");
+        foreach my $symfile (@symfiles) {
+            $symfile->load_cppfilt_symbols(*CPPFILT);
+        }
+        close(CPPFILT);
+
+        # Remove temporary file
+        unlink($filename);
+
+        $self->{cppfilt} = 1 if (!@_);
+
+        return 1;
+    } else {
+        main::error("Unable to create a temporary file");
+    }
+}
+
+sub preprocess {
+    my $self = shift;
+    my $count = 0;
+
+    if (!@_) {
+        return 0 unless (exists $self->{symfiles});
+        $self->cppfilt();
+        push @_, values(%{$self->{symfiles}});
+    } else {
+        $self->cppfilt(@_);
+    }
+    foreach my $symfile (@_) {
+        $count += $symfile->deprecate_useless_symbols();
+    }
+    return $count;
+}
+
+sub get_group_name {
+    my ($self, $symbol, $arch) = @_;
+
+    my $osym = new Debian::PkgKde::SymHelper::Symbol($symbol, $arch);
+    foreach my $handler (@{$self->{subst}}) {
+        $handler->clean($osym);
+    }
+    return $osym->get_symbol();
+}
+
+sub create_template_standalone {
+    my $self = shift;
+
+    return undef unless (exists $self->{symfiles});
+
+    my $symfiles = $self->{symfiles};
+
+    while (my ($arch, $symfile) = each %$symfiles) {
+        while (my ($soname, $sonameobj) = each(%{$symfile->{objects}})) {
+            my @syms = keys(%{$sonameobj->{syms}});
+            for my $sym (@syms) {
+                my $symbol = new Debian::PkgKde::SymHelper::Symbol($sym, $arch);
+                my $symbol2 = new Debian::PkgKde::SymHelper::Symbol2($sym, $arch);
+                foreach my $handler (@{$self->{standalone_subst}}) {
+                    if ($handler->detect($symbol2)) {
+                        # Make symbol arch independent with regard to this handler
+                        $handler->clean($symbol);
+                    }
+                }
+                my $newsym = $symbol2->get_symbol2();
+                if ($sym ne $newsym) {
+                    # Rename symbol
+                    my $info = $sonameobj->{syms}{$sym};
+                    $sonameobj->{syms}{$newsym} = $info;
+                    delete $sonameobj->{syms}{$sym};
+                }
+            }
+        }
+    }
+    return $self->get_symfile();
+}
+
+sub create_template {
+    my $self = shift;
+
+    return undef unless (exists $self->{symfiles});
+
+    my $symfiles = $self->{symfiles};
+    my $main_arch = $self->get_main_arch();
+
+    # Collect new symbols from them by grouping them using the
+    # fully arch independent derivative name
+    my %symbols;
+    foreach my $arch1 (@Debian::PkgKde::SymHelper::ARCHES) {
+        next unless exists $symfiles->{$arch1};
+
+        foreach my $arch2 (@Debian::PkgKde::SymHelper::ARCHES) {
+            next if $arch1 eq $arch2;
+            next unless exists $symfiles->{$arch2};
+
+            my @new = $symfiles->{$arch1}->get_new_symbols($symfiles->{$arch2});
+            foreach my $n (@new) {
+                my $g = $self->get_group_name($n->{name}, $arch1);
+                my $s = $n->{soname};
+                if (exists $symbols{$s}{$g}{arches}{$arch1}) {
+                    if ($symbols{$s}{$g}{arches}{$arch1}->get_symbol() ne $n->{name}) {
+                        warning("at least two new symbols get to the same group ($g) on $s/$arch1:\n" .
+                            "  " . $symbols{$s}{$g}{arches}{$arch1}->get_symbol() . "\n" .
+                            "  " . $n->{name});
+                        # Ban group
+                        $symbols{$s}{$g}{banned} = 1;
+                    }
+                } else {
+                    $symbols{$s}{$g}{arches}{$arch1} = new Debian::PkgKde::SymHelper::Symbol($n->{name}, $arch1);
+                }
+            }
+        }
+    }
+
+    # Do substvar detection
+    my $arch_count = scalar(keys(%$symfiles));
+
+    # Missing archs check
+    my %arch_ok;
+    my $arch_ok_i = 0;
+    while (my($arch, $f) = each(%$symfiles)) {
+        $arch_ok{$arch} = $arch_ok_i;
+    }
+
+    while (my ($soname, $groups) = each(%symbols)) {
+        while (my ($name, $group) = each(%$groups)) {
+            # Check if the group is not banned 
+            next if exists $group->{banned};
+
+            # Check if the group is complete
+            my $count = scalar(keys(%{$group->{arches}}));
+            if ($count < $arch_count) {
+                $group->{banned} = 1;
+                # Additional vtables are usual on armel
+                next if ($count == 1 && exists $group->{arches}{armel} && $group->{arches}{armel}->is_vtt());
+
+                $arch_ok_i++;
+                warning("ignoring incomplete group '$name/$soname' ($count < $arch_count). Symbol dump below:");
+                foreach my $arch (sort(keys %{$group->{arches}})) {
+                    info("  " . $group->{arches}{$arch}->get_symbol() . "/" . $arch . "\n");
+                    $arch_ok{$arch} = $arch_ok_i;
+                }
+                info("  - missing on:");
+                for my $arch (sort(keys %arch_ok)) {
+                    info(" $arch") if (defined $arch_ok{$arch} && $arch_ok{$arch} != $arch_ok_i);
+                }
+                info("\n");
+                next;
+            }
+
+            # Main symbol (reference)
+            my $main_symbol = new Debian::PkgKde::SymHelper::Symbol2($group->{arches}{$main_arch}->get_symbol(), $main_arch);
+            foreach my $handler (@{$self->{subst}}) {
+                if ($handler->detect($main_symbol, $group->{arches})) {
+                    # Make archsymbols arch independent with regard to his handler
+                    while (my ($arch, $symbol) = each(%{$group->{arches}})) {
+                        $handler->clean($symbol);
+                    }
+                }
+            }
+            $group->{template} = $main_symbol;
+        }
+    }
+
+    # Finally, integrate our template into $main_arch symfile
+    my $main_symfile = $symfiles->{$main_arch};
+    while (my ($soname, $sonameobj) = each(%{$symfiles->{$main_arch}{objects}})) {
+        my @syms = keys(%{$sonameobj->{syms}});
+        for my $sym (@syms) {
+            my $g = $self->get_group_name($sym, $main_arch);
+            if (exists $symbols{$soname}{$g}) {
+                my $group = $symbols{$soname}{$g};
+                if (!exists $group->{banned}) {
+                    # Rename symbol
+                    my $info = $sonameobj->{syms}{$sym};
+                    my $newsym = $group->{template}->get_symbol2();
+                    $sonameobj->{syms}{$newsym} = $info;
+                    delete $sonameobj->{syms}{$sym};
+                } elsif (exists $sonameobj->{syms}{$sym}) {
+                    delete $sonameobj->{syms}{$sym}
+                        unless ($sonameobj->{syms}{$sym}{deprecated});
+                }
+            }
+        }
+    }
+
+    return $main_symfile;
+}
+
+sub substitute {
+    my ($self, $file, $arch) = @_;
+    my $symfile = new Debian::PkgKde::SymHelper::SymbFile($file);
+
+    foreach my $h (@{$self->{subst}}) {
+        $h->set_arch($arch);
+    }
+    if ($symfile->scan_for_substvars()) {
+        return $symfile->substitute($self->{subst});
+    } else {
+        return undef;
+    }
+}
+
+sub apply_patch_to_template {
+    my ($self, $patchfh, $infile, $arch, $newminver) = @_;
+
+    # Dump arch specific symbol file to temporary location
+    my $archsymfile = $self->substitute($infile, $arch);
+    my ($archfh, $archfn) = File::Temp::tempfile();
+    $archsymfile->dump($archfh);
+    close($archfh);
+
+    # Adopt the patch to our needs (filename)
+    my $file2patch;
+    my $is_patch;
+    while(<$patchfh>) {
+        if (defined $is_patch) {
+            if (m/^(?:[+ -]|@@ )/) {
+                # Patch continues
+                print PATCH $_;
+                $is_patch++;
+            } else {
+                # Patch ended
+                last;
+            }
+        } elsif (defined $file2patch) {
+            if (m/^[+]{3}\s+\S+/) {
+                # Found the patch portion. Write the patch header
+                $is_patch = 0;
+                open(PATCH, "| patch -p0 >/dev/null 2>&1") or die "Unable to execute `patch` program";
+                print PATCH "--- ", $archfn, "\n";
+                print PATCH "+++ ", $archfn, "\n";
+            } else {
+                $file2patch = undef;
+            }
+        } elsif (m/^[-]{3}\s+(\S+)/) {
+            $file2patch = $1;
+        }
+    }
+
+    if($file2patch && close(PATCH) && $is_patch) {
+        # Patching was successful. Reparse
+        my $insymfile = new Debian::PkgKde::SymHelper::SymbFile($infile);
+        my $newsymfile = new Debian::PkgKde::SymHelper::SymbFile($archfn);
+
+        # Resync private symbols in newsymfile with archsymfile
+        $newsymfile->resync_private_symbols($archsymfile);
+
+        # Process lost symbols
+        $insymfile->merge_lost_symbols_to_template($archsymfile, $newsymfile);
+
+        # Now process new symbols. We need to a create template from them
+        if (my $dummysymfile = $newsymfile->get_new_symbols_as_symbfile($archsymfile)) {
+            $self->add_symbol_file($dummysymfile, $arch);
+            $self->preprocess();
+
+            # Handle min version
+            $dummysymfile->handle_min_version($newminver);
+
+            # Create a symbols template for our dummy file
+            $dummysymfile = $self->create_template_standalone();
+
+            # Finally, merge it to our $insymfile
+            $insymfile->merge_symbols_from_symbfile($dummysymfile, 1);
+        }
+        unlink($archfn);
+        return return $insymfile;
+    } else {
+        # Patching failed
+        unlink($archfn);
+        return undef;
+    }
+}
+
+1;

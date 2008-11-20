@@ -1,3 +1,15 @@
+pkg-kde-tools (0.3~pre3) UNRELEASED; urgency=low
+
+  * Add pkgkde-symbolshelper. It aims to make handling of symbols in
+    C++ libraries easier. Symbols in C++ libraries are inconsistent among
+    arches due to mangling and other issues.
+    - Add GPL3 notice to debian/copyright which pkgkde-symbolshelper is under.
+  * Add myself to Uploaders.
+  * Tweak description.
+  * Add DM-Upload-Allowed: yes.
+
+ -- Modestas Vainius <modestas@vainius.eu>  Thu, 20 Nov 2008 19:05:22 +0200
+
 pkg-kde-tools (0.2) unstable; urgency=low
 
   * The no .svn dir in release release.

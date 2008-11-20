@@ -1,0 +1,167 @@
+#!/usr/bin/perl -w
+
+# Copyright (C) 2008 Modestas Vainius <modestas@vainius.eu>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+use strict;
+use warnings;
+use File::Spec;
+use Getopt::Long;
+
+use Debian::PkgKde::SymHelper qw(info error warning);
+use Debian::PkgKde::SymHelper::Handler::Base;
+use Debian::PkgKde::SymHelper::SymbFile;
+use Debian::PkgKde::SymHelper::Handlers;
+
+my $opt_dir;
+my $opt_minversion;
+my $opt_in;
+my $opt_arch = Debian::PkgKde::SymHelper::Handler::Base::get_host_arch();
+my $opt_outfile;
+my $opt_patch;
+my $opt_fixup;
+
+sub find_package_symbolfile_path {
+    my ($package, $arch) = @_;
+    my @PATHS = (
+        "debian/$package.symbols.$arch",
+        "debian/symbols.$arch",
+        "debian/$package.symbols",
+        "debian/symbols"
+    );
+    for my $path (@PATHS) {
+        return $path if (-f $path);
+    }
+    return undef;
+}
+
+sub out_symfile {
+    my $symfile = shift;
+    return unless $symfile;
+
+    if ($opt_outfile) {
+        $symfile->save($opt_outfile, 2);
+    } else {
+        $symfile->dump(*STDOUT, 2);
+    }
+}
+
+sub print_symbol_list($$) {
+    my ($list, $prefix) = @_;
+    for my $item (@$list) {
+        info(sprintf("%s%s %s\n", $prefix, $item->{soname}, $item->{name}));
+    }
+}
+
+sub fixup {
+    my ($package, $infile, $outfile, $minver, $arch) = @_;
+
+    error("Specify either package or template and output symbol files")
+        unless ($package || $infile && $outfile);
+    unless ($infile) {
+        $infile = find_package_symbolfile_path($package, $arch);
+        return 0 unless ($infile);
+    }
+    unless ($outfile) {
+        $outfile = "debian/$package/DEBIAN/symbols";
+        return 0 unless (-f $outfile);
+    }
+
+    error("Symbol template file ($infile) not found") unless (-f $infile);
+    error("Output symbol file ($outfile) not found") unless (-f $outfile);
+
+    my $insymfile = new Debian::PkgKde::SymHelper::SymbFile($infile);
+    my $outsymfile = new Debian::PkgKde::SymHelper::SymbFile($outfile);
+
+    # Sync versions in both symfiles to get proper @new and @lost
+    # results later
+    $outsymfile->resync_private_symbol_versions($insymfile, 1);
+    $outsymfile->handle_min_version($minver);
+
+    # Save
+    $outsymfile->save($outfile, 2);
+
+    # Print some summary information since the one from dpkg-gensymbols is inaccurate
+    my @new = $outsymfile->get_new_symbols($insymfile);
+    if (@new) {
+        warning("NEW symbols in this version (" . scalar(@new) . "):");
+        print_symbol_list(\@new, "--   ");
+    }
+    my @lost = $outsymfile->get_lost_symbols($insymfile);
+    if (@lost) {
+        warning("LOST symbols in this version (" . scalar(@lost) . "):");
+        print_symbol_list(\@lost, "--   ");
+    }
+
+    return 1;
+}
+
+if (GetOptions(
+    "directory|d=s" => \$opt_dir,
+    "min-version|v:s" => \$opt_minversion,
+    "architecture|a=s" => \$opt_arch,
+    "input|i=s" => \$opt_in,
+    "output|o=s" => \$opt_outfile,
+    "patch|p:s" => \$opt_patch,
+    "fixup|f:s" => \$opt_fixup,)) {
+}
+
+my $handlers = new Debian::PkgKde::SymHelper::Handlers;
+my $str_arches = join("|", @Debian::PkgKde::SymHelper::ARCHES);
+error("Unknown architecture: $opt_arch")
+    unless grep /^$opt_arch$/, @Debian::PkgKde::SymHelper::ARCHES;
+
+if (defined $opt_dir) {
+    opendir(DIR, $opt_dir) or error("Unable to open directory: $opt_dir");
+    my %files;
+    while (my $file = readdir(DIR)) {
+        next if ($file =~ /^.{1,2}$/);
+        $file = File::Spec->catfile($opt_dir, $file);
+        if ($file =~ /.*?[_.]($str_arches)$/) {
+            $files{$1} = $file;
+        } else {
+            warning("$file is not named properly. Expected *_<arch> or *.<arch>");
+        }
+    }
+
+    if (scalar(keys %files) > 0) {
+        $handlers->load_symbol_files(\%files);
+        $handlers->preprocess();
+
+        # Create a symbols template and write it
+        $handlers->set_main_arch($opt_arch);
+        my $template = $handlers->create_template();
+        $template->handle_min_version($opt_minversion, 1);
+        out_symfile($template);
+    } else {
+        error("No properly named symbol files found in $opt_dir");
+    }
+} elsif (defined $opt_fixup) {
+    fixup($opt_fixup, $opt_in, $opt_outfile, $opt_minversion, $opt_arch);
+} elsif (defined $opt_in) {
+    error("Symbol template file ($opt_in) not found") unless (-f $opt_in);
+
+    if (defined $opt_patch) {
+        $opt_patch = "-" unless ($opt_patch);
+        # Open patch
+        open(PATCHINPUT, $opt_patch) or error("Unable to open patch '$opt_patch' for reading");
+        out_symfile($handlers->apply_patch_to_template(*PATCHINPUT, $opt_in, $opt_arch, $opt_minversion));
+        close(PATCHINPUT);
+    } else {
+        out_symfile($handlers->substitute($opt_in, $opt_arch));
+    }
+} else {
+    error("$0: insufficient number of arguments");
+}

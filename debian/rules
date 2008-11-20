@@ -13,6 +13,7 @@ binary-arch:
 binary-indep:
 	dh_testdir
 	dh_testroot
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/`dh_listpackages | head -n1`
 	dh_installchangelogs 
 	dh_installdocs
 	dh_installexamples
@@ -21,6 +22,7 @@ binary-indep:
 	#if triggered, please build source package with -I
 	test ! -e $(CURDIR)/debian/pkg-kde-tools/usr/share/pkg-kde-tools/makefiles/1/.svn/
 	dh_link
+	dh_perl
 	dh_strip
 	dh_compress
 	dh_fixperms
