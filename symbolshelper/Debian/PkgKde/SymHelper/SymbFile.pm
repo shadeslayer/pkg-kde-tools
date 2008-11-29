@@ -288,7 +288,7 @@ sub fix_min_versions {
         while (my ($sym, $info) = each(%{$sonameobj->{syms}})) {
             if ($with_deprecated || !$info->{deprecated}) {
                 my $minver = $info->{minver};
-                if ($minver =~ m/[^~]$/) {
+                if ($minver =~ m/-.*[^~]$/) {
                     unless($minver =~ s/-[01](?:$|[^\d-][^-]*$)//) {
                         $minver =~ s/([^~])$/$1~/;
                     }

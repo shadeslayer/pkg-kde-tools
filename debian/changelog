@@ -1,4 +1,4 @@
-pkg-kde-tools (0.3~pre5) UNRELEASED; urgency=low
+pkg-kde-tools (0.3~pre7) UNRELEASED; urgency=low
 
   * Add pkgkde-symbolshelper. It aims to make handling of symbols in
     C++ libraries easier. Symbols in C++ libraries are inconsistent among
