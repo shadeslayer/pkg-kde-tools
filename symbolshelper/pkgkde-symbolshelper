@@ -15,6 +15,38 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+=head1 NAME
+
+B<pkgkde-symbolshelper> - a helper tool for handling debian symbol files
+
+=head1 SYNOPSIS
+
+B<pkgkde-symbolshelper> U<subcommand> U<options>
+
+=head1 DESCRIPTION
+
+B<pkgkde-symbolshelper> is designed to ease maintainance of symbols files when
+the package needs a different one for each architecture. This is especially true
+for C++ libraries. However, differences in symbol names are usually minor and
+can be defined using some rules for each architecture. The program also
+introduces the concept of private symbols which, if actually exist, are written
+to the final symbols file but, if do not exist, they are simply ignored
+and do not cause failure at package build time.
+
+B<pkgkde-symbolshelper> works by generating a template symbols file 
+
+B<pkgkde-symbolshelper> U<symbolfile> subcommand should be called before
+F<dpkg-gensymbols(1)> to generate a real symbols file from the template and
+U<postgensymbols> subcommand should be called after F<dpkg-gensymbols(1)> to
+post process the final symbols file that F<dpkg-gensymbols(1)> has generated.
+
+Each subcommand accepts a few common options and a few specific options.
+
+=head1 OPTIONS
+=back
+
+=cut
+
 use strict;
 use warnings;
 use File::Spec;
@@ -25,14 +57,60 @@ use Debian::PkgKde::SymHelper::Handler::Base;
 use Debian::PkgKde::SymHelper::SymbFile;
 use Debian::PkgKde::SymHelper::Handlers;
 
-my $opt_dir;
-my $opt_minversion;
+my $handlers;
+
+######## Option processing ##################
+my $opt_out;
 my $opt_in;
 my $opt_arch = Debian::PkgKde::SymHelper::Handler::Base::get_host_arch();
-my $opt_outfile;
-my $opt_patch;
-my $opt_fixup;
+my $opt_version;
 
+sub verify_opt_arch {
+    my ($opt, $arch) = @_;
+    error("unknown architecture: $arch")
+        unless grep /^\Q$arch\E$/, @Debian::PkgKde::SymHelper::ARCHES;
+    $opt_arch = $arch;
+}
+
+sub verify_opt_in {
+    my ($opt, $input) = @_;
+
+    error("input file ($input) does not exit") unless (-f $input);
+    $opt_in = $input;
+}
+
+sub get_common_options {
+    my $args = shift;
+    my (%args, %res);
+
+    map { $args{$_} = 1 } split(//, $args);
+    $res{"output|o=s"} = \$opt_out if ($args{o});
+    $res{"input|i=s"} = \&verify_opt_in if ($args{i});
+    $res{"architecture|a=s"} = \&verify_opt_arch if ($args{a});
+    $res{"version|v:s"} = \$opt_version if ($args{v});
+
+    return %res;
+}
+
+sub check_mandatory_options {
+    my $args = shift;
+    my %args;
+
+    map { $args{$_} = 1 } split(//, $args);
+    error("input file option (-i) is mandatory") if (!$opt_in && $args{i});
+    error("output file option (-o) is mandatory") if (!$opt_out && $args{o});
+    error("architecture option (-a) is mandatory") if (!$opt_arch && $args{a});
+    error("version option (-v) is mandatory") if (!$opt_version && $args{v});
+
+    while (@_) {
+        my $val = shift;
+        my $msg = shift;
+        error($msg) if (!$val);
+    }
+    return 1;
+}
+
+############### Common subroutines #################
 sub find_package_symbolfile_path {
     my ($package, $arch) = @_;
     my @PATHS = (
@@ -51,8 +129,8 @@ sub out_symfile {
     my $symfile = shift;
     return unless $symfile;
 
-    if ($opt_outfile) {
-        $symfile->save($opt_outfile, 2);
+    if ($opt_out) {
+        $symfile->save($opt_out, 2);
     } else {
         $symfile->dump(*STDOUT, 2);
     }
@@ -65,103 +143,178 @@ sub print_symbol_list($$) {
     }
 }
 
-sub fixup {
-    my ($package, $infile, $outfile, $minver, $arch) = @_;
+############### Subcommands ####################
+sub subcommand_create {
+    my $opt_dir;
+    my %opts = (
+        get_common_options("oav"),
+        "directory|d=s" => \$opt_dir,
+    );
+    if (GetOptions(%opts)) {
+        check_mandatory_options("",
+            $opt_dir, "symbol file directory option (-d) is mandatory");
 
-    error("Specify either package or template and output symbol files")
-        unless ($package || $infile && $outfile);
-    unless ($infile) {
-        $infile = find_package_symbolfile_path($package, $arch);
-        return 0 unless ($infile);
+        opendir(DIR, $opt_dir) or error("Unable to open directory: $opt_dir");
+        my %files;
+        my $str_arches = join("|", @Debian::PkgKde::SymHelper::ARCHES);
+
+        while (my $file = readdir(DIR)) {
+            next if ($file =~ /^.{1,2}$/);
+            $file = File::Spec->catfile($opt_dir, $file);
+            if ($file =~ /.*?[_.]($str_arches)$/) {
+                $files{$1} = $file;
+            } else {
+                warning("$file is not named properly. Expected *_<arch> or *.<arch>");
+            }
+        }
+
+        if (scalar(keys %files) > 0) {
+            $handlers->load_symbol_files(\%files);
+            $handlers->preprocess();
+
+            # Create a symbols template and write it
+            $handlers->set_main_arch($opt_arch);
+            my $template;
+            if (scalar(keys %files) == 1) {
+                $template = $handlers->create_template_standalone();
+            } else {
+                $template = $handlers->create_template();
+            }
+            $template->handle_min_version($opt_version, 1);
+            out_symfile($template);
+        } else {
+            error("no properly named symbol files found in $opt_dir");
+        }
+        return 0;
     }
-    unless ($outfile) {
-        $outfile = "debian/$package/DEBIAN/symbols";
-        return 0 unless (-f $outfile);
-    }
-
-    error("Symbol template file ($infile) not found") unless (-f $infile);
-    error("Output symbol file ($outfile) not found") unless (-f $outfile);
-
-    my $insymfile = new Debian::PkgKde::SymHelper::SymbFile($infile);
-    my $outsymfile = new Debian::PkgKde::SymHelper::SymbFile($outfile);
-
-    # Sync versions in both symfiles to get proper @new and @lost
-    # results later
-    $outsymfile->resync_private_symbol_versions($insymfile, 1);
-    $outsymfile->handle_min_version($minver);
-
-    # Save
-    $outsymfile->save($outfile, 2);
-
-    # Print some summary information since the one from dpkg-gensymbols is inaccurate
-    my @new = $outsymfile->get_new_symbols($insymfile);
-    if (@new) {
-        warning("NEW symbols in this version (" . scalar(@new) . "):");
-        print_symbol_list(\@new, "--   ");
-    }
-    my @lost = $outsymfile->get_lost_symbols($insymfile);
-    if (@lost) {
-        warning("LOST symbols in this version (" . scalar(@lost) . "):");
-        print_symbol_list(\@lost, "--   ");
-    }
-
     return 1;
 }
 
-if (GetOptions(
-    "directory|d=s" => \$opt_dir,
-    "min-version|v:s" => \$opt_minversion,
-    "architecture|a=s" => \$opt_arch,
-    "input|i=s" => \$opt_in,
-    "output|o=s" => \$opt_outfile,
-    "patch|p:s" => \$opt_patch,
-    "fixup|f:s" => \$opt_fixup,)) {
+sub subcommand_symbolfile {
+    my $opt_package;
+    my %opts = (
+        get_common_options("oia"),
+        "package|p=s" => \$opt_package,
+    );
+    if (GetOptions(%opts)) {
+        unless ($opt_in) {
+            $opt_in = "debian/$opt_package.symbols.in";
+            error("symbol template file '$opt_in' was not found for package '$opt_package'");
+        }
+        out_symfile($handlers->substitute($opt_in, $opt_arch));
+        return 0;
+    }
+    return 1;
 }
 
-my $handlers = new Debian::PkgKde::SymHelper::Handlers;
-my $str_arches = join("|", @Debian::PkgKde::SymHelper::ARCHES);
-error("Unknown architecture: $opt_arch")
-    unless grep /^$opt_arch$/, @Debian::PkgKde::SymHelper::ARCHES;
+sub subcommand_patch {
+    my $opt_patch;
+    my %opts = (
+        get_common_options("oiav"),
+        "patch|p=s" => \$opt_patch,
+    );
+    if (GetOptions(%opts)) {
+        check_mandatory_options("i");
 
-if (defined $opt_dir) {
-    opendir(DIR, $opt_dir) or error("Unable to open directory: $opt_dir");
-    my %files;
-    while (my $file = readdir(DIR)) {
-        next if ($file =~ /^.{1,2}$/);
-        $file = File::Spec->catfile($opt_dir, $file);
-        if ($file =~ /.*?[_.]($str_arches)$/) {
-            $files{$1} = $file;
-        } else {
-            warning("$file is not named properly. Expected *_<arch> or *.<arch>");
-        }
-    }
-
-    if (scalar(keys %files) > 0) {
-        $handlers->load_symbol_files(\%files);
-        $handlers->preprocess();
-
-        # Create a symbols template and write it
-        $handlers->set_main_arch($opt_arch);
-        my $template = $handlers->create_template();
-        $template->handle_min_version($opt_minversion, 1);
-        out_symfile($template);
-    } else {
-        error("No properly named symbol files found in $opt_dir");
-    }
-} elsif (defined $opt_fixup) {
-    fixup($opt_fixup, $opt_in, $opt_outfile, $opt_minversion, $opt_arch);
-} elsif (defined $opt_in) {
-    error("Symbol template file ($opt_in) not found") unless (-f $opt_in);
-
-    if (defined $opt_patch) {
         $opt_patch = "-" unless ($opt_patch);
         # Open patch
-        open(PATCHINPUT, $opt_patch) or error("Unable to open patch '$opt_patch' for reading");
-        out_symfile($handlers->apply_patch_to_template(*PATCHINPUT, $opt_in, $opt_arch, $opt_minversion));
+        open(PATCHINPUT, $opt_patch) or error("unable to open patch '$opt_patch' for reading");
+        out_symfile($handlers->apply_patch_to_template(*PATCHINPUT, $opt_in, $opt_arch, $opt_version));
         close(PATCHINPUT);
-    } else {
-        out_symfile($handlers->substitute($opt_in, $opt_arch));
+        return 0;
     }
+    return 1;
+}
+
+sub subcommand_postgensymbols {
+    my ($infile, $outfile, $opt_package);
+    my %opts = (
+        get_common_options("oiav"),
+        "package|p=s" => \$opt_package,
+    );
+    if (GetOptions(%opts)) {
+        error("specify either package name or input template and output symbol files")
+            unless ($opt_package || $opt_in && $opt_out);
+
+        # Process options
+        if ($opt_in) {
+            $infile = $opt_in;
+        } else {
+            $infile = find_package_symbolfile_path($opt_package, $opt_arch);
+            return 0 unless ($infile);
+        }
+        if ($opt_out) {
+            $outfile = $opt_out;
+        } else {
+            $outfile = "debian/$opt_package/DEBIAN/symbols";
+            return 0 unless (-f $outfile);
+        }
+        error("output symbol file ($outfile) not found. Nothing to fixup") unless (-f $outfile);
+
+        my $insymfile = new Debian::PkgKde::SymHelper::SymbFile($infile);
+        my $outsymfile = new Debian::PkgKde::SymHelper::SymbFile($outfile);
+
+        # Sync versions in both symfiles to get proper @new and @lost
+        # results later
+        $outsymfile->resync_private_symbol_versions($insymfile, 1);
+        $outsymfile->handle_min_version($opt_version);
+
+        # Save
+        $outsymfile->save($outfile, 2);
+
+        # Print some summary information since the one from dpkg-gensymbols is inaccurate
+        my @new = $outsymfile->get_new_symbols($insymfile);
+        if (@new) {
+            warning("NEW symbols in this version (" . scalar(@new) . "):");
+            print_symbol_list(\@new, "--   ");
+        }
+        my @lost = $outsymfile->get_lost_symbols($insymfile);
+        if (@lost) {
+            warning("LOST symbols in this version (" . scalar(@lost) . "):");
+            print_symbol_list(\@lost, "--   ");
+        }
+
+        return 0;
+    }
+    return 1;
+}
+
+# Boilerplate for the common subcommand handler
+sub subcommand_boilerplate {
+    my %opts = (
+        get_common_options("oiav"),
+    );
+    if (GetOptions(%opts)) {
+#        check_mandatory_options("o",
+#            $opt_dir, "symbol file directory option (-d) is mandatory");
+        return 0;
+    }
+    return 1;
+}
+
+my %SUBCOMMANDS = (
+    "create"            => [ 1, \&subcommand_create, "create symbol file template" ],
+    "symbolfile"        => [ 2, \&subcommand_symbolfile, "generate symbol file from the template" ],
+    "patch"             => [ 3, \&subcommand_patch, "apply dpkg-gensymbols patch to the symbol file template" ],
+    "postgensymbols"    => [ 4, \&subcommand_postgensymbols, "post-process symbols file after dpkg-gensymbols" ],
+);
+
+# This one is needed by most subcommands
+$handlers = new Debian::PkgKde::SymHelper::Handlers;
+
+my $curcmd = shift @ARGV;
+if (defined $curcmd && exists $SUBCOMMANDS{$curcmd}) {
+    my $ret = &{$SUBCOMMANDS{$curcmd}->[1]}();
+    exit($ret);
 } else {
-    error("$0: insufficient number of arguments");
+    my $err;
+    $err = ($curcmd) ? "unrecognized subcommand '$curcmd'." : "subcommand was not specified.";
+    info($err . " Valid subcommands are:\n");
+
+    for my $cmd (sort({ $SUBCOMMANDS{$a}->[0] <=> $SUBCOMMANDS{$b}->[0] }
+                 keys %SUBCOMMANDS)) {
+        # Display command and its short help
+        info("  $cmd - " . $SUBCOMMANDS{$cmd}->[2] . "\n");
+    }
+    exit(2);
 }
