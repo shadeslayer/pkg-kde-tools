@@ -199,7 +199,7 @@ sub subcommand_symbolfile {
     if (GetOptions(%opts)) {
         unless ($opt_in) {
             $opt_in = "debian/$opt_package.symbols.in";
-            error("symbol template file '$opt_in' was not found for package '$opt_package'");
+            error("symbol template file '$opt_in' was not found for package '$opt_package'") unless (-r $opt_in);
         }
         out_symfile($handlers->substitute($opt_in, $opt_arch));
         return 0;
