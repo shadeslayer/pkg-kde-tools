@@ -16,14 +16,18 @@ sub new {
     my @standalone_substitution = (
         new Debian::PkgKde::SymHelper::Handler::VirtTable,
     );
-    my @substitution = (
-        @standalone_substitution,
+    my @multiple_substitution = (
         new Debian::PkgKde::SymHelper::Handler::size_t,
         new Debian::PkgKde::SymHelper::Handler::ssize_t,
         new Debian::PkgKde::SymHelper::Handler::qreal,
     );
+    my @substitution = (
+        @standalone_substitution,
+        @multiple_substitution,
+    );
     return bless { subst => \@substitution,
-                   standalone_subst => \ @standalone_substitution }, $cls;
+                   multiple_subst => \@multiple_substitution,
+                   standalone_subst => \@standalone_substitution }, $cls;
 }
 
 sub load_symbol_files {
@@ -136,8 +140,9 @@ sub get_group_name {
     return $osym->get_symbol();
 }
 
-sub create_template_standalone {
+sub _process_standalone {
     my $self = shift;
+    my $create = shift; # 0 - clean symbols, 1 - create template
 
     return undef unless (exists $self->{symfiles});
 
@@ -146,26 +151,42 @@ sub create_template_standalone {
     while (my ($arch, $symfile) = each %$symfiles) {
         while (my ($soname, $sonameobj) = each(%{$symfile->{objects}})) {
             my @syms = keys(%{$sonameobj->{syms}});
+            my %rename; # We need this hash to avoid name clashing
             for my $sym (@syms) {
                 my $symbol = new Debian::PkgKde::SymHelper::Symbol($sym, $arch);
                 my $symbol2 = new Debian::PkgKde::SymHelper::Symbol2($sym, $arch);
+                my $handled;
                 foreach my $handler (@{$self->{standalone_subst}}) {
                     if ($handler->detect($symbol2)) {
+                        $handled = 1;
                         # Make symbol arch independent with regard to this handler
                         $handler->clean($symbol);
                     }
                 }
-                my $newsym = $symbol2->get_symbol2();
+
+                my $newsym = ($create) ? $symbol2->get_symbol2() : $symbol->get_symbol();
+                my $info = $sonameobj->{syms}{$sym};
                 if ($sym ne $newsym) {
-                    # Rename symbol
-                    my $info = $sonameobj->{syms}{$sym};
-                    $sonameobj->{syms}{$newsym} = $info;
+                    $rename{$newsym} = $info;
                     delete $sonameobj->{syms}{$sym};
                 }
+                # Preserve symbol2 if clean requested
+                if (!$create && $handled) {
+                    $info->{__symbol2__} = $symbol2;
+                }
+            }
+            # We need this to avoid removal of symbols which names clash when renaming
+            while (my($newname, $info) = each %rename) {
+                $sonameobj->{syms}{$newname} = $info;
             }
         }
     }
     return $self->get_symfile();
+}
+
+sub create_template_standalone {
+    my $self = shift;
+    return $self->_process_standalone(1);
 }
 
 sub create_template {
@@ -175,6 +196,9 @@ sub create_template {
 
     my $symfiles = $self->{symfiles};
     my $main_arch = $self->get_main_arch();
+
+    # Process with standalone handlers first. Get a symfile with __symbol2__
+    my $symbol2symfile = $self->_process_standalone();
 
     # Collect new symbols from them by grouping them using the
     # fully arch independent derivative name
@@ -241,9 +265,15 @@ sub create_template {
                 next;
             }
 
-            # Main symbol (reference)
-            my $main_symbol = new Debian::PkgKde::SymHelper::Symbol2($group->{arches}{$main_arch}->get_symbol(), $main_arch);
-            foreach my $handler (@{$self->{subst}}) {
+            # Main symbol
+            my $symname = $group->{arches}{$main_arch}->get_symbol();
+            my $main_symbol;
+            if (exists $symbol2symfile->{objects}{$soname}{syms}{$symname}{__symbol2__}) {
+                $main_symbol = $symbol2symfile->{objects}{$soname}{syms}{$symname}{__symbol2__};
+            } else {
+                $main_symbol = new Debian::PkgKde::SymHelper::Symbol2($symname, $main_arch);
+            }
+            foreach my $handler (@{$self->{multiple_subst}}) {
                 if ($handler->detect($main_symbol, $group->{arches})) {
                     # Make archsymbols arch independent with regard to his handler
                     while (my ($arch, $symbol) = each(%{$group->{arches}})) {
@@ -261,18 +291,25 @@ sub create_template {
         my @syms = keys(%{$sonameobj->{syms}});
         for my $sym (@syms) {
             my $g = $self->get_group_name($sym, $main_arch);
+            my $symbol2;
             if (exists $symbols{$soname}{$g}) {
                 my $group = $symbols{$soname}{$g};
                 if (!exists $group->{banned}) {
-                    # Rename symbol
-                    my $info = $sonameobj->{syms}{$sym};
-                    my $newsym = $group->{template}->get_symbol2();
-                    $sonameobj->{syms}{$newsym} = $info;
-                    delete $sonameobj->{syms}{$sym};
-                } elsif (exists $sonameobj->{syms}{$sym}) {
-                    delete $sonameobj->{syms}{$sym}
-                        unless ($sonameobj->{syms}{$sym}{deprecated});
+                    $symbol2 = $group->{template};
                 }
+            } elsif (exists $sonameobj->{syms}{$sym}{__symbol2__}) {
+                $symbol2 = $sonameobj->{syms}{$sym}{__symbol2__};
+            } else {
+                next; # Leave this symbol alone
+            }
+            if (defined $symbol2) {
+                # Rename symbol
+                my $info = $sonameobj->{syms}{$sym};
+                $sonameobj->{syms}{$symbol2->get_symbol2()} = $info;
+                delete $sonameobj->{syms}{$sym};
+            } elsif (exists $sonameobj->{syms}{$sym}) {
+                delete $sonameobj->{syms}{$sym}
+                    unless ($sonameobj->{syms}{$sym}{deprecated});
             }
         }
     }
