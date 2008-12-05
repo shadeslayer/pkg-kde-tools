@@ -343,7 +343,9 @@ sub apply_patch_to_template {
     # Adopt the patch to our needs (filename)
     my $file2patch;
     my $is_patch;
-    while(<$patchfh>) {
+    my $sameline = 0;
+    while($sameline || ($_ = <$patchfh>)) {
+        $sameline = 0;
         if (defined $is_patch) {
             if (m/^(?:[+ -]|@@ )/) {
                 # Patch continues
@@ -351,7 +353,17 @@ sub apply_patch_to_template {
                 $is_patch++;
             } else {
                 # Patch ended
-                last;
+                if (!close(PATCH)) {
+                    # Continue searching for another patch
+                    $sameline = 1;
+                    $file2patch = undef;
+                    $is_patch = undef;
+                    next;
+                } else {
+                    $file2patch = undef;
+                    # $is_patch stays set
+                    last;
+                }
             }
         } elsif (defined $file2patch) {
             if (m/^[+]{3}\s+\S+/) {
@@ -367,8 +379,7 @@ sub apply_patch_to_template {
             $file2patch = $1;
         }
     }
-
-    if($file2patch && close(PATCH) && $is_patch) {
+    if(($file2patch && close(PATCH)) || $is_patch) {
         # Patching was successful. Reparse
         my $insymfile = new Debian::PkgKde::SymHelper::SymbFile($infile);
         my $newsymfile = new Debian::PkgKde::SymHelper::SymbFile($archfn);
@@ -381,6 +392,7 @@ sub apply_patch_to_template {
 
         # Now process new symbols. We need to a create template from them
         if (my $dummysymfile = $newsymfile->get_new_symbols_as_symbfile($archsymfile)) {
+            $dummysymfile->dump(*STDOUT);
             $self->add_symbol_file($dummysymfile, $arch);
             $self->preprocess();
 

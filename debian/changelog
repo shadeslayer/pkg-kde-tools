@@ -1,3 +1,10 @@
+pkg-kde-tools (0.3.1~pre1) UNRELEASED; urgency=low
+
+  * Improve `pkgkde-symbolshelper patch` processing of patches which patch
+    multiple files. Use the first patch partion that applies properly.
+
+ -- Modestas Vainius <modestas@vainius.eu>  Fri, 05 Dec 2008 02:46:09 +0200
+
 pkg-kde-tools (0.3) experimental; urgency=low
 
   * Add pkgkde-symbolshelper. It aims to make handling of symbols in
