@@ -1,8 +1,9 @@
 package Debian::PkgKde::SymHelper::Handler::VirtTable;
-our @ISA = qw( Debian::PkgKde::SymHelper::Handler::Base );
+our @ISA = qw( Debian::PkgKde::SymHelper::Handler );
 
 use Debian::PkgKde::SymHelper::CompileTest;
 use Debian::PkgKde::SymHelper qw(error);
+use Debian::PkgKde::SymHelper::Handler;
 
 sub get_host_arch_params {
     my $params = {};

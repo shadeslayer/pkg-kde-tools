@@ -53,7 +53,7 @@ use File::Spec;
 use Getopt::Long;
 
 use Debian::PkgKde::SymHelper qw(info error warning);
-use Debian::PkgKde::SymHelper::Handler::Base;
+use Debian::PkgKde::SymHelper::Handler;
 use Debian::PkgKde::SymHelper::SymbFile;
 use Debian::PkgKde::SymHelper::Handlers;
 
@@ -62,7 +62,8 @@ my $handlers;
 ######## Option processing ##################
 my $opt_out;
 my $opt_in;
-my $opt_arch = Debian::PkgKde::SymHelper::Handler::Base::get_host_arch();
+my $opt_package;
+my $opt_arch = Debian::PkgKde::SymHelper::Handler::get_host_arch();
 my $opt_version;
 
 sub verify_opt_arch {
@@ -86,6 +87,7 @@ sub get_common_options {
     map { $args{$_} = 1 } split(//, $args);
     $res{"output|o=s"} = \$opt_out if ($args{o});
     $res{"input|i=s"} = \&verify_opt_in if ($args{i});
+    $res{"package|p=s"} = \$opt_package if ($args{p});
     $res{"architecture|a=s"} = \&verify_opt_arch if ($args{a});
     $res{"version|v:s"} = \$opt_version if ($args{v});
 
@@ -94,13 +96,16 @@ sub get_common_options {
 
 sub check_mandatory_options {
     my $args = shift;
+    my $msg = shift;
     my %args;
-
+    
+    $msg = "" if (!defined $msg);
     map { $args{$_} = 1 } split(//, $args);
-    error("input file option (-i) is mandatory") if (!$opt_in && $args{i});
-    error("output file option (-o) is mandatory") if (!$opt_out && $args{o});
-    error("architecture option (-a) is mandatory") if (!$opt_arch && $args{a});
-    error("version option (-v) is mandatory") if (!$opt_version && $args{v});
+    error("input file option (-i) is mandatory $msg") if (!$opt_in && $args{i});
+    error("output file option (-o) is mandatory $msg") if (!$opt_out && $args{o});
+    error("package name option (-p) is mandatory $msg") if (!$opt_package && $args{p});
+    error("architecture option (-a) is mandatory $msg") if (!$opt_arch && $args{a});
+    error("version option (-v) is mandatory $msg") if (!$opt_version && $args{v});
 
     while (@_) {
         my $val = shift;
@@ -127,13 +132,14 @@ sub find_package_symbolfile_path {
 
 sub out_symfile {
     my $symfile = shift;
-    return unless $symfile;
+    return 1 unless $symfile;
 
     if ($opt_out) {
         $symfile->save($opt_out, 2);
     } else {
         $symfile->dump(*STDOUT, 2);
     }
+    return 0;
 }
 
 sub print_symbol_list($$) {
@@ -181,7 +187,7 @@ sub subcommand_create {
                 $template = $handlers->create_template();
             }
             $template->handle_min_version($opt_version, 1);
-            out_symfile($template);
+            return out_symfile($template);
         } else {
             error("no properly named symbol files found in $opt_dir");
         }
@@ -191,46 +197,48 @@ sub subcommand_create {
 }
 
 sub subcommand_symbolfile {
-    my $opt_package;
     my %opts = (
-        get_common_options("oia"),
-        "package|p=s" => \$opt_package,
+        get_common_options("oipa"),
     );
     if (GetOptions(%opts)) {
+        check_mandatory_options("i", "when package (-p) is not specified") unless ($opt_package);
         unless ($opt_in) {
             $opt_in = "debian/$opt_package.symbols.in";
             error("symbol template file '$opt_in' was not found for package '$opt_package'") unless (-r $opt_in);
         }
-        out_symfile($handlers->substitute($opt_in, $opt_arch));
-        return 0;
+        return out_symfile($handlers->substitute($opt_in, $opt_arch));
     }
     return 1;
 }
 
 sub subcommand_patch {
-    my $opt_patch;
+    my $opt_diff;
     my %opts = (
-        get_common_options("oiav"),
-        "patch|p=s" => \$opt_patch,
+        get_common_options("oipav"),
+        "diff|d=s" => \$opt_diff,
     );
     if (GetOptions(%opts)) {
-        check_mandatory_options("i");
+        check_mandatory_options("i", "when package (-p) is not specified") unless ($opt_package);
+        unless ($opt_in) {
+            $opt_in = "debian/$opt_package.symbols.in";
+            error("symbol template file '$opt_in' was not found for package '$opt_package'") unless (-r $opt_in);
+        }
+        $opt_out = $opt_in if (!$opt_out && -w $opt_in);
 
-        $opt_patch = "-" unless ($opt_patch);
+        $opt_diff = "-" unless ($opt_diff);
         # Open patch
-        open(PATCHINPUT, $opt_patch) or error("unable to open patch '$opt_patch' for reading");
-        out_symfile($handlers->apply_patch_to_template(*PATCHINPUT, $opt_in, $opt_arch, $opt_version));
-        close(PATCHINPUT);
-        return 0;
+        open(DIFFINPUT, $opt_diff) or error("unable to open patch '$opt_diff' for reading");
+        my $ret = out_symfile($handlers->apply_patch_to_template(*DIFFINPUT, $opt_in, $opt_arch, $opt_version));
+        close(DIFFINPUT);
+        return $ret;
     }
     return 1;
 }
 
 sub subcommand_postgensymbols {
-    my ($infile, $outfile, $opt_package);
+    my ($infile, $outfile);
     my %opts = (
-        get_common_options("oiav"),
-        "package|p=s" => \$opt_package,
+        get_common_options("oipav"),
     );
     if (GetOptions(%opts)) {
         error("specify either package name or input template and output symbol files")
@@ -282,11 +290,10 @@ sub subcommand_postgensymbols {
 # Boilerplate for the common subcommand handler
 sub subcommand_boilerplate {
     my %opts = (
-        get_common_options("oiav"),
+        get_common_options("oipav"),
     );
     if (GetOptions(%opts)) {
-#        check_mandatory_options("o",
-#            $opt_dir, "symbol file directory option (-d) is mandatory");
+#        check_mandatory_options("o");
         return 0;
     }
     return 1;

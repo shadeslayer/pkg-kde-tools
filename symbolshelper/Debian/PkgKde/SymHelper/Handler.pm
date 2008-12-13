@@ -1,4 +1,4 @@
-package Debian::PkgKde::SymHelper::Handler::Base;
+package Debian::PkgKde::SymHelper::Handler;
 
 use strict;
 use warnings;

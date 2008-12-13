@@ -4,9 +4,7 @@ use strict;
 use warnings;
 use File::Temp qw(tempfile);
 use Debian::PkgKde::SymHelper::Handler::VirtTable;
-use Debian::PkgKde::SymHelper::Handler::size_t;
-use Debian::PkgKde::SymHelper::Handler::ssize_t;
-use Debian::PkgKde::SymHelper::Handler::qreal;
+use Debian::PkgKde::SymHelper::Handler::SimpleTypeDiff;
 use Debian::PkgKde::SymHelper::Symbol;
 use Debian::PkgKde::SymHelper::Symbol2;
 use Debian::PkgKde::SymHelper qw(info error warning);
@@ -17,9 +15,9 @@ sub new {
         new Debian::PkgKde::SymHelper::Handler::VirtTable,
     );
     my @multiple_substitution = (
-        new Debian::PkgKde::SymHelper::Handler::size_t,
-        new Debian::PkgKde::SymHelper::Handler::ssize_t,
-        new Debian::PkgKde::SymHelper::Handler::qreal,
+        new Debian::PkgKde::SymHelper::Handler::SimpleTypeDiff::size_t,
+        new Debian::PkgKde::SymHelper::Handler::SimpleTypeDiff::ssize_t,
+        new Debian::PkgKde::SymHelper::Handler::SimpleTypeDiff::qreal,
     );
     my @substitution = (
         @standalone_substitution,
@@ -48,7 +46,7 @@ sub load_symbol_files {
 
 sub add_symbol_file {
     my ($self, $symfile, $arch) = @_;
-    $arch = Debian::PkgKde::SymHelper::Handler::Base::get_host_arch() unless (defined $arch);
+    $arch = Debian::PkgKde::SymHelper::Handler::get_host_arch() unless (defined $arch);
 
     $self->{symfiles}{$arch} = $symfile;
     $self->{main_arch} = $arch unless ($self->{main_arch});
@@ -61,7 +59,7 @@ sub get_main_arch {
 
 sub set_main_arch {
     my ($self, $arch) = @_;
-    $arch = Debian::PkgKde::SymHelper::Handler::Base::get_host_arch() unless defined $arch;
+    $arch = Debian::PkgKde::SymHelper::Handler::get_host_arch() unless defined $arch;
     $self->{main_arch} = $arch if ($self->get_symfile($arch));
 }
 
@@ -390,14 +388,14 @@ sub apply_patch_to_template {
         # Process lost symbols
         $insymfile->merge_lost_symbols_to_template($archsymfile, $newsymfile);
 
-        # Now process new symbols. We need to a create template from them
+        # Now process new symbols. We need to create a template from them
         if (my $dummysymfile = $newsymfile->get_new_symbols_as_symbfile($archsymfile)) {
-            $dummysymfile->dump(*STDOUT);
             $self->add_symbol_file($dummysymfile, $arch);
             $self->preprocess();
 
             # Handle min version
             $dummysymfile->handle_min_version($newminver);
+            $dummysymfile->dump(*STDOUT);
 
             # Create a symbols template for our dummy file
             $dummysymfile = $self->create_template_standalone();

@@ -18,9 +18,6 @@ binary-indep:
 	dh_installdocs
 	dh_installexamples
 	dh_install
-	#make sure we didn't accidentally add svn files
-	#if triggered, please build source package with -I
-	test ! -e $(CURDIR)/debian/pkg-kde-tools/usr/share/pkg-kde-tools/makefiles/1/.svn/
 	dh_link
 	dh_perl
 	dh_strip

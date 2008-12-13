@@ -1,9 +1,15 @@
-pkg-kde-tools (0.3.1~pre1) UNRELEASED; urgency=low
+pkg-kde-tools (0.3.1~pre3) UNRELEASED; urgency=low
 
-  * Improve `pkgkde-symbolshelper patch` processing of patches which patch
-    multiple files. Use the first patch partion that applies properly.
+  * pkgkde-symbolshelper/patch: improve processing of patches which patch
+    multiple files. Use the first patch portion that applies properly.
+  * pkgkde-symbolshelper/patch: rename -p parameter to -d (diff), support -p
+    (package) option.
+  * pkgkde-symbolshelper: rework module stucture a bit, merge small handlers
+    into one file.
+  * debian/rules: disable .svn check. It is wrong and useless since does not
+    check the tarball itself but the directory the tarball gets built from.
 
- -- Modestas Vainius <modestas@vainius.eu>  Fri, 05 Dec 2008 02:46:09 +0200
+ -- Modestas Vainius <modestas@vainius.eu>  Sat, 13 Dec 2008 01:58:28 +0200
 
 pkg-kde-tools (0.3) experimental; urgency=low
 

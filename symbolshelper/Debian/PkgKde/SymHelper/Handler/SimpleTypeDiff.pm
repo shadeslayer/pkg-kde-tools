@@ -1,12 +1,12 @@
 package Debian::PkgKde::SymHelper::Handler::SimpleTypeDiff;
-our @ISA = qw( Debian::PkgKde::SymHelper::Handler::Base );
+our @ISA = qw( Debian::PkgKde::SymHelper::Handler );
 
 use strict;
 use warnings;
-use Debian::PkgKde::SymHelper::Handler::Base;
+use Debian::PkgKde::SymHelper::Handler;
 
 sub new {
-    return Debian::PkgKde::SymHelper::Handler::Base::new(@_);
+    return Debian::PkgKde::SymHelper::Handler::new(@_);
 }
 
 sub clean {
@@ -58,6 +58,77 @@ sub replace {
     } else {
         return undef;
     }
+}
+
+1;
+package Debian::PkgKde::SymHelper::Handler::SimpleTypeDiff::size_t;
+our @ISA = qw( Debian::PkgKde::SymHelper::Handler::SimpleTypeDiff );
+
+use strict;
+use warnings;
+
+sub new {
+    my $self = Debian::PkgKde::SymHelper::Handler::SimpleTypeDiff::new(@_);
+    $self->{substvar} = "{size_t}";
+    $self->{main_type} = "j"; # unsigned int
+    $self->{type_re} = "[jm]";
+    return $self;
+}
+
+sub get_predef_arch_params {
+    my ($self, $arch) = @_;
+
+    # Mult should be 1 on 32bit arches and 2 on 64bit arches and so on
+    my $params = { type => "j" }; # unsigned int
+    $params->{type} = "m" if ($arch =~ /amd64|ia64|alpha|s390/); # unsigned long
+    return $params;
+}
+
+package Debian::PkgKde::SymHelper::Handler::SimpleTypeDiff::ssize_t;
+our @ISA = qw( Debian::PkgKde::SymHelper::Handler::SimpleTypeDiff );
+
+use strict;
+use warnings;
+
+sub new {
+    my $self = Debian::PkgKde::SymHelper::Handler::SimpleTypeDiff::new(@_);
+    $self->{substvar} = "{ssize_t}";
+    $self->{main_type} = "i"; # unsigned int
+    $self->{type_re} = "[il]";
+    return $self;
+}
+
+sub get_predef_arch_params {
+    my ($self, $arch) = @_;
+
+    # Mult should be 1 on 32bit arches and 2 on 64bit arches and so on
+    my $params = { type => "i" }; # int
+    $params->{type} = "l" if ($arch =~ /amd64|ia64|alpha|s390/); # unsigned long
+    return $params;
+}
+
+1;
+package Debian::PkgKde::SymHelper::Handler::SimpleTypeDiff::qreal;
+our @ISA = qw( Debian::PkgKde::SymHelper::Handler::SimpleTypeDiff );
+
+use strict;
+use warnings;
+
+sub new {
+    my $self = Debian::PkgKde::SymHelper::Handler::SimpleTypeDiff::new(@_);
+    $self->{substvar} = "{qreal}";
+    $self->{main_type} = "d"; # unsigned int
+    $self->{type_re} = "[fd]";
+    return $self;
+}
+
+sub get_predef_arch_params {
+    my ($self, $arch) = @_;
+
+    # Mult should be 1 on 32bit arches and 2 on 64bit arches and so on
+    my $params = { type => "d" }; # int
+    $params->{type} = "f" if ($arch =~ /arm/); # unsigned long
+    return $params;
 }
 
 1;
