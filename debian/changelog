@@ -1,3 +1,9 @@
+pkg-kde-tools (0.3.2~pre1) UNRELEASED; urgency=low
+
+  * Add support for resorting symbol files (useful after manual editing).
+
+ -- Modestas Vainius <modestas@vainius.eu>  Wed, 14 Jan 2009 15:29:21 +0200
+
 pkg-kde-tools (0.3.1) experimental; urgency=low
 
   * pkgkde-symbolshelper/patch: improve processing of patches which patch

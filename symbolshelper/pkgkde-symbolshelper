@@ -287,6 +287,24 @@ sub subcommand_postgensymbols {
     return 1;
 }
 
+sub subcommand_resort {
+    my %opts = (
+        get_common_options("oi"),
+    );
+    if (GetOptions(%opts)) {
+        check_mandatory_options("i");
+
+        if (-f $opt_in) {
+            my $symfile = new Debian::PkgKde::SymHelper::SymbFile($opt_in);
+            return out_symfile($symfile);
+        } else {
+            error("input symbol file ($opt_in) not found");
+            return 1;
+        }
+    }
+    return 1;
+}
+
 # Boilerplate for the common subcommand handler
 sub subcommand_boilerplate {
     my %opts = (
@@ -304,6 +322,7 @@ my %SUBCOMMANDS = (
     "symbolfile"        => [ 2, \&subcommand_symbolfile, "generate symbol file from the template" ],
     "patch"             => [ 3, \&subcommand_patch, "apply dpkg-gensymbols patch to the symbol file template" ],
     "postgensymbols"    => [ 4, \&subcommand_postgensymbols, "post-process symbols file after dpkg-gensymbols" ],
+    "resort"            => [ 5, \&subcommand_resort, "resort symbol file" ],
 );
 
 # This one is needed by most subcommands
