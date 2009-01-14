@@ -17,6 +17,8 @@ sub new {
     my @multiple_substitution = (
         new Debian::PkgKde::SymHelper::Handler::SimpleTypeDiff::size_t,
         new Debian::PkgKde::SymHelper::Handler::SimpleTypeDiff::ssize_t,
+        new Debian::PkgKde::SymHelper::Handler::SimpleTypeDiff::int64_t,
+        new Debian::PkgKde::SymHelper::Handler::SimpleTypeDiff::uint64_t,
         new Debian::PkgKde::SymHelper::Handler::SimpleTypeDiff::qreal,
     );
     my @substitution = (
