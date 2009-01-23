@@ -191,6 +191,11 @@ sub create_template_standalone {
 
 sub create_template {
     my $self = shift;
+    my %opts = @_;
+
+    # opts:
+    #   deprecate_incomplete - add symbols from incomplete groups
+    #                          as deprecated.
 
     return undef unless (exists $self->{symfiles});
 
@@ -220,7 +225,7 @@ sub create_template {
                             "  " . $symbols{$s}{$g}{arches}{$arch1}->get_symbol() . "\n" .
                             "  " . $n->{name});
                         # Ban group
-                        $symbols{$s}{$g}{banned} = 1;
+                        $symbols{$s}{$g}{banned} = "ambiguous";
                     }
                 } else {
                     $symbols{$s}{$g}{arches}{$arch1} = new Debian::PkgKde::SymHelper::Symbol($n->{name}, $arch1);
@@ -239,15 +244,18 @@ sub create_template {
         $arch_ok{$arch} = $arch_ok_i;
     }
 
+    my %other_groups;
     while (my ($soname, $groups) = each(%symbols)) {
+        $other_groups{$soname} = [];
         while (my ($name, $group) = each(%$groups)) {
             # Check if the group is not banned 
             next if exists $group->{banned};
 
             # Check if the group is complete
             my $count = scalar(keys(%{$group->{arches}}));
+            my $sym_arch = $main_arch;
             if ($count < $arch_count) {
-                $group->{banned} = 1;
+                $group->{banned} = "incomplete";
                 # Additional vtables are usual on armel
                 next if ($count == 1 && exists $group->{arches}{armel} && $group->{arches}{armel}->is_vtt());
 
@@ -262,16 +270,27 @@ sub create_template {
                     info(" $arch") if (defined $arch_ok{$arch} && $arch_ok{$arch} != $arch_ok_i);
                 }
                 info("\n");
-                next;
+
+                if (defined $opts{deprecate_incomplete}) {
+                    info("  - including this symbol in the template anyway\n");
+                    delete $group->{banned};
+                    $group->{deprecate} = "PRIVATE: ARCH: " . join(" ", sort(keys %{$group->{arches}}));
+                    # Determine symbol arch, prefer main_arch though
+                    if (!exists $group->{arches}{$main_arch}) {
+                        $sym_arch = (keys %{$group->{arches}})[0];
+                    }
+                } else {
+                    next;
+                }
             }
 
             # Main symbol
-            my $symname = $group->{arches}{$main_arch}->get_symbol();
+            my $symname = $group->{arches}{$sym_arch}->get_symbol();
             my $main_symbol;
             if (exists $symbol2symfile->{objects}{$soname}{syms}{$symname}{__symbol2__}) {
                 $main_symbol = $symbol2symfile->{objects}{$soname}{syms}{$symname}{__symbol2__};
             } else {
-                $main_symbol = new Debian::PkgKde::SymHelper::Symbol2($symname, $main_arch);
+                $main_symbol = new Debian::PkgKde::SymHelper::Symbol2($symname, $sym_arch);
             }
             foreach my $handler (@{$self->{multiple_subst}}) {
                 if ($handler->detect($main_symbol, $group->{arches})) {
@@ -282,20 +301,27 @@ sub create_template {
                 }
             }
             $group->{template} = $main_symbol;
+            if ($main_arch ne $sym_arch) {
+                push @{$other_groups{$soname}}, $group;
+            }
         }
     }
 
     # Finally, integrate our template into $main_arch symfile
     my $main_symfile = $symfiles->{$main_arch};
-    while (my ($soname, $sonameobj) = each(%{$symfiles->{$main_arch}{objects}})) {
+    while (my ($soname, $sonameobj) = each(%{$main_symfile->{objects}})) {
         my @syms = keys(%{$sonameobj->{syms}});
         for my $sym (@syms) {
             my $g = $self->get_group_name($sym, $main_arch);
             my $symbol2;
+            my $deprecate;
             if (exists $symbols{$soname}{$g}) {
                 my $group = $symbols{$soname}{$g};
                 if (!exists $group->{banned}) {
                     $symbol2 = $group->{template};
+                } elsif (exists $group->{deprecate}) {
+                    $symbol2 = $group->{template};
+                    $deprecate = $group->{deprecate};
                 }
             } elsif (exists $sonameobj->{syms}{$sym}{__symbol2__}) {
                 $symbol2 = $sonameobj->{syms}{$sym}{__symbol2__};
@@ -305,12 +331,31 @@ sub create_template {
             if (defined $symbol2) {
                 # Rename symbol
                 my $info = $sonameobj->{syms}{$sym};
-                $sonameobj->{syms}{$symbol2->get_symbol2()} = $info;
+                if (defined $deprecate) {
+                    $info->{deprecated} = $deprecate;
+                }
                 delete $sonameobj->{syms}{$sym};
+                $sonameobj->{syms}{$symbol2->get_symbol2()} = $info;
             } elsif (exists $sonameobj->{syms}{$sym}) {
                 delete $sonameobj->{syms}{$sym}
                     unless ($sonameobj->{syms}{$sym}{deprecated});
             }
+        }
+    }
+
+    # Add symbols from "other groups" (they are new in main_symfile)
+    while (my ($soname, $groups) = each(%other_groups)) {
+        for my $group (@$groups) {
+            my $symbol2 = $group->{template};
+            
+            if (defined $symbol2) {
+                # Add symbol
+                my $info = $symfiles->{$symbol2->get_arch()}{objects}{$soname}{syms}{$symbol2->get_symbol()};
+                if ($group->{deprecate}) {
+                    $info->{deprecated} = $group->{deprecate};
+                }
+                $main_symfile->{objects}{$soname}{syms}{$symbol2->get_symbol2()} = $info;
+            } 
         }
     }
 

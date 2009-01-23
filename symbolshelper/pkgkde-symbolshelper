@@ -152,9 +152,11 @@ sub print_symbol_list($$) {
 ############### Subcommands ####################
 sub subcommand_create {
     my $opt_dir;
+    my $opt_deprecate_incomplete;
     my %opts = (
         get_common_options("oav"),
         "directory|d=s" => \$opt_dir,
+        "with-incomplete|wi!" => \$opt_deprecate_incomplete,
     );
     if (GetOptions(%opts)) {
         check_mandatory_options("",
@@ -184,7 +186,9 @@ sub subcommand_create {
             if (scalar(keys %files) == 1) {
                 $template = $handlers->create_template_standalone();
             } else {
-                $template = $handlers->create_template();
+                $template = $handlers->create_template(
+                    "deprecate_incomplete" => $opt_deprecate_incomplete,
+                );
             }
             $template->handle_min_version($opt_version, 1);
             return out_symfile($template);

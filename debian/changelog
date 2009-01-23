@@ -1,8 +1,15 @@
-pkg-kde-tools (0.3.2~pre1) UNRELEASED; urgency=low
+pkg-kde-tools (0.4.0~pre1) UNRELEASED; urgency=low
 
-  * Add support for resorting symbol files (useful after manual editing).
+  * pkgkde-symbolshelper: add support for resorting symbol files (useful after
+    manual editing).
+  * pkgkde-symbolshelper create: add support for adding arch specific symbols
+    to the symbol template.
+  * Add dh_sameversiondep from official KDE packaging:
+    - make pkg-kde-tools suggest debhelper v7;
+    - add POD help and generate manual page from it;
+    - add support for the external reference package.
 
- -- Modestas Vainius <modestas@vainius.eu>  Wed, 14 Jan 2009 15:29:21 +0200
+ -- Modestas Vainius <modestas@vainius.eu>  Sat, 24 Jan 2009 01:26:33 +0200
 
 pkg-kde-tools (0.3.1) experimental; urgency=low
 
