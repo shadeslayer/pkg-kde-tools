@@ -10,7 +10,7 @@ pkg-kde-tools (0.4.0~pre4) UNRELEASED; urgency=low
     - add support for the external reference package.
   * Pass -X.svn to dh_install
   * Add stuff from svn pkg-kde/cdbs as pkg-kde-build. Port kde.mk and rename
-    it to kde4.mk:
+    it to debian-qt-kde.mk as it was called in kde3 when stored in cdbs/ dir.
     - use /usr/share/pkg-kde-tools/makefiles/1/variables.mk;
     - link with --as-needed by default;
     - remove lintian section, we should use dh_lintian;
