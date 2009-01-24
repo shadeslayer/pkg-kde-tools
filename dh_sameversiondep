@@ -248,12 +248,10 @@ sub get_package_dpkg_status {
         } elsif (defined($curpkg)) {
             if (m/^($regexp_fields):\s*(.*)$/) {
                 my $field = $1;
-                error("Dublicate field $field for the $curpkg package in the dpkg status file")
+                error("dublicate field $field for the $curpkg package in the dpkg status file")
                     if (exists $status{$curpkg}{$field});
                 $status{$curpkg}{$field} = $2;
             }
-        } else {
-            error("Missing Package entry at $.");
         }
     }
     close(DPKG);
@@ -322,8 +320,8 @@ foreach my $package (@{$dh{DOPACKAGES}}) {
                     my $deptype = $3;
                     $deptype = $fieldname unless defined $deptype;
 
-                    # Initialize some dep2add and scanpkg data.
-                    # scanpkg might also come from external source. Use dpkg-query
+                    # Initialize some dep2add and refpkg data.
+                    # refpkg might also come from external source. Use dpkg-query
                     # to get its dpkg status then.
                     my $refpkg_status;
                     my $dep2add_status;
@@ -338,9 +336,9 @@ foreach my $package (@{$dh{DOPACKAGES}}) {
                         $dep2add_status = get_package_dpkg_status( [ $dep2add ], [ "Source", "Version", $deptype ] );
                     } else {
                         my $status = get_package_dpkg_status( [ $refpkg, $dep2add ], [ "Source", "Version", $deptype ] );
-                        error("Cannot continue because the scan package $refpkg could not be found in debian/control or dpkg status")
+                        error("cannot continue because the reference package $refpkg could not be found in debian/control or dpkg status")
                             unless (exists $status->{$refpkg});
-                        error("Cannot continue because package $refpkg has no $deptype field to scan")
+                        error("cannot continue because package $refpkg has no $deptype field to scan")
                             unless (exists $status->{$refpkg}{$deptype});
                         $refpkg_status = $status->{$refpkg};
 
@@ -348,7 +346,7 @@ foreach my $package (@{$dh{DOPACKAGES}}) {
                     }
 
                     ##### Process and verify dep2add status #####
-                    error("Cannot continue because package $dep2add could not be found in dpkg status")
+                    error("cannot continue because package $dep2add could not be found in dpkg status")
                         unless (exists $dep2add_status->{$dep2add});
                     $dep2add_status = $dep2add_status->{$dep2add};
 
@@ -358,27 +356,27 @@ foreach my $package (@{$dh{DOPACKAGES}}) {
                         unless ($dep2add_status->{Source});
 
                     # Check validility of dep2add status
-                    error("Could not retreive source package name for $dep2add package. Is it installed?")
+                    error("could not retreive source package name for $dep2add package. Is it installed?")
                         unless exists $dep2add_status->{Source} && exists $dep2add_status->{Version};
-                    error("Package $dep2add has no $deptype field. This configuration is unsupported. ")
+                    error("package $dep2add has no $deptype field. This configuration is unsupported. ")
                         unless exists $dep2add_status->{$deptype};
                     my @dep2add_deps = extract_package_names($dep2add_status->{$deptype});
 
-                    # Get deptype packages of scanpkg
-                    my @scanpkg_deps;
+                    # Get deptype packages of refpkg
+                    my @refpkg_deps;
                     if ($vars) {
-                        @scanpkg_deps = $vars->get_dep_package_names($deptype);
+                        @refpkg_deps = $vars->get_dep_package_names($deptype);
                     } else {
-                        @scanpkg_deps = extract_package_names($refpkg_status->{$deptype});
+                        @refpkg_deps = extract_package_names($refpkg_status->{$deptype});
                     }
-                    error("Cannot continue because package $refpkg has no $deptype field to scan")
-                        unless (@scanpkg_deps);
+                    error("cannot continue because package $refpkg has no $deptype field to scan")
+                        unless (@refpkg_deps);
 
                     # Intersect both _deps arrays to find common dependencies
                     my @commondeps;
                     {
                         my %_map;
-                        map { $_map{$_} = 1; } @scanpkg_deps;
+                        map { $_map{$_} = 1; } @refpkg_deps;
                         map { push @commondeps, $_ if exists $_map{$_} } @dep2add_deps;
                     }
 
@@ -388,8 +386,8 @@ foreach my $package (@{$dh{DOPACKAGES}}) {
 
                     # Check if all packages were found
                     for my $dep (@commondeps) {
-                        error("Package $dep was not found in the dpkg status. Internal error")
-                            unless exists $depstatus->{$pkg};
+                        error("package $dep was not found in the dpkg status. Internal error")
+                            unless exists $depstatus->{$dep};
                     }
 
                     # Filter commondeps
@@ -433,7 +431,7 @@ foreach my $package (@{$dh{DOPACKAGES}}) {
                         write_substvar($pkgname, $varname, join(", ", @uniqdeps), $pkg_substvars);
                     }
                 } else {
-                    error("Invalid '$namespace' substvar syntax: $varparams");
+                    error("invalid '$namespace' substvar syntax: $varparams");
                 }
             }
         }

@@ -1,4 +1,4 @@
-pkg-kde-tools (0.4.0~pre1) UNRELEASED; urgency=low
+pkg-kde-tools (0.4.0~pre3) UNRELEASED; urgency=low
 
   * pkgkde-symbolshelper: add support for resorting symbol files (useful after
     manual editing).
@@ -17,8 +17,10 @@ pkg-kde-tools (0.4.0~pre1) UNRELEASED; urgency=low
     - add versions.mk and control.mk too. The latter needs porting if it is
       useful;
     - add README to discourage other developers from using pkg-kde-build.
+  * Add makefiles/1/cdbs/symbolshelper.mk which hooks pkgkde-symbolshelper
+    calls to cdbs.
 
- -- Modestas Vainius <modestas@vainius.eu>  Sat, 24 Jan 2009 02:47:13 +0200
+ -- Modestas Vainius <modestas@vainius.eu>  Sat, 24 Jan 2009 04:16:47 +0200
 
 pkg-kde-tools (0.3.1) experimental; urgency=low
 
