@@ -1,5 +1,8 @@
 include /usr/share/cdbs/1/rules/buildvars.mk
 
+ifndef _cdbs_pkgkde_symbolshelper
+_cdbs_pkgkde_symbolshelper = 1
+
 SYMBOLSHELPER_PACKAGES := $(filter $(DEB_PACKAGES),$(patsubst debian/%.symbols.in,%,$(wildcard debian/*.symbols.in)))
 
 $(patsubst %,binary-strip/%,$(SYMBOLSHELPER_PACKAGES)):: binary-strip/%:
@@ -10,3 +13,5 @@ $(patsubst %,binary-fixup/%,$(SYMBOLSHELPER_PACKAGES)):: binary-fixup/%:
 
 clean::
 	rm -f $(patsubst %,debian/%.symbols.$(DEB_HOST_ARCH),$(SYMBOLSHELPER_PACKAGES))
+
+endif

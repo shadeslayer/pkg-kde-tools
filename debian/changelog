@@ -19,8 +19,10 @@ pkg-kde-tools (0.4.0~pre3) UNRELEASED; urgency=low
     - add README to discourage other developers from using pkg-kde-build.
   * Add makefiles/1/cdbs/symbolshelper.mk which hooks pkgkde-symbolshelper
     calls to cdbs.
+  * Add makefiles/1/cdbs/kde4.mk symlink to makefiles/1/cdbs/kde.mk for
+    clarity.
 
- -- Modestas Vainius <modestas@vainius.eu>  Sat, 24 Jan 2009 04:16:47 +0200
+ -- Modestas Vainius <modestas@vainius.eu>  Sat, 24 Jan 2009 11:35:33 +0200
 
 pkg-kde-tools (0.3.1) experimental; urgency=low
 
