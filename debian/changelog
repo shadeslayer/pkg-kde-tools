@@ -1,4 +1,4 @@
-pkg-kde-tools (0.4.0~pre4) UNRELEASED; urgency=low
+pkg-kde-tools (0.4.0~pre5) UNRELEASED; urgency=low
 
   * pkgkde-symbolshelper: add support for resorting symbol files (useful after
     manual editing).
@@ -9,14 +9,12 @@ pkg-kde-tools (0.4.0~pre4) UNRELEASED; urgency=low
     - add POD help and generate manual page from it;
     - add support for the external reference package.
   * Pass -X.svn to dh_install
-  * Add stuff from svn pkg-kde/cdbs as pkg-kde-build. Port kde.mk and rename
+  * Add stuff from svn pkg-kde/cdbs as qt-kde-team. Port kde.mk and rename
     it to debian-qt-kde.mk as it was called in kde3 when stored in cdbs/ dir.
     - use /usr/share/pkg-kde-tools/makefiles/1/variables.mk;
     - link with --as-needed by default;
     - remove lintian section, we should use dh_lintian;
-    - add versions.mk and control.mk too. The latter needs porting if it is
-      useful;
-    - add README to discourage other developers from using pkg-kde-build.
+    - add README to discourage other developers from using qt-kde-team.
   * Add makefiles/1/cdbs/symbolshelper.mk which hooks pkgkde-symbolshelper
     calls to cdbs.
   * Add "distro policy" checking when building the package:

@@ -1,18 +1,25 @@
+ifndef _cdbs_debian_qt_kde
+_cdbs_debian_qt_kde = 1
+
 include /usr/share/cdbs/1/class/cmake.mk
 include /usr/share/cdbs/1/rules/debhelper.mk
 include /usr/share/cdbs/1/rules/patchsys-quilt.mk
 include /usr/share/cdbs/1/rules/utils.mk
 
+DEB_PKG_KDE_DATA := /usr/share/pkg-kde-tools
+DEB_PKG_KDE_MAKEFILES := $(DEB_PKG_KDE_DATA)/makefiles/1
+DEB_PKG_KDE_QT_KDE_TEAM := $(DEB_PKG_KDE_DATA)/qt-kde-team/1
+
 # DEB_KDE_DISABLE_POLICY_CHECK lists distributions for which
 # policy check should be disabled
 DEB_KDE_DISABLE_POLICY_CHECK ?=
-include /usr/share/pkg-kde-tools/pkg-kde-build/1/policy.mk
+include $(DEB_PKG_KDE_QT_KDE_TEAM)/policy.mk
 
 # Link with --as-needed by default
 DEB_KDE_LINK_WITH_AS_NEEDED ?= yes
 
 # Include default KDE 4 cmake configuration variables
-include /usr/share/pkg-kde-tools/makefiles/1/variables.mk
+include $(DEB_PKG_KDE_MAKEFILES)/variables.mk
 
 # Since cmake 2.6.2 or higher is required from now on, enable
 # relative paths to get more ccache hits.
@@ -78,3 +85,6 @@ binary-install/$(DEB_SOURCE_PACKAGE)-doc-html::
 # Run dh_sameversiondep
 common-binary-predeb-arch common-binary-predeb-indep::
 	dh_sameversiondep $(if $(filter common-binary-predeb-arch,$@),-a,-i)
+
+# _cdbs_debian_qt_kde
+endif
