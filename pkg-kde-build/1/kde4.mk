@@ -3,6 +3,11 @@ include /usr/share/cdbs/1/rules/debhelper.mk
 include /usr/share/cdbs/1/rules/patchsys-quilt.mk
 include /usr/share/cdbs/1/rules/utils.mk
 
+# DEB_KDE_DISABLE_POLICY_CHECK lists distributions for which
+# policy check should be disabled
+DEB_KDE_DISABLE_POLICY_CHECK ?=
+include /usr/share/pkg-kde-tools/pkg-kde-build/1/policy.mk
+
 # Link with --as-needed by default
 DEB_KDE_LINK_WITH_AS_NEEDED ?= yes
 
@@ -36,10 +41,6 @@ debian/stamp-man-pages:
 	touch debian/stamp-man-pages
 
 clean::
-ifndef THIS_SHOULD_GO_TO_UNSTABLE
-	#guard against experimental uploads to unstable
-	dpkg-parsechangelog | grep ^Distribution | grep -q 'experimental\|UNRELEASED\|jaunty'
-endif
 	rm -rf debian/man/out
 	-rmdir debian/man
 	rm -f debian/stamp-man-pages
