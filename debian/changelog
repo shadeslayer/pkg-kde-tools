@@ -5,11 +5,20 @@ pkg-kde-tools (0.4.0~pre1) UNRELEASED; urgency=low
   * pkgkde-symbolshelper create: add support for adding arch specific symbols
     to the symbol template.
   * Add dh_sameversiondep from official KDE packaging:
-    - make pkg-kde-tools suggest debhelper v7;
+    - make pkg-kde-tools suggest debhelper v7 and dpkg-dev;
     - add POD help and generate manual page from it;
     - add support for the external reference package.
+  * Pass -X.svn to dh_install
+  * Add stuff from svn pkg-kde/cdbs as pkg-kde-build. Port kde.mk and rename
+    it to kde4.mk:
+    - use /usr/share/pkg-kde-tools/makefiles/1/variables.mk;
+    - link with --as-needed by default;
+    - remove lintian section, we should use dh_lintian;
+    - add versions.mk and control.mk too. The latter needs porting if it is
+      useful;
+    - add README to discourage other developers from using pkg-kde-build.
 
- -- Modestas Vainius <modestas@vainius.eu>  Sat, 24 Jan 2009 01:26:33 +0200
+ -- Modestas Vainius <modestas@vainius.eu>  Sat, 24 Jan 2009 02:47:13 +0200
 
 pkg-kde-tools (0.3.1) experimental; urgency=low
 

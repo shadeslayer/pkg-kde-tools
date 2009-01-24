@@ -1,0 +1,8 @@
+Makefile snippets and scripts found in this directory and its subdirectories
+are for use with official KDE or kdesupport packages maintained by Debian
+Qt/KDE Maintainers team ONLY. Compatibility of any kind is not guaranteed and
+may be broken at any time without any notice.
+
+Maintainers of other software based on KDE 4 should consider using makefile
+snippets under /usr/share/pkg-kde-tools/makefiles/. Please read
+/usr/share/doc/pkg-kde-tools/README.Debian for more information.

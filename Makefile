@@ -3,6 +3,7 @@ SYMBOLSHELPER_DIR := symbolshelper
 
 BINDIR := $(DESTDIR)/usr/bin
 MANDIR := $(DESTDIR)/usr/share/man
+#DATADIR := $(DESTDIR)/usr/share/pkg-kde-tools
 
 install:
 	install -d $(BINDIR) $(MANDIR)

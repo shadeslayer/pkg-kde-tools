@@ -10,7 +10,7 @@ DM-Upload-Allowed: yes
 Package: pkg-kde-tools
 Architecture: all
 Depends: ${perl:Depends}
-Suggests: debhelper (>= 7), cdbs
+Suggests: debhelper (>= 7), cdbs, dpkg-dev
 Description: common makesnippets and build scripts for KDE4 related packages
  This package contains makefiles setting the default build arguments for KDE4
  packages.
