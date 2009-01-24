@@ -347,7 +347,7 @@ sub create_template {
     while (my ($soname, $groups) = each(%other_groups)) {
         for my $group (@$groups) {
             my $symbol2 = $group->{template};
-            
+
             if (defined $symbol2) {
                 # Add symbol
                 my $info = $symfiles->{$symbol2->get_arch()}{objects}{$soname}{syms}{$symbol2->get_symbol()};

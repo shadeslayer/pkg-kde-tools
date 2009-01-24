@@ -98,7 +98,7 @@ sub check_mandatory_options {
     my $args = shift;
     my $msg = shift;
     my %args;
-    
+
     $msg = "" if (!defined $msg);
     map { $args{$_} = 1 } split(//, $args);
     error("input file option (-i) is mandatory $msg") if (!$opt_in && $args{i});
