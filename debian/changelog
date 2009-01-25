@@ -9,20 +9,21 @@ pkg-kde-tools (0.4.0~pre6) UNRELEASED; urgency=low
     - add POD help and generate manual page from it;
     - add support for the external reference package.
   * Pass -X.svn to dh_install
+  * Add makefiles/1/cdbs/symbolshelper.mk which hooks pkgkde-symbolshelper
+    calls to cdbs.
   * Add stuff from svn pkg-kde/cdbs as qt-kde-team. Port kde.mk and rename
     it to debian-qt-kde.mk as it was called in kde3 when stored in cdbs/ dir.
     - use /usr/share/pkg-kde-tools/makefiles/1/variables.mk;
     - link with --as-needed by default;
     - remove lintian section, we should use dh_lintian;
-    - add README to discourage other developers from using qt-kde-team.
-  * Add makefiles/1/cdbs/symbolshelper.mk which hooks pkgkde-symbolshelper
-    calls to cdbs.
+    - add README to discourage other developers from using qt-kde-team;
+    - enable pkgkde-symbolshelper support in debian-qt-kde.mk by defaylt.
   * Add "distro policy" checking when building the package:
     - THIS_SHOULD_GO_TO_UNSTABLE moved policy/unstable.mk
     - policy/unstable.mk also emits a warning when KDE alpha or betas are to
       be uploaded to unstable.
 
- -- Modestas Vainius <modestas@vainius.eu>  Sat, 24 Jan 2009 15:42:10 +0200
+ -- Modestas Vainius <modestas@vainius.eu>  Sun, 25 Jan 2009 03:47:20 +0200
 
 pkg-kde-tools (0.3.1) experimental; urgency=low
 
