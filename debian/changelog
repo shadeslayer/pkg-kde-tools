@@ -1,4 +1,4 @@
-pkg-kde-tools (0.4.0~pre7) UNRELEASED; urgency=low
+pkg-kde-tools (0.4.0) experimental; urgency=low
 
   * pkgkde-symbolshelper: add support for resorting symbol files (useful after
     manual editing).
@@ -23,7 +23,7 @@ pkg-kde-tools (0.4.0~pre7) UNRELEASED; urgency=low
     - policy/unstable.mk also emits a warning when KDE alpha or betas are to
       be uploaded to unstable.
 
- -- Modestas Vainius <modestas@vainius.eu>  Sun, 25 Jan 2009 11:59:00 +0200
+ -- Modestas Vainius <modestas@vainius.eu>  Sun, 25 Jan 2009 13:20:43 +0200
 
 pkg-kde-tools (0.3.1) experimental; urgency=low
 
