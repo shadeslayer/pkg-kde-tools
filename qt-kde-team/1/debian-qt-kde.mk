@@ -21,6 +21,9 @@ DEB_KDE_LINK_WITH_AS_NEEDED ?= yes
 # Include default KDE 4 cmake configuration variables
 include $(DEB_PKG_KDE_MAKEFILES)/variables.mk
 
+# Add support for pkgkde-symbolshelper by default
+include $(DEB_PKG_KDE_MAKEFILES)/cdbs/symbolshelper.mk
+
 # Since cmake 2.6.2 or higher is required from now on, enable
 # relative paths to get more ccache hits.
 # NOTE: might not work with vanilla 2.6.2, only with Debian's one.
