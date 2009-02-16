@@ -17,10 +17,5 @@ endif
 binary-indep binary-arch: upstream_version_check
 
 pre-build clean:: upstream_version_check
-# HACK. I could not think of anything less hardcoded to replace it.
-# It is temporal anyway.
-ifndef THIS_SHOULD_GO_TO_UNSTABLE
-	@echo "Unstable uploads should be allowed explicitly (set THIS_SHOULD_GO_TO_UNSTABLE)" && /bin/false >&2
-endif
 
 .PHONY: upstream_version_check

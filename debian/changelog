@@ -1,3 +1,10 @@
+pkg-kde-tools (0.4.0.1) unstable; urgency=low
+
+  * Get rid of THIS_SHOULD_GO_TO_UNSTABLE hack.
+  * Release to unstable.
+
+ -- Modestas Vainius <modestas@vainius.eu>  Mon, 16 Feb 2009 01:58:52 +0200
+
 pkg-kde-tools (0.4.0) experimental; urgency=low
 
   * pkgkde-symbolshelper: add support for resorting symbol files (useful after
