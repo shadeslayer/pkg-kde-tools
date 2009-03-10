@@ -59,18 +59,7 @@ clean::
 
 $(patsubst %,binary-install/%,$(DEB_PACKAGES)) :: binary-install/%:
 	if test -x /usr/bin/dh_desktop; then dh_desktop -p$(cdbs_curpkg) $(DEB_DH_DESKTOP_ARGS); fi
-	if test -e debian/$(cdbs_curpkg).presubj; then \
-		install -p -D -m644 debian/$(cdbs_curpkg).presubj \
-			debian/$(cdbs_curpkg)/usr/share/bug/$(cdbs_curpkg)/presubj; \
-	fi
-	if test -e debian/$(cdbs_curpkg).bugscript; then \
-		install -p -D -m755 debian/$(cdbs_curpkg).bugscript \
-			debian/$(cdbs_curpkg)/usr/share/bug/$(cdbs_curpkg)/script; \
-	fi
-	if test -e debian/$(cdbs_curpkg).bugcontrol; then \
-		install -p -D -m644 debian/$(cdbs_curpkg).bugcontrol \
-			debian/$(cdbs_curpkg)/usr/share/bug/$(cdbs_curpkg)/control; \
-	fi
+	dh_bugfiles -p$(cdbs_curpkg)
 
 binary-install/$(DEB_SOURCE_PACKAGE)-doc-html::
 	set -e; \

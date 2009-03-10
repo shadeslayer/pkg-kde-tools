@@ -1,8 +1,10 @@
 pkg-kde-tools (0.4.1~pre1) UNRELEASED; urgency=low
 
   * Add Vcs fields to debian/control (Git).
+  * Get rid of custom bug file processing in qt-kde-team/1/debian-qt-kde.mk.
+    This is handled by dh_bugfiles now.
 
- -- Modestas Vainius <modestas@vainius.eu>  Tue, 10 Mar 2009 10:27:11 +0200
+ -- Modestas Vainius <modestas@vainius.eu>  Tue, 10 Mar 2009 10:29:08 +0200
 
 pkg-kde-tools (0.4.0.1) unstable; urgency=low
 
