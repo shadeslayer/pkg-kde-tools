@@ -139,7 +139,7 @@ use strict;
 use warnings;
 use Dpkg::Control;
 use Dpkg::Substvars;
-use Dpkg::ErrorHandling;
+use Dpkg::ErrorHandling ();
 use File::Copy;
 
 use Debian::Debhelper::Dh_Lib;
