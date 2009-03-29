@@ -140,22 +140,34 @@ sub deprecate_useless_symbols {
 }
 
 sub dump {
-    my ($self, $fh, $with_deprecated) = @_;
+    my $self = shift;
+    my ($fh, %opts) = @_;
 
-    if (!defined $with_deprecated || $with_deprecated != 2) {
-        return Dpkg::Shlibs::SymbolFile::dump(@_);
+    if (!exists $opts{with_deprecated} || $opts{with_deprecated} != 2) {
+        return $self->SUPER::dump(@_);
     } else {
         foreach my $soname (sort keys %{$self->{objects}}) {
             my @deps = @{$self->{objects}{$soname}{deps}};
-            print $fh "$soname $deps[0]\n";
-            shift @deps;
-            print $fh "| $_\n" foreach (@deps);
+            my $dep = shift @deps;
+            $dep =~ s/#PACKAGE#/$opts{package}/g if exists $opts{package};
+            print $fh "$soname $dep\n";
+            foreach $dep (@deps) {
+                $dep =~ s/#PACKAGE#/$opts{package}/g if exists $opts{package};
+                print $fh "| $dep\n";
+            }
             my $f = $self->{objects}{$soname}{fields};
-            print $fh "* $_: $f->{$_}\n" foreach (sort keys %{$f});
+            foreach my $field (sort keys %{$f}) {
+                my $value = $f->{$field};
+                $value =~ s/#PACKAGE#/$opts{package}/g if exists $opts{package};
+                print $fh "* $field: $value\n";
+            }
             foreach my $sym (sort keys %{$self->{objects}{$soname}{syms}}) {
                 my $info = $self->{objects}{$soname}{syms}{$sym};
+                next if $info->{deprecated} and not $opts{with_deprecated};
+                ####### START Changes here #########
                 print $fh "#", (($info->{deprecated} =~ m/^PRIVATE:/) ? "DEPRECATED" : "MISSING"),
                     ": $info->{deprecated}#" if $info->{deprecated};
+                ####### END Changes here #########
                 print $fh " $sym $info->{minver}";
                 print $fh " $info->{dep_id}" if $info->{dep_id};
                 print $fh "\n";
