@@ -1,6 +1,7 @@
 pkg-kde-tools (0.4.2) unstable; urgency=low
 
   * Remove setting of kde home. We now use the default.
+  * Add aggressive conflicts to avoid bad accidents.
 
  -- Sune Vuorela <debian@pusling.com>  Wed, 01 Apr 2009 22:23:23 +0200
 
