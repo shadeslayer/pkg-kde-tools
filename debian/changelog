@@ -1,3 +1,13 @@
+pkg-kde-tools (0.4.6) experimental; urgency=low
+
+  * Merge changes from 0.4.2, now compatible with KDE 4.2.2 in sid.
+  * Improve output of the patch subcommand:
+    - it includes added MISSING symbols now;
+    - dump postprocessed symbols.
+  * Switch to named parameters for *_min_version() subs.
+
+ -- Modestas Vainius <modestas@vainius.eu>  Sat, 11 Apr 2009 16:44:48 +0300
+
 pkg-kde-tools (0.4.5) experimental; urgency=low
 
   * Restore pkgkde-symbolshelper compatibility with dpkg-dev 1.15.0. This
