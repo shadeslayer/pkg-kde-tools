@@ -6,8 +6,9 @@ pkg-kde-tools (0.4.6) experimental; urgency=low
     - dump postprocessed symbols.
   * Switch to named parameters for *_min_version() subs.
   * Bump Standards-Version to 3.8.1 (no changes).
+  * Fix dh_sameversiondep POD page (lintian warning).
 
- -- Modestas Vainius <modestas@vainius.eu>  Sat, 11 Apr 2009 16:49:15 +0300
+ -- Modestas Vainius <modestas@vainius.eu>  Sat, 11 Apr 2009 16:51:06 +0300
 
 pkg-kde-tools (0.4.5) experimental; urgency=low
 
