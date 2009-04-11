@@ -6,7 +6,6 @@ DEB_CMAKE_KDE4_FLAGS += \
         -DCMAKE_BUILD_TYPE=Debian \
         -DKDE4_BUILD_TESTS=false \
         -DKDE_DISTRIBUTION_TEXT="Debian packages" \
-        -DKDE_DEFAULT_HOME=.kde4 \
         -DCMAKE_SKIP_RPATH=true \
         -DKDE4_USE_ALWAYS_FULL_RPATH=false \
         -DCONFIG_INSTALL_DIR=$(DEB_CONFIG_INSTALL_DIR) \
