@@ -284,21 +284,21 @@ sub merge_symbols_from_symbfile {
 }
 
 sub set_min_version {
-    my ($self, $version, $with_deprecated) = @_;
+    my ($self, $version, %opts) = @_;
 
     while (my ($soname, $sonameobj) = each(%{$self->{objects}})) {
         while (my ($sym, $info) = each(%{$sonameobj->{syms}})) {
-            $info->{minver} = $version if ($with_deprecated || !$info->{deprecated});
+            $info->{minver} = $version if ($opts{with_deprecated} || !$info->{deprecated});
         }
     }
 }
 
 sub fix_min_versions {
-    my ($self, $with_deprecated) = @_;
+    my ($self, %opts) = @_;
 
     while (my ($soname, $sonameobj) = each(%{$self->{objects}})) {
         while (my ($sym, $info) = each(%{$sonameobj->{syms}})) {
-            if ($with_deprecated || !$info->{deprecated}) {
+            if ($opts{with_deprecated} || !$info->{deprecated}) {
                 my $minver = $info->{minver};
                 if ($minver =~ m/-.*[^~]$/) {
                     unless($minver =~ s/-[01](?:$|[^\d-][^-]*$)//) {
@@ -312,13 +312,13 @@ sub fix_min_versions {
 }
 
 sub handle_min_version {
-    my ($self, $version, $with_deprecated) = @_;
+    my ($self, $version, %opts) = @_;
 
     if (defined $version) {
         if ($version) {
-            $self->set_min_version($version, $with_deprecated);
+            $self->set_min_version($version, %opts);
         } else {
-            $self->fix_min_versions($with_deprecated);
+            $self->fix_min_versions(%opts);
         }
     }
 }

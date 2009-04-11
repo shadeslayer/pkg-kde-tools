@@ -441,7 +441,7 @@ sub apply_patch_to_template {
             $self->preprocess();
 
             # Handle min version
-            $dummysymfile->handle_min_version($newminver);
+            $dummysymfile->handle_min_version($newminver, with_deprecated => 1);
             $dummysymfile->dump(*STDOUT, with_deprecated => 2);
 
             # Create a symbols template for our dummy file

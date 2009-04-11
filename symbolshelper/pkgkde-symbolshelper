@@ -190,7 +190,7 @@ sub subcommand_create {
                     "deprecate_incomplete" => $opt_deprecate_incomplete,
                 );
             }
-            $template->handle_min_version($opt_version, 1);
+            $template->handle_min_version($opt_version, with_deprecated => 1);
             return out_symfile($template);
         } else {
             error("no properly named symbol files found in $opt_dir");
