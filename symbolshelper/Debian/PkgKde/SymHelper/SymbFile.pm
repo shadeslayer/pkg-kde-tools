@@ -222,7 +222,8 @@ sub resync_private_symbol_versions {
 
 sub merge_lost_symbols_to_template {
     my ($self, $origsymfile, $newsymfile) = @_;
-    # Note: origsymfile must be = $self->substitute()
+    my $count = 0;
+    # Note: $origsymfile should normally be result of  $self->substitute()
 
     # Process symbols which are missing (lost) in $newsymfile
     for my $n ($newsymfile->get_lost_symbols($origsymfile)) {
@@ -239,7 +240,9 @@ sub merge_lost_symbols_to_template {
             # Mark as missing
             $self->{objects}{$soname}{syms}{$mysym}{deprecated} = "LOST UNKNOWNVER";
         }
+        $count++;
     }
+    return $count;
 }
 
 sub get_new_symbols_as_symbfile {

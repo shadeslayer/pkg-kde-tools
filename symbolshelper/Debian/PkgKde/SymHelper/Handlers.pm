@@ -432,8 +432,18 @@ sub apply_patch_to_template {
         # Resync private symbols in newsymfile with archsymfile
         $newsymfile->resync_private_symbols($archsymfile);
 
-        # Process lost symbols
-        $insymfile->merge_lost_symbols_to_template($archsymfile, $newsymfile);
+        # Merge lost symbols
+        if ($insymfile->merge_lost_symbols_to_template($archsymfile, $newsymfile)) {
+            # Dump new MISSING symbols
+            my $dummysymfile = new Debian::PkgKde::SymHelper::SymbFile();
+            $dummysymfile->merge_lost_symbols_to_template($archsymfile, $newsymfile);
+
+            info("-- Added new MISSING symbols --\n");
+            while (my ($soname, $obj) = each %{$dummysymfile->{objects}}) {
+                $obj->{deps} = [ 'dummy dep' ];
+            }
+            $dummysymfile->dump(*STDOUT, with_deprecated => 1);
+        }
 
         # Now process new symbols. We need to create a template from them
         if (my $dummysymfile = $newsymfile->get_new_symbols_as_symbfile($archsymfile)) {
@@ -442,6 +452,9 @@ sub apply_patch_to_template {
 
             # Handle min version
             $dummysymfile->handle_min_version($newminver, with_deprecated => 1);
+
+            # Dump new symbols
+            info("-- Added new symbols --\n");
             $dummysymfile->dump(*STDOUT, with_deprecated => 2);
 
             # Create a symbols template for our dummy file
