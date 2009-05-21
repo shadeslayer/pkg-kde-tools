@@ -1,8 +1,10 @@
-pkg-kde-tools (0.4.6.1) unstable; urgency=low
+pkg-kde-tools (0.4.7) unstable; urgency=low
 
-  * dpkg 1.15.1 entered unstable, pkg-kde-tools 0.4.6 follows.
+  * dpkg 1.15.1 entered unstable, so pkg-kde-tools 0.4.7 follows.
+  * Change Conflicts to Breaks on dpkg-dev/kdelibs5 (more apppropriate in
+    this case).
 
- -- Modestas Vainius <modestas@vainius.eu>  Thu, 21 May 2009 08:52:45 +0300
+ -- Modestas Vainius <modestas@vainius.eu>  Thu, 21 May 2009 09:02:09 +0300
 
 pkg-kde-tools (0.4.6) experimental; urgency=low
 
