@@ -1,3 +1,9 @@
+pkg-kde-tools (0.4.6.1) unstable; urgency=low
+
+  * dpkg 1.15.1 entered unstable, pkg-kde-tools 0.4.6 follows.
+
+ -- Modestas Vainius <modestas@vainius.eu>  Thu, 21 May 2009 08:52:45 +0300
+
 pkg-kde-tools (0.4.6) experimental; urgency=low
 
   * Merge changes from 0.4.2, now compatible with KDE 4.2.2 in sid.
