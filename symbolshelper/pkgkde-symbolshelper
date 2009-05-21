@@ -135,9 +135,9 @@ sub out_symfile {
     return 1 unless $symfile;
 
     if ($opt_out) {
-        $symfile->save($opt_out, 2);
+        $symfile->save($opt_out, with_deprecated=>2);
     } else {
-        $symfile->dump(*STDOUT, 2);
+        $symfile->dump(*STDOUT, with_deprecated=>2);
     }
     return 0;
 }
@@ -190,7 +190,7 @@ sub subcommand_create {
                     "deprecate_incomplete" => $opt_deprecate_incomplete,
                 );
             }
-            $template->handle_min_version($opt_version, 1);
+            $template->handle_min_version($opt_version, with_deprecated => 1);
             return out_symfile($template);
         } else {
             error("no properly named symbol files found in $opt_dir");
@@ -272,7 +272,7 @@ sub subcommand_postgensymbols {
         $outsymfile->handle_min_version($opt_version);
 
         # Save
-        $outsymfile->save($outfile, 2);
+        $outsymfile->save($outfile, with_deprecated=>2);
 
         # Print some summary information since the one from dpkg-gensymbols is inaccurate
         my @new = $outsymfile->get_new_symbols($insymfile);

@@ -140,22 +140,34 @@ sub deprecate_useless_symbols {
 }
 
 sub dump {
-    my ($self, $fh, $with_deprecated) = @_;
+    my $self = shift;
+    my ($fh, %opts) = @_;
 
-    if (!defined $with_deprecated || $with_deprecated != 2) {
-        return Dpkg::Shlibs::SymbolFile::dump(@_);
+    if (!exists $opts{with_deprecated} || $opts{with_deprecated} != 2) {
+        return $self->SUPER::dump(@_);
     } else {
         foreach my $soname (sort keys %{$self->{objects}}) {
             my @deps = @{$self->{objects}{$soname}{deps}};
-            print $fh "$soname $deps[0]\n";
-            shift @deps;
-            print $fh "| $_\n" foreach (@deps);
+            my $dep = shift @deps;
+            $dep =~ s/#PACKAGE#/$opts{package}/g if exists $opts{package};
+            print $fh "$soname $dep\n";
+            foreach $dep (@deps) {
+                $dep =~ s/#PACKAGE#/$opts{package}/g if exists $opts{package};
+                print $fh "| $dep\n";
+            }
             my $f = $self->{objects}{$soname}{fields};
-            print $fh "* $_: $f->{$_}\n" foreach (sort keys %{$f});
+            foreach my $field (sort keys %{$f}) {
+                my $value = $f->{$field};
+                $value =~ s/#PACKAGE#/$opts{package}/g if exists $opts{package};
+                print $fh "* $field: $value\n";
+            }
             foreach my $sym (sort keys %{$self->{objects}{$soname}{syms}}) {
                 my $info = $self->{objects}{$soname}{syms}{$sym};
+                next if $info->{deprecated} and not $opts{with_deprecated};
+                ####### START Changes here #########
                 print $fh "#", (($info->{deprecated} =~ m/^PRIVATE:/) ? "DEPRECATED" : "MISSING"),
                     ": $info->{deprecated}#" if $info->{deprecated};
+                ####### END Changes here #########
                 print $fh " $sym $info->{minver}";
                 print $fh " $info->{dep_id}" if $info->{dep_id};
                 print $fh "\n";
@@ -210,7 +222,8 @@ sub resync_private_symbol_versions {
 
 sub merge_lost_symbols_to_template {
     my ($self, $origsymfile, $newsymfile) = @_;
-    # Note: origsymfile must be = $self->substitute()
+    my $count = 0;
+    # Note: $origsymfile should normally be result of  $self->substitute()
 
     # Process symbols which are missing (lost) in $newsymfile
     for my $n ($newsymfile->get_lost_symbols($origsymfile)) {
@@ -227,7 +240,9 @@ sub merge_lost_symbols_to_template {
             # Mark as missing
             $self->{objects}{$soname}{syms}{$mysym}{deprecated} = "LOST UNKNOWNVER";
         }
+        $count++;
     }
+    return $count;
 }
 
 sub get_new_symbols_as_symbfile {
@@ -272,21 +287,21 @@ sub merge_symbols_from_symbfile {
 }
 
 sub set_min_version {
-    my ($self, $version, $with_deprecated) = @_;
+    my ($self, $version, %opts) = @_;
 
     while (my ($soname, $sonameobj) = each(%{$self->{objects}})) {
         while (my ($sym, $info) = each(%{$sonameobj->{syms}})) {
-            $info->{minver} = $version if ($with_deprecated || !$info->{deprecated});
+            $info->{minver} = $version if ($opts{with_deprecated} || !$info->{deprecated});
         }
     }
 }
 
 sub fix_min_versions {
-    my ($self, $with_deprecated) = @_;
+    my ($self, %opts) = @_;
 
     while (my ($soname, $sonameobj) = each(%{$self->{objects}})) {
         while (my ($sym, $info) = each(%{$sonameobj->{syms}})) {
-            if ($with_deprecated || !$info->{deprecated}) {
+            if ($opts{with_deprecated} || !$info->{deprecated}) {
                 my $minver = $info->{minver};
                 if ($minver =~ m/-.*[^~]$/) {
                     unless($minver =~ s/-[01](?:$|[^\d-][^-]*$)//) {
@@ -300,13 +315,13 @@ sub fix_min_versions {
 }
 
 sub handle_min_version {
-    my ($self, $version, $with_deprecated) = @_;
+    my ($self, $version, %opts) = @_;
 
     if (defined $version) {
         if ($version) {
-            $self->set_min_version($version, $with_deprecated);
+            $self->set_min_version($version, %opts);
         } else {
-            $self->fix_min_versions($with_deprecated);
+            $self->fix_min_versions(%opts);
         }
     }
 }

@@ -79,26 +79,26 @@ Enhances or Pre-Depends field of any binary package. The field, which the
 substvar appears in, becomes the default I<dependency type> for that substvar.
 B<sameVersionDep> should be formatted as follows (everything is case sensitive):
 
-S<< ${B<sameVersionDep>:I<dependency package>[[:I<reference package>]-I<dependency type>]} >>
+S<< ${B<sameVersionDep>:I<dependency>[[:I<reference>]-I<dependency type>]} >>
 
 =over 4
 
-=item I<dependency package> (mandatory)
+=item I<dependency> (mandatory)
 
 The name of the package which you want to add as a dependency.
 
-=item I<reference package> (optional)
+=item I<reference> (optional)
 
 The name of the package which dependencies are to be intersected with the
-dependencies of the I<dependency package>. Defaults to the first package in
+dependencies of the I<dependency> package. Defaults to the first package in
 debian/control if ommited.
 
 =item I<dependency type> (optional)
 
 Can be either Depends, Recommends, Suggests, Enhances or Pre-Depends. Defaults
 to the name of the field which the substvar was found in. Specifies which type
-of dependencies to consider when analyzing I<dependency package> and
-I<reference package>.
+of dependencies to consider when analyzing I<dependency> package and
+I<reference> package.
 
 =back
 
@@ -139,7 +139,7 @@ use strict;
 use warnings;
 use Dpkg::Control;
 use Dpkg::Substvars;
-use Dpkg::ErrorHandling;
+use Dpkg::ErrorHandling ();
 use File::Copy;
 
 use Debian::Debhelper::Dh_Lib;
