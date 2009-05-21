@@ -1,10 +1,21 @@
 pkg-kde-tools (0.4.7) unstable; urgency=low
 
+  +++ Changes by Modestas Vainius:
+
   * dpkg 1.15.1 entered unstable, so pkg-kde-tools 0.4.7 follows.
   * Change Conflicts to Breaks on dpkg-dev/kdelibs5 (more apppropriate in
     this case).
 
- -- Modestas Vainius <modestas@vainius.eu>  Thu, 21 May 2009 09:02:09 +0300
+  +++ Changes by Fathi Boudra:
+
+  * Re-word README.Debian:
+    - use 80 colons max
+    - add a note on DEB_KDE_LINK_AS_NEEDED usage
+    - improve debhelper snippet based on dh-make template
+    - fix typo kde4.mk -> kde.mk
+    - remove extra lines
+
+ -- Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>  Thu, 21 May 2009 09:14:44 +0300
 
 pkg-kde-tools (0.4.6) experimental; urgency=low
 
