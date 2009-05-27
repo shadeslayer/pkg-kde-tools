@@ -1,3 +1,11 @@
+pkg-kde-tools (0.4.8) unstable; urgency=low
+
+  * Add maintainer check to debian_qt_kde.mk to disallow anybody else but
+    Debian Qt/KDE Maintainers to use this snippet (i.e. for official KDE
+    packages only). The check is supposed to support Kubuntu packages too.
+
+ -- Modestas Vainius <modestas@vainius.eu>  Wed, 27 May 2009 13:42:22 +0300
+
 pkg-kde-tools (0.4.7) unstable; urgency=low
 
   +++ Changes by Modestas Vainius:
