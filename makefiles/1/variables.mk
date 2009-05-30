@@ -15,7 +15,7 @@ DEB_CMAKE_KDE4_FLAGS += \
         -DLIB_INSTALL_DIR=/usr/lib \
         -DSYSCONF_INSTALL_DIR=/etc
 
-# Set the DEB_KDE_LINK_WITH_AS_NEEDED to 'yes' to enable linking
+# Set the DEB_KDE_LINK_WITH_AS_NEEDED to yes to enable linking
 # with --as-needed (off by default)
 DEB_KDE_LINK_WITH_AS_NEEDED ?= no
 ifneq (,$(findstring yes, $(DEB_KDE_LINK_WITH_AS_NEEDED)))
