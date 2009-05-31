@@ -58,7 +58,6 @@ clean::
 
 
 $(patsubst %,binary-install/%,$(DEB_PACKAGES)) :: binary-install/%:
-	$(if $(wildcard /usr/bin/dh_desktop),dh_desktop -p$(cdbs_curpkg) $(DEB_DH_DESKTOP_ARGS))
 	$(if $(wildcard /usr/bin/dh_bugfiles),dh_bugfiles -p$(cdbs_curpkg) $(DEB_DH_BUGFILES_ARGS))
 
 binary-install/$(DEB_SOURCE_PACKAGE)-doc-html::

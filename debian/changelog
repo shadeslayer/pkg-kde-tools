@@ -1,6 +1,10 @@
 pkg-kde-tools (0.4.9) UNRELEASED; urgency=low
 
+  [ Modestas Vainius ]
   * Clarify comment in variables.mk.
+
+  [ Raúl Sánchez Siles ]
+  * Remove usage of deprecated dh_desktop.
 
  -- Modestas Vainius <modestas@vainius.eu>  Sat, 30 May 2009 16:38:46 +0300
 
