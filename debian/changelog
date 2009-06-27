@@ -2,6 +2,11 @@ pkg-kde-tools (0.4.9) UNRELEASED; urgency=low
 
   [ Modestas Vainius ]
   * Clarify comment in variables.mk.
+  * Install severily stripped down version of pkgkde-symbolshelper which
+    is compatible with dpkg-dev >= 1.15.3. This version is inappropriate
+    to generate/patch new symbols, it is here just to avoid breaking
+    old packages. While dpkg-dev 1.15.3 has some big improvements, they
+    are still not enough to properly support most C++ libraries.
 
   [ Raúl Sánchez Siles ]
   * Remove usage of deprecated dh_desktop.
