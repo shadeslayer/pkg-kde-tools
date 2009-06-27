@@ -1,4 +1,4 @@
-pkg-kde-tools (0.4.9) UNRELEASED; urgency=low
+pkg-kde-tools (0.4.9) unstable; urgency=low
 
   [ Modestas Vainius ]
   * Clarify comment in variables.mk.
@@ -11,7 +11,7 @@ pkg-kde-tools (0.4.9) UNRELEASED; urgency=low
   [ Raúl Sánchez Siles ]
   * Remove usage of deprecated dh_desktop.
 
- -- Modestas Vainius <modestas@vainius.eu>  Sat, 30 May 2009 16:38:46 +0300
+ -- Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>  Sat, 27 Jun 2009 22:32:11 +0300
 
 pkg-kde-tools (0.4.8) unstable; urgency=low
 
