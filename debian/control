@@ -12,7 +12,7 @@ Vcs-Browser: http://git.debian.org/?p=pkg-kde/pkg-kde-tools.git;a=summary
 Package: pkg-kde-tools
 Architecture: all
 Depends: ${perl:Depends}
-Suggests: debhelper (>= 7), cdbs, dpkg-dev (>= 1.15.0)
+Suggests: debhelper (>= 7.3.0), cdbs, dpkg-dev (>= 1.15.0)
 Breaks: dpkg-dev (<< 1.15.3), kdelibs5-dev (<< 4:4.2.2)
 Description: common makesnippets and build scripts for KDE4 related packages
  This package contains makefiles setting the default build arguments for KDE4
