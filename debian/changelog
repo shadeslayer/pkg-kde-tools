@@ -3,8 +3,9 @@ pkg-kde-tools (0.4.10) unstable; urgency=low
   * Add a basic debhelper/kde.mk snippet which automatically passes KDE cmake
     flags to dh_auto_configure and runs dh $@ by default. Either of defaults
     can be overriden as needed.
+  * Update debian/README.Debian with details about dh(1) support.
 
- -- Modestas Vainius <modestas@vainius.eu>  Thu, 02 Jul 2009 19:39:15 +0300
+ -- Modestas Vainius <modestas@vainius.eu>  Thu, 02 Jul 2009 20:08:49 +0300
 
 pkg-kde-tools (0.4.9) unstable; urgency=low
 

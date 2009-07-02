@@ -1,9 +1,16 @@
 pkg-kde-tools for Debian
 ------------------------
 
- These snippets should be universal usable:
-  - If your package uses CDBS, you should be able to just include the kde.mk
-    file.
+ These snippets (/usr/share/pkg-kde-tools/makefiles/1) should be universal
+ usable:
+  - If your package uses CDBS, you should be able to just include the
+    cdbs/kde.mk file.
+  - If your package uses Debhelper dh(1) command sequencer (Debhelper v7.3.0 or
+    later is required), you can include debhelper/kde.mk in your debian/rules.
+    It will take care of passing default KDE 4 flags to CMake by overriding
+    dh_auto_configure. Custom CMake flags can be passed by setting
+    DEB_CMAKE_CUSTOM_FLAGS make variable. The snippet runs a standard dh $@ by
+    default.
   - If you use other tools, include the variables.mk file and run cmake with
     $(DEB_CMAKE_KDE4_FLAGS) to get the kde4 default variables.
 
@@ -14,16 +21,32 @@ Examples:
 
 A CDBS using package:
 
+-------> debian/rules <-------
 #!/usr/bin/make -f
 
 include /usr/share/pkg-kde-tools/makefiles/1/cdbs/kde.mk
 include /usr/share/cdbs/1/rules/debhelper.mk
+------------------------------
 
-#end cdbs makefile
+A package using dh(1) (full example):
 
-A non-cdbs-using package could start with something like the following and end
-up like any other cmake using package.
+-------> debian/rules <-------
+#!/usr/bin/make -f
 
+include /usr/share/pkg-kde-tools/makefiles/1/debhelper/kde.mk
+
+# If you need to pass additional CMake flags, do it like this:
+DEB_CMAKE_CUSTOM_FLAGS += -DSOME_FLAG=some_value
+
+# You may pass additional arguments to dh(1) like this:
+%:
+	dh --with quilt $@
+------------------------------
+
+A non CDBS or dh(7) using package could start with something like the following
+and end up like any other cmake using package.
+
+-------> debian/rules <-------
 #!/usr/bin/make -f
 
 include /usr/share/pkg-kde-tools/makefiles/1/variables.mk
@@ -48,7 +71,4 @@ build-stamp: builddir/Makefile
 	$(MAKE) -C builddir
 
 	touch $@
-
-#end snippet
-
- -- Sune Vuorela <debian@pusling.com>  Thu, 18 Sep 2008 21:39:35 +0200
+------------------------------
