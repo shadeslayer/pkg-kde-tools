@@ -16,9 +16,9 @@ sub DESCRIPTION {
 }
 
 sub KDE4_FLAGS_FILE {
-    my $file = "makefiles/1/kde4_flags";
+    my $file = "kde4_flags";
     if (! -r $file) {
-        $file = "/usr/share/pkg-kde-tools/makefiles/1/kde4_flags";
+        $file = "/usr/share/pkg-kde-tools/kde4_flags";
     }
     if (! -r $file) {
         error "kde4_flags file could not be found";

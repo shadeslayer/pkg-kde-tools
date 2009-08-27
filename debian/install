@@ -1,2 +1,3 @@
 makefiles /usr/share/pkg-kde-tools/
 qt-kde-team /usr/share/pkg-kde-tools/
+kde4_flags /usr/share/pkg-kde-tools/
