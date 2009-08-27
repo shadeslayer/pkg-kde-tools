@@ -1,3 +1,8 @@
+pkg-kde-tools (0.4.12~pre1) UNRELEASED; urgency=low
+
+
+ -- Modestas Vainius <modestas@vainius.eu>  Thu, 27 Aug 2009 09:41:13 +0300
+
 pkg-kde-tools (0.4.11) unstable; urgency=low
 
   * Debhelper 7.3.7 has been upload to unstable, pkg-kde-tools with
