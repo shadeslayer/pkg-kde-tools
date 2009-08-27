@@ -7,6 +7,8 @@ pkg-kde-tools (0.5.0~pre1) UNRELEASED; urgency=low
   * Deprecate debhelper/kde.mk snippet. Use kde build system/sequence addon
     instead.
   * Remove extra slashes from debian/install.
+  * Switch debian/rules to dh. Update build dependencies and compat
+    accordingly.
 
  -- Modestas Vainius <modestas@vainius.eu>  Thu, 27 Aug 2009 09:45:30 +0300
 

@@ -6,6 +6,9 @@ BINDIR := $(DESTDIR)/usr/bin
 MANDIR := $(DESTDIR)/usr/share/man
 #DATADIR := $(DESTDIR)/usr/share/pkg-kde-tools
 
+build:
+	# Nothing do build
+
 install:
 	install -d $(BINDIR) $(MANDIR)
 	
