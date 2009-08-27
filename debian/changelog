@@ -1,4 +1,4 @@
-pkg-kde-tools (0.5.0~pre2) UNRELEASED; urgency=low
+pkg-kde-tools (0.5.0) unstable; urgency=low
 
   * Split off KDE 4 cmake flags from variables.mk to the text file.
   * Create debhelper subdir and move dh_sameversiondep to it.
@@ -10,7 +10,7 @@ pkg-kde-tools (0.5.0~pre2) UNRELEASED; urgency=low
   * Switch debian/rules to dh. Update build dependencies and compat
     accordingly.
 
- -- Modestas Vainius <modestas@vainius.eu>  Thu, 27 Aug 2009 09:45:30 +0300
+ -- Modestas Vainius <modestas@vainius.eu>  Thu, 27 Aug 2009 19:50:35 +0300
 
 pkg-kde-tools (0.4.11) unstable; urgency=low
 
