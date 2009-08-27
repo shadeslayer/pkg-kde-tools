@@ -3,6 +3,7 @@ pkg-kde-tools (0.4.12~pre1) UNRELEASED; urgency=low
   * Split off KDE 4 cmake flags from variables.mk to the text file.
   * Create debhelper subdir and move dh_sameversiondep to it.
   * Add a kde build system for debhelper (>= 7.3).
+  * Add a kde sequence addon (template) for debhelper (>= 7.3.16).
 
  -- Modestas Vainius <modestas@vainius.eu>  Thu, 27 Aug 2009 09:45:30 +0300
 
