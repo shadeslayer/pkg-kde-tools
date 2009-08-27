@@ -10,6 +10,8 @@ ifneq ($(DEB_DH_VERSION),ok)
     $(error Debhelper is too old ($(DEB_DH_VERSION)) on your system. Upgrade to 7.3.0 or later)
 endif
 
+$(warning This kde.mk make snippet is deprecated. Please use kde sequence addon and/or kde buildsystem)
+
 # Configure with KDE cmake flags by default.
 DEB_KDE_OVERRIDE_DH_AUTO_CONFIGURE ?= override_dh_auto_configure
 $(DEB_KDE_OVERRIDE_DH_AUTO_CONFIGURE):
