@@ -1,19 +1,12 @@
-# KDE 4 global configuration file installation directory
-DEB_CONFIG_INSTALL_DIR ?= /usr/share/kde4/config
-
 # Standard Debian KDE 4 cmake flags
-DEB_CMAKE_KDE4_FLAGS += \
-        -DCMAKE_BUILD_TYPE=Debian \
-        -DKDE4_BUILD_TESTS=false \
-        -DKDE_DISTRIBUTION_TEXT="Debian packages" \
-        -DCMAKE_SKIP_RPATH=true \
-        -DKDE4_USE_ALWAYS_FULL_RPATH=false \
-        -DCONFIG_INSTALL_DIR=$(DEB_CONFIG_INSTALL_DIR) \
-        -DDATA_INSTALL_DIR=/usr/share/kde4/apps \
-        -DHTML_INSTALL_DIR=/usr/share/doc/kde4/HTML \
-        -DKCFG_INSTALL_DIR=/usr/share/kde4/config.kcfg \
-        -DLIB_INSTALL_DIR=/usr/lib \
-        -DSYSCONF_INSTALL_DIR=/etc
+_kde4_flags := $(shell cat $(dir $(lastword $(MAKEFILE_LIST)))/kde4_flags)
+DEB_CMAKE_KDE4_FLAGS += $(_kde4_flags)
+
+# Custom KDE 4 global configuration file installation directory
+ifdef DEB_CONFIG_INSTALL_DIR
+    DEB_CMAKE_KDE4_FLAGS := $(filter-out -DCONFIG_INSTALL_DIR=%,$(DEB_CMAKE_KDE4_FLAGS)) \
+                            -DCONFIG_INSTALL_DIR=$(DEB_CONFIG_INSTALL_DIR)
+endif
 
 # Set the DEB_KDE_LINK_WITH_AS_NEEDED to yes to enable linking
 # with --as-needed (off by default)

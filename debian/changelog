@@ -1,7 +1,8 @@
 pkg-kde-tools (0.4.12~pre1) UNRELEASED; urgency=low
 
+  * Split off KDE 4 cmake flags from variables.mk to the text file.
 
- -- Modestas Vainius <modestas@vainius.eu>  Thu, 27 Aug 2009 09:41:13 +0300
+ -- Modestas Vainius <modestas@vainius.eu>  Thu, 27 Aug 2009 09:44:38 +0300
 
 pkg-kde-tools (0.4.11) unstable; urgency=low
 
