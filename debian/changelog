@@ -1,6 +1,6 @@
 pkg-kde-tools (0.5.1) UNRELEASED; urgency=low
 
-  * dh_sameversiondep: really disable of warnings about unknown substvars.
+  * dh_sameversiondep: really disable warnings about unknown substvars.
 
  -- Modestas Vainius <modestas@vainius.eu>  Sun, 30 Aug 2009 09:42:18 +0300
 
