@@ -1,3 +1,8 @@
+pkg-kde-tools (0.5.1) UNRELEASED; urgency=low
+
+
+ -- Modestas Vainius <modestas@vainius.eu>  Sun, 30 Aug 2009 09:42:18 +0300
+
 pkg-kde-tools (0.5.0) unstable; urgency=low
 
   * Split off KDE 4 cmake flags from variables.mk to the text file.
