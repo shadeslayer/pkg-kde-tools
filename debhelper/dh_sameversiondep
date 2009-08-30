@@ -197,14 +197,13 @@ sub Shlibsvars::get_fieldval {
     return undef if (!defined $pkg || !exists $pkg->{$field});
 
     # Turn of warnings for substvars runs
-    my $save_quiet = $Dpkg::ErrorHandling::quiet_warnings;
-    $Dpkg::ErrorHandling::quiet_warnings = 1;
+    Dpkg::ErrorHandling::report_options(quiet_warnings => 1);
 
     my $val = $pkg->{$field};
     $val = $self->{substvars}->substvars($val);
     $val = $g_substvars->substvars($val);
 
-    $Dpkg::ErrorHandling::quiet_warnings = $save_quiet;
+    Dpkg::ErrorHandling::report_options(quiet_warnings => 0);
     return $val;
 }
 
