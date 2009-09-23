@@ -9,6 +9,8 @@ pkg-kde-tools (0.5.1) unstable; urgency=low
   * Change the generation of the HTML documentation's path to
     /usr/share/doc/kde4/ instead of /usr/share/doc/kde/. We are building with 
     -DHTML_INSTALL_DIR=/usr/share/doc/kde4/HTML .
+  * Bump Standards-Version to 3.8.3: no changes needed.
+  * Add © in copyright file instead of (C).
 
  -- Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>  Wed, 23 Sep 2009 10:14:30 +0200
 
