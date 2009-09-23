@@ -1,8 +1,16 @@
-pkg-kde-tools (0.5.1) UNRELEASED; urgency=low
+pkg-kde-tools (0.5.1) unstable; urgency=low
+
+  +++ Changes by Modestas Vainius:
 
   * dh_sameversiondep: really disable warnings about unknown substvars.
 
- -- Modestas Vainius <modestas@vainius.eu>  Sun, 30 Aug 2009 09:42:18 +0300
+  +++ Changes by Ana Beatriz Guerrero Lopez:
+
+  * Change the generation of the HTML documentation's path to
+    /usr/share/doc/kde4/ instead of /usr/share/doc/kde/. We are building with 
+    -DHTML_INSTALL_DIR=/usr/share/doc/kde4/HTML .
+
+ -- Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>  Wed, 23 Sep 2009 10:14:30 +0200
 
 pkg-kde-tools (0.5.0) unstable; urgency=low
 
