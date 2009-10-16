@@ -1,4 +1,4 @@
-pkg-kde-tools (0.5.2~pre1) UNRELEASED; urgency=low
+pkg-kde-tools (0.5.2~pre2) UNRELEASED; urgency=low
 
   * Add pkgkde-vcs helper tool for performing various common tasks
     when packaging with version control system repositories. As of this commit
