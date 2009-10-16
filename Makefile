@@ -29,4 +29,5 @@ install:
 	# pkgkde-vcs
 	install -d $(DATADIR)/vcs
 	install -m 0755 $(VCS_DIR)/pkgkde-vcs $(BINDIR)
+	install -m 0644 $(VCS_DIR)/pkgkde-vcs.1 $(MANDIR)/man1
 	cd $(VCS_DIR)/vcslib && find . -type f -exec install -D -m 0644 {} $(DATADIR)/vcs/{} \;

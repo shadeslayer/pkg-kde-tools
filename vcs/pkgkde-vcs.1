@@ -1,0 +1,102 @@
+.TH PKGKDE\-VCS 1 "2009-10-16" "0.1" "Debian KDE packaging VCS helper"
+.SH NAME
+.B pkgkde\-vcs
+\- a helper tool for Debian pkg-kde VCS repositories.
+.SH SYNOPSIS
+.B pkgkde\-vcs
+[\fB\-vy\fR] \fIsubcommand\fR [ \fISUBCOMMAND OPTIONS\fR ] [ -- \fIEXTERNAL TOOL OPTIONS\fR ]
+.SH DESCRIPTION
+.B pkgkde\-vcs
+is a helper tool which aims to simplify a couple of routine tasks associated
+with packaging management in version control system (VCS) repositories.
+\fBpkgkde\-vcs\fR transparently supports VCSes used by Debian Qt/KDE maintainer
+groups wrapping various VCS related command sequences into a convenient CLI
+interface. Please note that this helper enforces the best practises and
+packaging conventions adopted by Debian Qt/KDE maintainer groups and therefore
+it should not be considered as a general purpose packaging helper.
+
+.B pkgkde\-cvs
+should be run from the fully checked out packaging repository of the package it
+is supposed to act upon. Firstly, it attempts to detect a VCS in use for
+the particular packaging in the working directory. Please note, that the
+detection might fail if underlying VCS utilities are not installed. If
+detection is successful, \fBpkgkde\-vcs\fR will perform tasks as defined for
+the specified \fIsubcommand\fR (e.g. tag). Different set of subcommands might
+be defined for each VCS and each of them might accept a different set of \fISUBCOMMAND
+OPTIONS\fR (see below). All locally unrecognized subcommand options (or the
+ones specified as \fIEXTERNAL TOOL OPTIONS\fR after \-\-) will be passed to the
+external VCS tool(s) which \fBpkgkde\-vcs\fR executes to do the job.
+
+.B pkgkde\-vcs
+accepts a couple of \fIcommon options\fR which apply to the
+helper as whole or are common for all VCSes it supports. They should be passed
+before \fIsubcommand\fR in order to be recognized.
+
+Even if \fBpkgkde\-vcs\fR does extensive sanity checks before doing anything,
+an underlying command it executes might still fail. Then \fBpkgkde\-vcs\fR will
+terminate immediately possibly leaving repository in an inconsistent state. It is
+up to a user to recover from such a failure.
+
+At the moment, \fBpkgkde\-vcs\fR supports only \fIGit\fR VCS.
+
+.SH OPTIONS
+.SS Common options
+.TP
+.B \-y
+By default, execution of each external command that makes changes to the
+repository has to be explicitly confirmed by user. However, if this option is
+specified, command will be run without confirmation.
+.TP
+.B \-v
+Be more verbose (e.g. show external commands as they are executed).
+.TP
+.BI \-\-\  "\fIEXTERNAL TOOL OPTIONS\fR"
+Pass additional \fIEXTERNAL TOOL OPTIONS\fR to the external commands
+\fBpkgkde\-vcs\fR executes to accomplish the task. See documentations of the
+specific \fIsubcommand\fR for more details.
+
+.SH SUPPORTED VERSION CONTROL SYSTEMS AND SUBCOMMANDS
+.SS Git
+In order to use \fBpkgkde\-vcs\fR with Git, \fIgit(1)\fR must be available in \fIPATH\fR.
+Bare Git repositories are not supported and Git repository should be in fully checked out
+state. The following subcommands for Git repositories are supported at the moment:
+.TP
+.B tag
+Tag current packaging state (HEAD) as upload to Debian archive. Repository
+working tree must be clean before executing this subcommand. Current package
+version and target distribution are automatically determined from
+\fIdebian/changelog\fR. Distribution must be a valid Debian suite in order to
+avoid tagging of unfinished (aka UNRELEASED) revisions.
+
+The subcommand will create an annotated Git tag under "debian/" namespace. The
+subcommand itself does not accept any additional options. All \fIEXTERNAL TOOL
+OPTIONS\fR (if specified) and will be passed to \fBgit tag\fR invocation. It is
+recommended to sign tags by specifying \fB-s\fR option.
+
+The tag created by \fBpkgkde\-vcs tag\fR will meet the following requirements:
+.RS
+.IP \(bu
+The tag will named as "debian/<version>" where <version> is a full debian
+package version without epoch. All occurrences of the ~ character in <version>
+will be replaced with the \- character because Git does not support ~ character
+in tag names.
+.IP \(bu
+The tag will be assigned the message with content like
+<version>/<distribution>" where <version> is a full debian version of the
+package (without any modifications including epoch) and <distribution> is the
+distribution this package is uploaded.
+.P
+For example, a standard \fBpkgkde\-cvs tag\fR will execute the following under
+the hood (assuming version is 1:2.3.4-5 and distribution is experimental):
+.P
+.RS
+$ git tag debian/2.3.4-5 -m "1:2.3.4-5/experimental"
+.RE
+.SH LICENSE
+.P
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+.SH AUTHORS
+Modestas Vainius <modestas@vainius.eu>
