@@ -62,10 +62,10 @@ determine_libdir()
 runcmd()
 {
     local ans exitval
-    if [ -n "$OPT_VERBOSE" ] || [ -z "$OPT_YES" ]; then
+    if [ -n "$OPT_VERBOSE" ] || [ "$OPT_PROMPT" = "prompt" ]; then
         echo "$" "$*" >&2
     fi
-    if [ -z "$OPT_YES" ]; then
+    if [ "$OPT_PROMPT" = "prompt" ]; then
         echo -n "Run the command above? [Y/n]: "
         while true; do
             read ans
@@ -78,6 +78,10 @@ runcmd()
                 echo -n "Enter Y (default) or N: "
             fi
         done
+    fi
+
+    if [ "$OPT_PROMPT" = "n" ]; then
+        return 0
     fi
 
     # Run the command
@@ -135,12 +139,13 @@ is_distribution_valid()
 
 # Parse common options
 OPT_VERBOSE=
-OPT_YES=
+OPT_PROMPT='prompt'
 
-while getopts ":vy" name; do
+while getopts ":vyn" name; do
     case "$name" in
         v)  OPT_VERBOSE=1 ;;
-        y)  OPT_YES=1 ;;
+        y)  OPT_PROMPT='y' ;;
+        n)  OPT_PROMPT='n' ;;
         ?)  if [ -n "$OPTARG" ]; then OPTIND=$(($OPTIND-1)); fi; break;;
         :)  die "$OPTARG option is missing a required argument" ;;
     esac
