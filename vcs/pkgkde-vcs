@@ -1,0 +1,175 @@
+#!/bin/sh
+
+# Copyright (C) 2009 Modestas Vainius <modestas@vainius.eu>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+# Tag debian package release
+
+info()
+{
+    echo "pkgkde-vcs: $*"
+}
+
+die()
+{
+    info "fatal: $*" >&2
+    exit 1
+}
+
+# Determine VCS type of the repository in the current directory and echo
+# its type to standard output.
+# Supports Git at the moment
+determine_vcs()
+{
+    if which git > /dev/null && git rev-parse --git-dir >/dev/null 2>/dev/null; then
+        echo git
+        return 0
+    fi
+    return 1
+}
+
+# Determine LIBDIR. Supports both running in-source and installed
+# version.
+determine_libdir()
+{
+    local libdir
+    libdir=`dirname $0 2>/dev/null`
+    if [ -n "$libdir" ] && [ -d "$libdir/vcslib" ]; then
+        echo "$libdir/vcslib"
+        return 0
+    else
+        libdir="/usr/share/pkg-kde-tools/vcs"
+        if [ -d "$libdir" ]; then
+            echo "$libdir"
+            return 0
+        fi
+    fi
+    return 1
+}
+
+# Run the command prompting for confirmation if necessary
+runcmd()
+{
+    local ans exitval
+    if [ -n "$OPT_VERBOSE" ] || [ -z "$OPT_YES" ]; then
+        echo "$" "$*" >&2
+    fi
+    if [ -z "$OPT_YES" ]; then
+        echo -n "Run the command above? [Y/n]: "
+        while true; do
+            read ans
+            if [ "$ans" = "Y" ] || [ "$ans" = "y" ] || [ -z "$ans" ]; then
+                break
+            elif [ "$ans" = "N" ] || [ "$ans" = "n" ]; then
+                info "Cancelled by user." >&2
+                exit 2
+            else
+                echo -n "Enter Y (default) or N: "
+            fi
+        done
+    fi
+
+    # Run the command
+    "$@"
+    exitval="$?"
+    if [ "$exitval" -eq "0" ]; then
+        return 0
+    else
+        info "Command failed with $exitval" >&2
+        exit $exitval
+    fi
+}
+
+_get_deb_field()
+{
+    cat | grep "^$1:" | sed "s/^$1:[[:space:]]*\(.*\)\$/\1/"
+}
+
+# Given path to the package root (where debian/ subdirectory is), set some
+# informational variables (DEB_* namespace) about the package
+get_debian_package_info()
+{
+    local rootdir _pchangelog
+    rootdir="$1"
+
+    if [ -f "$rootdir/debian/changelog" ]; then
+        _pchangelog="$(dpkg-parsechangelog "-l$rootdir/debian/changelog")"
+        DEB_VERSION="$(echo "$_pchangelog" | _get_deb_field 'Version')"
+        if [ -n "$DEB_VERSION" ]; then
+            DEB_VERSION_WO_EPOCH=$(echo $DEB_VERSION | sed 's/^[[:digit:]]\+://')
+        else
+            die "unable to determine package version."
+        fi
+        DEB_SOURCE="$(echo "$_pchangelog" | _get_deb_field 'Source')"
+        DEB_DISTRIBUTION="$(echo "$_pchangelog" | _get_deb_field 'Distribution')"
+    else
+        die "debian/changelog could not be found in $rootdir"
+    fi
+}
+
+is_valid_package_root()
+{
+    test -f "$1/debian/changelog" && test -f "$1/debian/control"
+}
+
+is_distribution_valid()
+{
+    local distro
+    test -n "$1" || distro="$DEB_DISTRIBUTION"
+    if [ "$(expr match "$distro" '^\(\(stable\|testing\)\(-security\|-proposed-updates\)\|\(lenny\|squeeze\)-backports\|unstable\|experimental\)$')" = "$distro" ]; then
+        return 0
+    fi
+    return 1
+}
+
+# Parse common options
+OPT_VERBOSE=
+OPT_YES=
+
+while getopts ":vy" name; do
+    case "$name" in
+        v)  OPT_VERBOSE=1 ;;
+        y)  OPT_YES=1 ;;
+        ?)  if [ -n "$OPTARG" ]; then OPTIND=$(($OPTIND-1)); fi; break;;
+        :)  die "$OPTARG option is missing a required argument" ;;
+    esac
+done
+
+if [ "$OPTIND" -gt 1 ]; then
+    shift "$(($OPTIND-1))"
+    OPTIND=1
+fi
+
+# Determine VCS type and source its library script
+
+VCS=$(determine_vcs)
+case "$VCS" in
+    "")
+        die "unable to determine VCS type or VCS tools (git, svn) are not installed."
+        ;;
+    *)
+        # Load VCS script file. Determines LIBDIR in the process
+        if LIBDIR=$(determine_libdir) && [ $? -eq 0 ]; then
+            if [ -f "$LIBDIR/$VCS.sh" ]; then
+                . "$LIBDIR/$VCS.sh"
+            else
+                die "$VCS VCS is NOT supported (via $LIBDIR)."
+            fi
+        else
+            die "unable to determine pkgkde-vcs library directory."
+        fi
+        ;;
+esac
+
+exit 0

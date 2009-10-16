@@ -1,10 +1,11 @@
 PERLLIBDIR := $(shell perl -MConfig -e 'print $$Config{vendorlib}')
 SYMBOLSHELPER_DIR := symbolshelper
 DEBHELPER_DIR := debhelper
+VCS_DIR := vcs
 
 BINDIR := $(DESTDIR)/usr/bin
 MANDIR := $(DESTDIR)/usr/share/man
-#DATADIR := $(DESTDIR)/usr/share/pkg-kde-tools
+DATADIR := $(DESTDIR)/usr/share/pkg-kde-tools
 
 build:
 	# Nothing do build
@@ -25,3 +26,8 @@ install:
 	# Debhelper addons
 	cd $(DEBHELPER_DIR) && find Debian -type f -name "*.pm" -exec \
 	    install -D -m 0644 {} $(DESTDIR)/$(PERLLIBDIR)/{} \;
+	
+	# pkgkde-vcs
+	install -d $(DATADIR)/vcs
+	install -m 0755 $(VCS_DIR)/pkgkde-vcs $(BINDIR)
+	cd $(VCS_DIR)/vcslib && find . -type f -exec install -D -m 0644 {} $(DATADIR)/vcs/{} \;
