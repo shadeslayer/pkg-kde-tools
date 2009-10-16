@@ -11,7 +11,7 @@ build:
 	# Nothing do build
 
 install:
-	install -d $(BINDIR) $(MANDIR)
+	install -d $(BINDIR) $(MANDIR) $(MANDIR)/man1
 	
 	# symbolshelper
 	cd $(SYMBOLSHELPER_DIR) && find Debian -type f -name "*.pm" -exec \
@@ -19,7 +19,6 @@ install:
 	install -m 0755 $(SYMBOLSHELPER_DIR)/pkgkde-symbolshelper-basic $(DESTDIR)/usr/bin/pkgkde-symbolshelper
 	
 	# Custom debhelper commands
-	install -d $(MANDIR)/man1
 	pod2man $(DEBHELPER_DIR)/dh_sameversiondep > $(MANDIR)/man1/dh_sameversiondep.1
 	install -m 0755 $(DEBHELPER_DIR)/dh_sameversiondep $(BINDIR)
 	
