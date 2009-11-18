@@ -137,7 +137,15 @@ Modestas Vainius <modestas@vainius.eu>
 
 use strict;
 use warnings;
-use Dpkg::Control;
+
+# 1.15.5 or later
+my $dpkg_control_class = 'Dpkg::Control::Info';
+eval "use Dpkg::Control::Info";
+if ($@) {
+    # 1.15.4 or earlier
+    eval "use Dpkg::Control";
+    $dpkg_control_class = 'Dpkg::Control';
+}
 use Dpkg::Substvars;
 use Dpkg::ErrorHandling ();
 use File::Copy;
@@ -294,7 +302,7 @@ sub write_substvar($$$$) {
 
 init();
 
-my $control = new Dpkg::Control;
+my $control = $dpkg_control_class->new();
 my %shlibsvars;
 
 foreach my $package (@{$dh{DOPACKAGES}}) {
