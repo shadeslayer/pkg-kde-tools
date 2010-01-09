@@ -11,12 +11,16 @@ build:
 	# Nothing do build
 
 install:
-	install -d $(BINDIR) $(MANDIR) $(MANDIR)/man1
+	install -d $(DATADIR) $(BINDIR) $(MANDIR) $(MANDIR)/man1
 	
 	# symbolshelper
 	cd $(SYMBOLSHELPER_DIR) && find Debian -type f -name "*.pm" -exec \
 	    install -D -m 0644 {} $(DESTDIR)/$(PERLLIBDIR)/{} \;
-	install -m 0755 $(SYMBOLSHELPER_DIR)/pkgkde-symbolshelper-basic $(DESTDIR)/usr/bin/pkgkde-symbolshelper	
+	install -m 0755 $(SYMBOLSHELPER_DIR)/pkgkde-symbolshelper-basic $(BINDIR)/pkgkde-symbolshelper
+	install -m 0755 $(SYMBOLSHELPER_DIR)/dh_pkgkde-symbolshelper $(DATADIR)
+	ln -sf /usr/share/pkg-kde-tools/dh_pkgkde-symbolshelper $(BINDIR)/dh_pkgkde-symbolshelper_generate
+	ln -sf /usr/share/pkg-kde-tools/dh_pkgkde-symbolshelper $(BINDIR)/dh_pkgkde-symbolshelper_clean
+	
 	# Improved Dpkg::Shlibs and dpkg-gensymbols
 	cd $(SYMBOLSHELPER_DIR) && find Dpkg -type f -name "*.pm" -exec \
 	    install -D -m 0644 {} $(DATADIR)/{} \;

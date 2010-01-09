@@ -1,0 +1,26 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Debian::Debhelper::Dh_Lib;
+
+init();
+
+foreach my $pkg (@{$dh{DOPACKAGES}}) {
+    my $infile = "debian/$pkg.symbols.in";
+    my $outfile = "debian/$pkg.symbols." . package_arch($pkg);
+
+    next if $pkg eq "all";
+
+    if ($0 =~ /_generate$/) {
+        if (-f $infile) {
+            doit('pkgkde-symbolshelper', 'symbolfile', '-p', $pkg, '-o', $outfile);
+        }
+    } elsif ($0 =~ /_clean$/) {
+        if (-f $outfile) {
+            doit("rm", "-f", $outfile);
+        }
+    } else {
+        error("invalid program execution");
+    }
+}
