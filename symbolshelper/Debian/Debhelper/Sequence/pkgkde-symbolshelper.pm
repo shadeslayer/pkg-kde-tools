@@ -7,3 +7,5 @@ if (! grep { PKGKDE_BINDIR eq $_ } split(":", $ENV{PATH})) {
 
 insert_before("dh_makeshlibs", "dh_pkgkde-symbolshelper_generate");
 insert_after("dh_clean", "dh_pkgkde-symbolshelper_clean");
+
+1;
