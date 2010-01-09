@@ -28,7 +28,7 @@ foreach my $pkg (@{$dh{DOPACKAGES}}) {
     my $infile = "debian/$pkg.symbols.in";
     my $outfile = "debian/$pkg.symbols.$arch";
 
-    if ($0 =~ /_generate$/) {
+    if ($0 =~ /_symbolfile$/) {
         if (-f $infile) {
             doit('pkgkde-symbolshelper', 'symbolfile', '-p', $pkg, '-o', $outfile);
         }

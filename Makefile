@@ -18,7 +18,7 @@ install:
 	    install -D -m 0644 {} $(DESTDIR)/$(PERLLIBDIR)/{} \;
 	install -m 0755 $(SYMBOLSHELPER_DIR)/pkgkde-symbolshelper-basic $(BINDIR)/pkgkde-symbolshelper
 	install -m 0755 $(SYMBOLSHELPER_DIR)/dh_pkgkde-symbolshelper $(DATADIR)
-	ln -sf /usr/share/pkg-kde-tools/dh_pkgkde-symbolshelper $(BINDIR)/dh_pkgkde-symbolshelper_generate
+	ln -sf /usr/share/pkg-kde-tools/dh_pkgkde-symbolshelper $(BINDIR)/dh_pkgkde-symbolshelper_symbolfile
 	ln -sf /usr/share/pkg-kde-tools/dh_pkgkde-symbolshelper $(BINDIR)/dh_pkgkde-symbolshelper_clean
 	
 	# Improved Dpkg::Shlibs and dpkg-gensymbols
