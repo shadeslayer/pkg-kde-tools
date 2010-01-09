@@ -1,4 +1,4 @@
-pkg-kde-tools (0.5.4) UNRELEASED; urgency=low
+pkg-kde-tools (0.6.0~pre1) UNRELEASED; urgency=low
 
   * Remove DMUA field from debian/control which was added for me.
 
