@@ -11,7 +11,7 @@ foreach my $pkg (@{$dh{DOPACKAGES}}) {
     next if $arch eq "all";
 
     my $infile = "debian/$pkg.symbols.in";
-    my $outfile = "debian/$pkg.symbols.$arch"
+    my $outfile = "debian/$pkg.symbols.$arch";
 
     if ($0 =~ /_generate$/) {
         if (-f $infile) {
