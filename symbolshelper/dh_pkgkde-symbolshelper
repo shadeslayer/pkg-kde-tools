@@ -18,6 +18,7 @@ foreach my $pkg (@{$dh{DOPACKAGES}}) {
             doit('pkgkde-symbolshelper', 'symbolfile', '-p', $pkg, '-o', $outfile);
         }
     } elsif ($0 =~ /_clean$/) {
+        inhibit_log();
         if (-f $outfile) {
             doit("rm", "-f", $outfile);
         }
