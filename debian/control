@@ -4,7 +4,7 @@ Priority: extra
 Maintainer: Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>
 Build-Depends: debhelper (>= 7)
 Standards-Version: 3.8.3
-Uploaders: Sune Vuorela <debian@pusling.com>, Modestas Vainius <modestas@vainius.eu>
+Uploaders: Sune Vuorela <debian@pusling.com>, Modestas Vainius <modax@debian.org>
 Vcs-Git: git://git.debian.org/git/pkg-kde/pkg-kde-tools.git
 Vcs-Browser: http://git.debian.org/?p=pkg-kde/pkg-kde-tools.git;a=summary
 
