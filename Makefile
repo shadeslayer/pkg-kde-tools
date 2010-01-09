@@ -16,7 +16,17 @@ install:
 	# symbolshelper
 	cd $(SYMBOLSHELPER_DIR) && find Debian -type f -name "*.pm" -exec \
 	    install -D -m 0644 {} $(DESTDIR)/$(PERLLIBDIR)/{} \;
-	install -m 0755 $(SYMBOLSHELPER_DIR)/pkgkde-symbolshelper-basic $(DESTDIR)/usr/bin/pkgkde-symbolshelper
+	install -m 0755 $(SYMBOLSHELPER_DIR)/pkgkde-symbolshelper-basic $(DESTDIR)/usr/bin/pkgkde-symbolshelper	
+	# Improved Dpkg::Shlibs and dpkg-gensymbols
+	cd $(SYMBOLSHELPER_DIR) && find Dpkg -type f -name "*.pm" -exec \
+	    install -D -m 0644 {} $(DATADIR)/{} \;
+	install -m 0755 $(SYMBOLSHELPER_DIR)/pkgkde-gensymbols $(BINDIR)
+	install -m 0755 $(SYMBOLSHELPER_DIR)/dpkg-gensymbols.1 $(MANDIR)/man1/pkgkde-gensymbols.1
+	install -m 0755 $(SYMBOLSHELPER_DIR)/dpkg-gensymbols.pl $(DATADIR)
+	install -d $(DATADIR)/bin
+	# Make it possible to transparently replace dpkg-gensymbols with
+	# pkgkde-gensymbols
+	ln -sf /usr/bin/pkgkde-gensymbols $(DATADIR)/bin/dpkg-gensymbols
 	
 	# Custom debhelper commands
 	pod2man $(DEBHELPER_DIR)/dh_sameversiondep > $(MANDIR)/man1/dh_sameversiondep.1

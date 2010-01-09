@@ -1,6 +1,9 @@
 pkg-kde-tools (0.6.0~pre1) UNRELEASED; urgency=low
 
   * Remove DMUA field from debian/control which was added for me.
+  * Provide newer dpkg-gensymbols as pkgkde-gensymbols.
+  * Make it possible to replace dpkg-gensymbols with pkgkde-gensymbols
+    (by adding /usr/share/pkg-kde-tools/bin to $PATH).
 
  -- Modestas Vainius <modestas@vainius.eu>  Sun, 06 Dec 2009 22:06:01 +0200
 
