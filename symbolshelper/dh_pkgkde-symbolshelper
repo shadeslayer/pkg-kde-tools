@@ -7,10 +7,11 @@ use Debian::Debhelper::Dh_Lib;
 init();
 
 foreach my $pkg (@{$dh{DOPACKAGES}}) {
-    my $infile = "debian/$pkg.symbols.in";
-    my $outfile = "debian/$pkg.symbols." . package_arch($pkg);
+    my $arch = package_arch($pkg);
+    next if $arch eq "all";
 
-    next if $pkg eq "all";
+    my $infile = "debian/$pkg.symbols.in";
+    my $outfile = "debian/$pkg.symbols.$arch"
 
     if ($0 =~ /_generate$/) {
         if (-f $infile) {
