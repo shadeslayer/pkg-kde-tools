@@ -25,10 +25,6 @@ use Dpkg::Control::Fields;
 use Dpkg::Shlibs::Symbol;
 use Dpkg::Arch qw(get_host_arch);
 
-# Supported alias types in the order of matching preference
-# See: find_matching_pattern().
-use constant 'ALIAS_TYPES' => qw(c++ wildcard);
-
 my %blacklist = (
     '__bss_end__' => 1,		# arm
     '__bss_end' => 1,		# arm
@@ -108,9 +104,8 @@ sub clear_except {
 
 # Create a symbol from the supplied string specification.
 sub create_symbol {
-    my $self = shift;
-    my $spec = shift;
-    my $symbol = shift || Dpkg::Shlibs::Symbol->new();
+    my ($self, $spec, $symbol) = @_;
+    $symbol = Dpkg::Shlibs::Symbol->new() unless defined $symbol;
 
     if ($symbol->parse($spec)) {
 	$symbol->initialize(arch => $self->{arch});
@@ -287,6 +282,8 @@ sub dump {
 	    # Do not dump symbols from foreign arch unless dumping a template.
 	    next if not $opts{template_mode} and
 	            not $sym->arch_is_concerned($self->{arch});
+	    # Dump symbol specification. Dump symbol tags only in template mode.
+	    print $fh $sym->get_symbolspec($opts{template_mode}), "\n";
 	    # Dump pattern matches as comments (if requested)
 	    if ($opts{with_pattern_matches} && $sym->is_pattern()) {
 		for my $match (sort { $a->get_symboltempl() cmp
@@ -295,8 +292,6 @@ sub dump {
 		    print $fh "#MATCH:", $match->get_symbolspec(0), "\n";
 		}
 	    }
-	    # Dump symbol specification. Dump symbol tags only in template mode.
-	    print $fh $sym->get_symbolspec($opts{template_mode}), "\n";
 	}
     }
 }
@@ -319,7 +314,7 @@ sub find_matching_pattern {
 	next unless defined $obj;
 
 	my $all_aliases = $obj->{patterns}{aliases};
-	for my $type (ALIAS_TYPES) {
+	for my $type (Dpkg::Shlibs::Symbol::ALIAS_TYPES) {
 	    if (exists $all_aliases->{$type}) {
 		my $aliases = $all_aliases->{$type};
 		if (my $alias = $aliases->{converter}->convert_to_alias($name)) {

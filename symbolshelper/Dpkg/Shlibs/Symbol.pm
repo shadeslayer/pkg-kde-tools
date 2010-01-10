@@ -25,6 +25,9 @@ use Dpkg::Version;
 use Storable qw();
 use Dpkg::Shlibs::Cppfilt;
 
+# Supported alias types in the order of matching preference
+use constant 'ALIAS_TYPES' => qw(c++ symver);
+
 sub new {
     my $this = shift;
     my $class = ref($this) || $this;
@@ -146,26 +149,43 @@ sub initialize {
 
     # Look for tags marking symbol patterns. The pattern may match multiple
     # real symbols.
+    my $type;
     if ($self->has_tag('c++')) {
 	# Raw symbol name is always demangled to the same alias while demangled
 	# symbol name cannot be reliably converted back to raw symbol name.
 	# Therefore, we can use hash for mapping.
-	$self->init_pattern('alias-c++'); # Alias subtype is c++.
+	$type = 'alias-c++';
     }
-    # Wildcard is an alias based pattern. It gets recognized here even if it is
-    # not specially tagged.
-    if (my $ver = $self->get_wildcard_version()) {
-	error(_g("you can't use wildcards on unversioned symbols: %s"), $_) if $ver eq "Base";
-	$self->init_pattern(($self->is_pattern()) ? 'generic' : 'alias-wildcard');
-	$self->{pattern}{wildcard} = 1;
+
+    if ($self->has_tag('symver')) {
+	# Each symbol is matched against its version rather than full
+	# name@version string.
+	$type = (defined $type) ? 'generic' : 'alias-symver';
     }
-    # As soon as regexp is involved,  we need to match each real
+    # Support old style wildcard syntax as well. That's basically a symver
+    # with implicit optional tag.
+    if ($self->get_symbolname() =~ /^\*@(.*)$/) {
+	error(_g("you can't use wildcards on unversioned symbols: %s"), $_) if $1 eq "Base";
+	# symver pattern needs symbol name to be its version. However, keeping
+	# dumping this as old style wildcard in the output.
+	unless (defined $self->{symbol_templ}) {
+	    $self->{symbol_templ} = $self->get_symbolname();
+	}
+	$type = (defined $type) ? 'generic' : 'alias-symver';
+	$self->{symbol} = $1;
+	$self->{pattern}{old_wildcard} = 1;
+    }
+
+    # As soon as regex is involved, we need to match each real
     # symbol against each pattern (aka 'generic' pattern).
-    if ($self->has_tag('regexp')) {
-	$self->init_pattern('generic');
+    if ($self->has_tag('regex')) {
+	$type = 'generic';
 	# Pre-compile regular expression for better performance.
-	my $regexp = $self->get_symbolname();
-	$self->{pattern}{regexp} = qr/$regexp/;
+	my $regex = $self->get_symbolname();
+	$self->{pattern}{regex} = qr/$regex/;
+    }
+    if (defined $type) {
+	$self->init_pattern($type);
     }
 }
 
@@ -188,14 +208,6 @@ sub set_symbolname {
     } else {
 	delete $self->{symbol_quoted};
     }
-}
-
-sub get_wildcard_version {
-    my $self = shift;
-    if ($self->get_symbolname() =~ /^\*@(.*)$/) {
-	return $1;
-    }
-    return undef;
 }
 
 sub has_tags {
@@ -241,7 +253,7 @@ sub equals {
 
     # Compare names and tag sets
     return 0 if $self->{symbol} ne $other->{symbol};
-    return 0 if scalar(@{$self->{tagorder}}) != scalar(@{$self->{tagorder}});
+    return 0 if scalar(@{$self->{tagorder}}) != scalar(@{$other->{tagorder}});
 
     for (my $i = 0; $i < scalar(@{$self->{tagorder}}); $i++) {
 	my $tag = $self->{tagorder}->[$i];
@@ -258,7 +270,8 @@ sub equals {
 
 sub is_optional {
     my $self = shift;
-    return $self->has_tag("optional");
+    return $self->has_tag("optional") ||
+           (exists $self->{pattern} && exists $self->{pattern}{old_wildcard});
 }
 
 sub is_arch_specific {
@@ -290,8 +303,7 @@ sub get_pattern {
 
 # Initialises this symbol as a pattern of the specified type.
 sub init_pattern {
-    my $self = shift;
-    my $type = shift;
+    my ($self, $type) = @_;
 
     $self->{pattern}{type} = $type;
     # To be filled with references to symbols matching this pattern.
@@ -346,16 +358,16 @@ sub create_pattern_match {
 # the current pattern ($self). Returns undef if the supplied raw name is not
 # transformable to alias.
 sub convert_to_alias {
-    my $self = shift;
-    my $rawname = shift;
-    my $type = shift || $self->get_alias_type();
+    my ($self, $rawname, $type) = @_;
+    $type = $self->get_alias_type() unless $type;
+
     if ($type) {
-	if ($type eq 'wildcard') {
-	    # In case of wildcard, alias is like "*@SYMBOL_VERSION". Extract
-	    # symbol version from the rawname.
-	    return "*\@$1" if ($rawname =~ /\@([^@]+)$/);
+	if ($type eq 'symver') {
+	    # In case of symver, alias is symbol version. Extract it from the
+	    # rawname.
+	    return "$1" if ($rawname =~ /\@([^@]+)$/);
 	} elsif ($rawname =~ /^_Z/ && $type eq "c++") {
-	    return cppfilt_demangle($rawname, "gnu-v3");
+	    return cppfilt_demangle($rawname, "auto");
 	}
     }
     return undef;
@@ -384,9 +396,13 @@ sub get_symbolspec {
     my $spec = "";
     $spec .= "#MISSING: $self->{deprecated}#" if $self->{deprecated};
     $spec .= " ";
-    if ($template_mode && $self->has_tags()) {
-	$spec .= sprintf('%s%3$s%s%3$s', $self->get_tagspec(),
-	    $self->get_symboltempl(), $self->{symbol_quoted} || "");
+    if ($template_mode) {
+	if ($self->has_tags()) {
+	    $spec .= sprintf('%s%3$s%s%3$s', $self->get_tagspec(),
+		$self->get_symboltempl(), $self->{symbol_quoted} || "");
+	} else {
+	    $spec .= $self->get_symboltempl();
+	}
     } else {
 	$spec .= $self->get_symbolname();
     }
@@ -451,9 +467,7 @@ sub is_eligible_as_new {
 # Determine whether a supplied raw symbol name matches against current ($self)
 # symbol or pattern.
 sub matches_rawname {
-    my $self = shift;
-    my $rawname = shift;
-
+    my ($self, $rawname) = @_;
     my $target = $rawname;
     my $ok = 1;
     my $do_eq_match = 1;
@@ -461,21 +475,14 @@ sub matches_rawname {
     if ($self->is_pattern()) {
 	# Process pattern tags in the order they were specified.
 	for my $tag (@{$self->{tagorder}}) {
-	    if ($tag eq "c++") {
-		# Demangle it.
-		$ok = not not ($target = $self->convert_to_alias($target, "c++"));
-	    } elsif ($tag eq "regexp") {
-		# Symbol name is a regexp. Match it against the target
+	    if (grep { $tag eq $_ } ALIAS_TYPES) {
+		$ok = not not ($target = $self->convert_to_alias($target, $tag));
+	    } elsif ($tag eq "regex") {
+		# Symbol name is a regex. Match it against the target
 		$do_eq_match = 0;
-		$ok = ($target =~ $self->{pattern}{regexp});
+		$ok = ($target =~ $self->{pattern}{regex});
 	    }
 	    last if not $ok;
-	}
-	if ($ok) {
-	    # Wildcards are checked last
-	    if ($self->{pattern}{wildcard}) {
-		$target = $self->convert_to_alias($target, "wildcard");
-	    }
 	}
     }
 

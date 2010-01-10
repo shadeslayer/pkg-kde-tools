@@ -162,8 +162,12 @@ some low level toolchain libraries like libgcc.
 Denotes \fIc++\fR symbol pattern. See \fBUsing symbol patterns\fR subsection
 below.
 .TP
-.B regexp
-Denotes \fIregexp\fR symbol pattern. See \fBUsing symbol patterns\fR subsection
+.B symver
+Denotes \fIsymver\fR (symbol version) symbol pattern. See \fBUsing symbol
+patterns\fR subsection below.
+.TP
+.B regex
+Denotes \fIregex\fR symbol pattern. See \fBUsing symbol patterns\fR subsection
 below.
 .SS Using symbol patterns
 .P
@@ -172,9 +176,15 @@ symbols from the library. \fBdpkg-gensymbols\fR will attempt to match each
 pattern against each real symbol that does \fInot\fR have a specific symbol
 counterpart defined in the symbol file. Whenever the first matching pattern is
 found, all its tags and properties will be used as a basis specification of the
-symbol. If neither pattern matches, the symbol will be considered as MISSING.
-Please also note that patterns are in the same way affected by \fIoptional\fR,
-\fIarch\fR and other standard tags whenever possible.
+symbol. If neither pattern matches, the symbol will be considered as new.
+
+A pattern is considered lost if it does not match any symbol in the library. By
+default this will trigger a \fBdpkg-gensymbols\fR failure under \fI-c1\fR or
+higher level. However, if the failure is undesired, the pattern may be marked
+with the \fIoptional\fR tag. Then if the pattern does not match anything, it
+will only appear in the diff as MISSING. Moreover, like any symbol, the patten
+may be limited to the specific architectures with the \fIarch\fR tag. Please
+refer to \fBStandard symbol tags\fR subsection above for more information.
 
 Patterns are an extension of the \fIdeb\-symbols(5)\fR format hence they are
 only valid in symbol file templates. Pattern specification syntax is not any
@@ -183,7 +193,7 @@ specification serves as an expression to be matched against \fIname@version\fR
 of the real symbol. In order to distinguish among different pattern types, a
 pattern will typically be tagged with a special tag.
 
-At the moment, \fBdpkg\-gensymbols\fR supports three atomic pattern types:
+At the moment, \fBdpkg\-gensymbols\fR supports three basic pattern types:
 .TP 3
 .B c++
 This pattern is denoted by the \fIc++\fR tag. It matches only C++ symbols by
@@ -216,30 +226,33 @@ for them). However, as these collisions happen on the ABI level, they should
 not degrade quality of the symbol file.
 .RE
 .TP
-.B wildcards
-Wildcard patterns are denoted by the string of the form \fI*@version\fR in the
-symbol name field, e.g. "*@GLIBC_2.0". Well maintained libraries have
+.B symver
+This pattern is denoted by the \fIsymver\fR tag. Well maintained libraries have
 versioned symbols where each version corresponds to the upstream version where
-the symbol got added. If that's the case, you can use wildcard patterns to
-match any symbol associated to the specific version. So "*@GLIBC_2.0" would
-match all symbols associated to the version GLIBC_2.0. For example:
+the symbol got added. If that's the case, you can use a \fIsymver\fR pattern to
+match any symbol associated to the specific version. For example:
 .RS
 .PP
 libc.so.6 libc6 #MINVER#
- *@GLIBC_2.0 2.0
+ (symver)GLIBC_2.0 2.0
  [...]
- *@GLIBC_2.7 2.7
+ (symver)GLIBC_2.7 2.7
  access@GLIBC_2.0 2.2
 .PP
 All symbols associated with versions GLIBC_2.0 and GLIBC_2.7 will lead to
 minimal version of 2.0 and 2.7 respectively with the exception of the symbol
 access@GLIBC_2.0. The latter will lead to a minimal dependency on libc6 version
-2.2 despite being in the scope of the wildcard "*@GLIBC_2.0" because specific
-symbols take precedence over patterns.
+2.2 despite being in the scope of the "(symver)GLIBC_2.0" pattern because
+specific symbols take precedence over patterns.
+.P
+Please note that while old style wildcard patterns (denoted by "*@version" in
+the symbol name field) are still supported, they have been deprecated by new
+style syntax "(symver|optional)version". For example, "*@GLIBC_2.0 2.0" should
+be written as "(symver|optional)GLIBC_2.0 2.0" if the same behaviour is needed.
 .RE
 .TP
-.B regexp
-Regular expression patterns are denoted by the \fIregexp\fR tag. They match by
+.B regex
+Regular expression patterns are denoted by the \fIregex\fR tag. They match by
 the perl regular expression specified in the symbol name field. A regular
 expression is matched as it is, therefore do not forget to start it with the
 \fI^\fR character or it may match any part of the real symbol
@@ -247,8 +260,8 @@ expression is matched as it is, therefore do not forget to start it with the
 .RS
 .PP
 libdummy.so.1 libdummy1 #MINVER#
- (regexp)"^mystack_.*@Base$" 1.0
- (regexp|optional)"private" 1.0
+ (regex)"^mystack_.*@Base$" 1.0
+ (regex|optional)"private" 1.0
 .P
 Symbols like "mystack_new@Base", "mystack_push@Base", "mystack_pop@Base" etc.
 will be matched by the first pattern while e.g. "ng_mystack_new@Base" won't.
@@ -256,35 +269,34 @@ The second pattern will match all symbols having the string "private" in their
 names and matches will inherit \fIoptional\fR tag from the pattern.
 .RE
 .P
-Atomic patterns listed above can be combined where it makes sense. In that
-case, they are processed in the order in which the tags are specified. Since
-wildcard pattern does not have a specific tag, it is processed last if the
-symbol specification looks like a wildcard. For example, both
+Basic patterns listed above can be combined where it makes sense. In that case,
+they are processed in the order in which the tags are specified. For example,
+both
 .PP
- (c++|regexp)"^NSA::ClassA::Private::privmethod\\d\\(int\\)@Base" 1.0
- (regexp|c++)N3NSA6ClassA7Private11privmethod\\dEi@Base 1.0
+ (c++|regex)"^NSA::ClassA::Private::privmethod\\d\\(int\\)@Base" 1.0
+ (regex|c++)N3NSA6ClassA7Private11privmethod\\dEi@Base 1.0
 .P
 will match symbols "_ZN3NSA6ClassA7Private11privmethod1Ei@Base" and
 "_ZN3NSA6ClassA7Private11privmethod2Ei@Base". When matching the first pattern,
-the raw symbol is first demangled as c++ symbol, then the demangled name is
+the raw symbol is first demangled as C++ symbol, then the demangled name is
 matched against the regular expression. On the other hand, when matching the
 second pattern, regular expression is matched against the raw symbol name, then
-the symbol is tested if it is c++ one by attempting to demangle it. A failure
-of any atomic pattern will result in the failure of the whole pattern.
+the symbol is tested if it is C++ one by attempting to demangle it. A failure
+of any basic pattern will result in the failure of the whole pattern.
 Therefore, for example, "__N3NSA6ClassA7Private11privmethod\\dEi@Base" will not
-match either of the patterns because it is not a valid c++ symbol.
+match either of the patterns because it is not a valid C++ symbol.
 .P
-In general, all patterns are divided into two groups: aliases (atomic c++ and
-wildcards) and generic patterns (regexp, all combinations of multiple atomic
-patterns). Matching of atomic alias-based patterns is fast (O(1)) while
-generic patterns are O(N) (N - generic pattern count) for each symbol.
+In general, all patterns are divided into two groups: aliases (basic \fIc++\fR
+and \fIsymver\fR) and generic patterns (\fIregex\fR, all combinations of
+multiple basic patterns). Matching of basic alias-based patterns is fast (O(1))
+while generic patterns are O(N) (N - generic pattern count) for each symbol.
 Therefore, it is recommended not to overuse generic patterns.
 .P
-When multiple patterns match the same real symbol, aliases (first c++, then
-wildcards) are preferred over generic patterns. Generic patterns are matched in
-the order they are found in the symbol file template until the first success.
-Please note, however, that manual reordering of template file entries is not
-recommended because \fBdpkg-gensymbols\fR generates diffs based on the
+When multiple patterns match the same real symbol, aliases (first \fIc++\fR,
+then \fIsymver\fR) are preferred over generic patterns. Generic patterns are
+matched in the order they are found in the symbol file template until the first
+success.  Please note, however, that manual reordering of template file entries
+is not recommended because \fBdpkg-gensymbols\fR generates diffs based on the
 alphanumerical order of their names.
 .SS Using includes
 .P
