@@ -176,13 +176,13 @@ symbols from the library. \fBdpkg-gensymbols\fR will attempt to match each
 pattern against each real symbol that does \fInot\fR have a specific symbol
 counterpart defined in the symbol file. Whenever the first matching pattern is
 found, all its tags and properties will be used as a basis specification of the
-symbol. If neither pattern matches, the symbol will be considered as new.
+symbol. If none of the patterns matches, the symbol will be considered as new.
 
 A pattern is considered lost if it does not match any symbol in the library. By
 default this will trigger a \fBdpkg-gensymbols\fR failure under \fI-c1\fR or
 higher level. However, if the failure is undesired, the pattern may be marked
 with the \fIoptional\fR tag. Then if the pattern does not match anything, it
-will only appear in the diff as MISSING. Moreover, like any symbol, the patten
+will only appear in the diff as MISSING. Moreover, like any symbol, the pattern
 may be limited to the specific architectures with the \fIarch\fR tag. Please
 refer to \fBStandard symbol tags\fR subsection above for more information.
 
@@ -419,6 +419,12 @@ DPKG_GENSYMBOLS_CHECK_LEVEL.
 Enable debug mode. Numerous messages are displayed to explain what 
 .B dpkg\-gensymbols
 does.
+.TP
+.BI \-V
+Enable verbose mode. The generated symbols file contains deprecated
+symbols as comments. Furthermore in template mode, pattern symbols
+are followed by comments listing real symbols that have matched the
+pattern.
 .TP
 .BR \-h ", " \-\-help
 Show the usage message and exit.
