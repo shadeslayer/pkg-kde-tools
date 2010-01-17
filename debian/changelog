@@ -12,6 +12,7 @@ pkg-kde-tools (0.6.0~pre4) UNRELEASED; urgency=low
   * Add support for substitutions directly to pkgkde-gensymbols
     (dpkg-gensymbols wrapper). This renders `pkgkde-symbolshelper symbolfile`
     obsolete.
+  * Switch to 3.0 (native) format: ignores VCS directories by default.
 
  -- Modestas Vainius <modestas@vainius.eu>  Sun, 06 Dec 2009 22:06:01 +0200
 
