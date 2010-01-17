@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright (C) 2008 Modestas Vainius <modestas@vainius.eu>
+# Copyright (C) 2008-2010 Modestas Vainius <modax@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -9,7 +9,7 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
@@ -52,10 +52,10 @@ use warnings;
 use File::Spec;
 use Getopt::Long;
 
-use Debian::PkgKde::SymHelper qw(info error warning);
-use Debian::PkgKde::SymHelper::Handler;
-use Debian::PkgKde::SymHelper::SymbFile;
-use Debian::PkgKde::SymHelper::Handlers;
+use Dpkg::ErrorHandling;
+use Dpkg::Arch qw(get_host_arch get_valid_arches);
+use Debian::PkgKde::SymbolsHelper::SymbolFile;
+use Debian::PkgKde::SymbolsHelper::SymbolFileCollection;
 
 my $handlers;
 
@@ -63,13 +63,13 @@ my $handlers;
 my $opt_out;
 my $opt_in;
 my $opt_package;
-my $opt_arch = Debian::PkgKde::SymHelper::Handler::get_host_arch();
+my $opt_arch = get_host_arch();
 my $opt_version;
 
 sub verify_opt_arch {
     my ($opt, $arch) = @_;
     error("unknown architecture: $arch")
-        unless grep /^\Q$arch\E$/, @Debian::PkgKde::SymHelper::ARCHES;
+	unless grep /^\Q$arch\E$/, get_valid_arches();
     $opt_arch = $arch;
 }
 
@@ -95,8 +95,7 @@ sub get_common_options {
 }
 
 sub check_mandatory_options {
-    my $args = shift;
-    my $msg = shift;
+    my ($args, $msg, @opts) = @_;
     my %args;
 
     $msg = "" if (!defined $msg);
@@ -107,10 +106,10 @@ sub check_mandatory_options {
     error("architecture option (-a) is mandatory $msg") if (!$opt_arch && $args{a});
     error("version option (-v) is mandatory $msg") if (!$opt_version && $args{v});
 
-    while (@_) {
-        my $val = shift;
-        my $msg = shift;
-        error($msg) if (!$val);
+    while (@opts) {
+	my $val = shift @opts;
+	my $msg = shift @opts;
+	error($msg) if (!$val);
     }
     return 1;
 }
@@ -119,13 +118,13 @@ sub check_mandatory_options {
 sub find_package_symbolfile_path {
     my ($package, $arch) = @_;
     my @PATHS = (
-        "debian/$package.symbols.$arch",
-        "debian/symbols.$arch",
-        "debian/$package.symbols",
-        "debian/symbols"
+	"debian/$package.symbols.$arch",
+	"debian/symbols.$arch",
+	"debian/$package.symbols",
+	"debian/symbols"
     );
     for my $path (@PATHS) {
-        return $path if (-f $path);
+	return $path if (-f $path);
     }
     return undef;
 }
@@ -135,9 +134,9 @@ sub out_symfile {
     return 1 unless $symfile;
 
     if ($opt_out) {
-        $symfile->save($opt_out, with_deprecated=>2);
+	$symfile->save($opt_out, template_mode => 1);
     } else {
-        $symfile->dump(*STDOUT, with_deprecated=>2);
+	$symfile->dump(*STDOUT, template_mode => 1);
     }
     return 0;
 }
@@ -145,192 +144,151 @@ sub out_symfile {
 sub print_symbol_list($$) {
     my ($list, $prefix) = @_;
     for my $item (@$list) {
-        info(sprintf("%s%s %s\n", $prefix, $item->{soname}, $item->{name}));
+	info(sprintf("%s%s %s\n", $prefix, $item->{soname}, $item->get_symbolname()));
     }
 }
 
 ############### Subcommands ####################
 sub subcommand_create {
     my $opt_dir;
-    my $opt_deprecate_incomplete;
     my %opts = (
-        get_common_options("oav"),
-        "directory|d=s" => \$opt_dir,
-        "with-incomplete|wi!" => \$opt_deprecate_incomplete,
+	get_common_options("oav"),
+	"directory|d=s" => \$opt_dir,
     );
     if (GetOptions(%opts)) {
-        check_mandatory_options("",
-            $opt_dir, "symbol file directory option (-d) is mandatory");
+	check_mandatory_options("", "",
+	    $opt_dir => "symbol file directory option (-d) is mandatory");
 
-        opendir(DIR, $opt_dir) or error("Unable to open directory: $opt_dir");
-        my %files;
-        my $str_arches = join("|", @Debian::PkgKde::SymHelper::ARCHES);
+	opendir(DIR, $opt_dir) or error("Unable to open directory: $opt_dir");
+	my %files;
+	my $str_arches = join("|", get_valid_arches());
 
-        while (my $file = readdir(DIR)) {
-            next if ($file =~ /^.{1,2}$/);
-            $file = File::Spec->catfile($opt_dir, $file);
-            if ($file =~ /.*?[_.]($str_arches)$/) {
-                $files{$1} = $file;
-            } else {
-                warning("$file is not named properly. Expected *_<arch> or *.<arch>");
-            }
-        }
+	while (my $file = readdir(DIR)) {
+	    next if ($file =~ /^.{1,2}$/);
+	    $file = File::Spec->catfile($opt_dir, $file);
+	    if ($file =~ /.*?[_.]($str_arches)$/) {
+		$files{$1} = $file;
+	    } else {
+		warning("$file is not named properly. Expected *_<arch> or *.<arch>");
+	    }
+	}
 
-        if (scalar(keys %files) > 0) {
-            $handlers->load_symbol_files(\%files);
-            $handlers->preprocess();
+	if (scalar(keys %files) > 0) {
+	    # This one is needed by most subcommands
+	    my $symfiles = Debian::PkgKde::SymbolsHelper::SymbolFileCollection->new($opt_arch);
 
-            # Create a symbols template and write it
-            $handlers->set_main_arch($opt_arch);
-            my $template;
-            if (scalar(keys %files) == 1) {
-                $template = $handlers->create_template_standalone();
-            } else {
-                $template = $handlers->create_template(
-                    "deprecate_incomplete" => $opt_deprecate_incomplete,
-                );
-            }
-            $template->handle_min_version($opt_version, with_deprecated => 1);
-            return out_symfile($template);
-        } else {
-            error("no properly named symbol files found in $opt_dir");
-        }
-        return 0;
+	    $symfiles->load_symbol_files(\%files);
+	    # Detect templinst symbols before substitutions
+	    foreach my $symfile ($symfiles->get_symfiles()) {
+		$symfile->mark_cpp_templinst_as_optional();
+	    }
+
+	    # Create a symbols template
+	    my $template;
+	    if (scalar(keys %files) == 1) {
+		$template = $symfiles->create_template_standalone();
+	    } else {
+		$template = $symfiles->create_template();
+	    }
+
+	    $template->handle_min_version($opt_version);
+	    $template->handle_virtual_table_symbols();
+	    return out_symfile($template);
+	} else {
+	    error("no properly named symbol files found in $opt_dir");
+	}
+	return 0;
     }
     return 1;
 }
 
 sub subcommand_symbolfile {
     my %opts = (
-        get_common_options("oipa"),
+	get_common_options("oipa"),
     );
     if (GetOptions(%opts)) {
-        check_mandatory_options("i", "when package (-p) is not specified") unless ($opt_package);
-        unless ($opt_in) {
-            $opt_in = "debian/$opt_package.symbols.in";
-            error("symbol template file '$opt_in' was not found for package '$opt_package'") unless (-r $opt_in);
-        }
-        return out_symfile($handlers->substitute($opt_in, $opt_arch));
+	check_mandatory_options("i", "when package (-p) is not specified") unless ($opt_package);
+	unless ($opt_in) {
+	    $opt_in = "debian/$opt_package.symbols.in";
+	    error("symbol template file '$opt_in' was not found for package '$opt_package'") unless (-r $opt_in);
+	}
+	# Redump to new location.
+	my $symfile = Debian::PkgKde::SymbolsHelper::SymbolFile->new(file => $opt_in, arch => $opt_arch);
+	return out_symfile($symfile);
     }
     return 1;
 }
 
 sub subcommand_patch {
+    error("NOT IMPLEMENTED YET");
+
     my $opt_diff;
     my %opts = (
-        get_common_options("oipav"),
-        "diff|d=s" => \$opt_diff,
+	get_common_options("oipav"),
+	"diff|d=s" => \$opt_diff,
     );
     if (GetOptions(%opts)) {
-        check_mandatory_options("i", "when package (-p) is not specified") unless ($opt_package);
-        unless ($opt_in) {
-            $opt_in = "debian/$opt_package.symbols.in";
-            error("symbol template file '$opt_in' was not found for package '$opt_package'") unless (-r $opt_in);
-        }
-        $opt_out = $opt_in if (!$opt_out && -w $opt_in);
+	check_mandatory_options("i", "when package (-p) is not specified") unless ($opt_package);
+	unless ($opt_in) {
+	    $opt_in = "debian/$opt_package.symbols.in";
+	    error("symbol template file '$opt_in' was not found for package '$opt_package'") unless (-r $opt_in);
+	}
+	$opt_out = $opt_in if (!$opt_out && -w $opt_in);
 
-        $opt_diff = "-" unless ($opt_diff);
-        # Open patch
-        open(DIFFINPUT, $opt_diff) or error("unable to open patch '$opt_diff' for reading");
-        my $ret = out_symfile($handlers->apply_patch_to_template(*DIFFINPUT, $opt_in, $opt_arch, $opt_version));
-        close(DIFFINPUT);
-        return $ret;
-    }
-    return 1;
-}
-
-sub subcommand_postgensymbols {
-    my ($infile, $outfile);
-    my %opts = (
-        get_common_options("oipav"),
-    );
-    if (GetOptions(%opts)) {
-        error("specify either package name or input template and output symbol files")
-            unless ($opt_package || $opt_in && $opt_out);
-
-        # Process options
-        if ($opt_in) {
-            $infile = $opt_in;
-        } else {
-            $infile = find_package_symbolfile_path($opt_package, $opt_arch);
-            return 0 unless ($infile);
-        }
-        if ($opt_out) {
-            $outfile = $opt_out;
-        } else {
-            $outfile = "debian/$opt_package/DEBIAN/symbols";
-            return 0 unless (-f $outfile);
-        }
-        error("output symbol file ($outfile) not found. Nothing to fixup") unless (-f $outfile);
-
-        my $insymfile = new Debian::PkgKde::SymHelper::SymbFile($infile);
-        my $outsymfile = new Debian::PkgKde::SymHelper::SymbFile($outfile);
-
-        # Sync versions in both symfiles to get proper @new and @lost
-        # results later
-        $outsymfile->resync_private_symbol_versions($insymfile, 1);
-        $outsymfile->handle_min_version($opt_version);
-
-        # Save
-        $outsymfile->save($outfile, with_deprecated=>2);
-
-        # Print some summary information since the one from dpkg-gensymbols is inaccurate
-        my @new = $outsymfile->get_new_symbols($insymfile);
-        if (@new) {
-            warning("NEW symbols in this version (" . scalar(@new) . "):");
-            print_symbol_list(\@new, "--   ");
-        }
-        my @lost = $outsymfile->get_lost_symbols($insymfile);
-        if (@lost) {
-            warning("LOST symbols in this version (" . scalar(@lost) . "):");
-            print_symbol_list(\@lost, "--   ");
-        }
-
-        return 0;
+	$opt_diff = "-" unless ($opt_diff);
+	# Open patch
+	open(DIFFINPUT, $opt_diff) or error("unable to open patch '$opt_diff' for reading");
+	my $ret = out_symfile($handlers->apply_patch_to_template(*DIFFINPUT, $opt_in, $opt_arch, $opt_version));
+	close(DIFFINPUT);
+	return $ret;
     }
     return 1;
 }
 
 sub subcommand_resort {
     my %opts = (
-        get_common_options("oi"),
+	get_common_options("oi"),
     );
     if (GetOptions(%opts)) {
-        check_mandatory_options("i");
+	check_mandatory_options("i");
 
-        if (-f $opt_in) {
-            my $symfile = new Debian::PkgKde::SymHelper::SymbFile($opt_in);
-            return out_symfile($symfile);
-        } else {
-            error("input symbol file ($opt_in) not found");
-            return 1;
-        }
+	if (-f $opt_in) {
+	    my $symfile = Debian::PkgKde::SymbolsHelper::SymbolFile->new(file => $opt_in, arch => $opt_arch);
+	    return out_symfile($symfile);
+	} else {
+	    error("input symbol file ($opt_in) not found");
+	    return 1;
+	}
     }
+    return 1;
+}
+
+sub subcommand_postgensymbols {
+    warning("postgensymbols has been deprecated. Please remove this call.");
     return 1;
 }
 
 # Boilerplate for the common subcommand handler
 sub subcommand_boilerplate {
     my %opts = (
-        get_common_options("oipav"),
+	get_common_options("oipav"),
     );
     if (GetOptions(%opts)) {
-#        check_mandatory_options("o");
-        return 0;
+#	 check_mandatory_options("o");
+	return 0;
     }
     return 1;
 }
 
 my %SUBCOMMANDS = (
-    "create"            => [ 1, \&subcommand_create, "create symbol file template" ],
-    "symbolfile"        => [ 2, \&subcommand_symbolfile, "generate symbol file from the template" ],
-    "patch"             => [ 3, \&subcommand_patch, "apply dpkg-gensymbols patch to the symbol file template" ],
-    "postgensymbols"    => [ 4, \&subcommand_postgensymbols, "post-process symbols file after dpkg-gensymbols" ],
-    "resort"            => [ 5, \&subcommand_resort, "resort symbol file" ],
+    "create"		=> [ 1, \&subcommand_create, "create symbol file template" ],
+    "symbolfile"	=> [ 2, \&subcommand_symbolfile, "generate symbol file from the template" ],
+    "patch"		=> [ 3, \&subcommand_patch, "apply dpkg-gensymbols patch to the symbol file template" ],
+    "resort"		=> [ 4, \&subcommand_resort, "resort symbol file" ],
+    "postgensymbols"	=> [ 5, \&subcommand_postgensymbols, "deprecated. Does nothing" ],
 );
 
-# This one is needed by most subcommands
-$handlers = new Debian::PkgKde::SymHelper::Handlers;
+report_options(info_fh => \*STDERR);
 
 my $curcmd = shift @ARGV;
 if (defined $curcmd && exists $SUBCOMMANDS{$curcmd}) {
@@ -339,12 +297,12 @@ if (defined $curcmd && exists $SUBCOMMANDS{$curcmd}) {
 } else {
     my $err;
     $err = ($curcmd) ? "unrecognized subcommand '$curcmd'." : "subcommand was not specified.";
-    info($err . " Valid subcommands are:\n");
+    errormsg($err . " Valid subcommands are:");
 
     for my $cmd (sort({ $SUBCOMMANDS{$a}->[0] <=> $SUBCOMMANDS{$b}->[0] }
-                 keys %SUBCOMMANDS)) {
-        # Display command and its short help
-        info("  $cmd - " . $SUBCOMMANDS{$cmd}->[2] . "\n");
+		 keys %SUBCOMMANDS)) {
+	# Display command and its short help
+	info("	$cmd - " . $SUBCOMMANDS{$cmd}->[2]);
     }
     exit(2);
 }

@@ -1,10 +1,10 @@
-package Debian::PkgKde::SymHelper::CompileTest;
+package Debian::PkgKde::SymbolsHelper::CompileTest;
 
 use strict;
 use warnings;
 use File::Temp qw(tempdir);
 use File::Spec;
-use Debian::PkgKde::SymHelper qw(error);
+use Dpkg::ErrorHandling;
 
 sub new {
     my ($cls, $compiler, $lib) = @_;
