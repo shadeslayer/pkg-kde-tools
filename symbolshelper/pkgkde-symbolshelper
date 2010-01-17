@@ -202,23 +202,6 @@ sub subcommand_create {
     return 1;
 }
 
-sub subcommand_symbolfile {
-    my %opts = (
-	get_common_options("oipa"),
-    );
-    if (GetOptions(%opts)) {
-	check_mandatory_options("i", "when package (-p) is not specified") unless ($opt_package);
-	unless ($opt_in) {
-	    $opt_in = "debian/$opt_package.symbols.in";
-	    error("symbol template file '$opt_in' was not found for package '$opt_package'") unless (-r $opt_in);
-	}
-	# Redump to new location.
-	my $symfile = Debian::PkgKde::SymbolsHelper::SymbolFile->new(file => $opt_in, arch => $opt_arch);
-	return out_symfile($symfile);
-    }
-    return 1;
-}
-
 sub subcommand_patch {
     error("NOT IMPLEMENTED YET");
 
@@ -263,6 +246,25 @@ sub subcommand_resort {
     return 1;
 }
 
+sub subcommand_symbolfile {
+    warning("'symbolfile' has been deprecated.");
+    info("you can add substitutions to standard symbol files and remove this call.");
+    my %opts = (
+	get_common_options("oipa"),
+    );
+    if (GetOptions(%opts)) {
+	check_mandatory_options("i", "when package (-p) is not specified") unless ($opt_package);
+	unless ($opt_in) {
+	    $opt_in = "debian/$opt_package.symbols.in";
+	    error("symbol template file '$opt_in' was not found for package '$opt_package'") unless (-r $opt_in);
+	}
+	# Redump to new location.
+	my $symfile = Debian::PkgKde::SymbolsHelper::SymbolFile->new(file => $opt_in, arch => $opt_arch);
+	return out_symfile($symfile);
+    }
+    return 1;
+}
+
 sub subcommand_postgensymbols {
     warning("postgensymbols has been deprecated. Please remove this call.");
     return 1;
@@ -282,9 +284,9 @@ sub subcommand_boilerplate {
 
 my %SUBCOMMANDS = (
     "create"		=> [ 1, \&subcommand_create, "create symbol file template" ],
-    "symbolfile"	=> [ 2, \&subcommand_symbolfile, "generate symbol file from the template" ],
-    "patch"		=> [ 3, \&subcommand_patch, "apply dpkg-gensymbols patch to the symbol file template" ],
-    "resort"		=> [ 4, \&subcommand_resort, "resort symbol file" ],
+    "patch"		=> [ 2, \&subcommand_patch, "apply dpkg-gensymbols patch to the symbol file template" ],
+    "resort"		=> [ 3, \&subcommand_resort, "resort symbol file" ],
+    "symbolfile"	=> [ 4, \&subcommand_symbolfile, "deprecated. Redumps debian/package.symbols.in." ],
     "postgensymbols"	=> [ 5, \&subcommand_postgensymbols, "deprecated. Does nothing" ],
 );
 
