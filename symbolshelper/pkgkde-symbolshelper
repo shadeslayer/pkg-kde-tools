@@ -286,8 +286,9 @@ sub subcommand_resort {
 }
 
 sub subcommand_symbolfile {
-    warning("'symbolfile' has been deprecated.");
-    info("you can add substitutions to standard symbol files and remove this call.");
+    warning("'symbolfile' and debian/*.symbols.in files have been deprecated.");
+    info("You should add substitutions to standard symbol files and " .
+         "use pkgkde-gensymbols as dpkg-gensymbols wrapper.");
     my %opts = (
 	get_common_options("oipa"),
     );
@@ -299,6 +300,16 @@ sub subcommand_symbolfile {
 	}
 	# Redump to new location.
 	my $symfile = Debian::PkgKde::SymbolsHelper::SymbolFile->new(file => $opt_in, arch => $opt_arch);
+	foreach my $sym ($symfile->get_symbols()) {
+	    if ($sym->has_tag("subst")) {
+		my $val = $sym->get_tag_value("subst");
+		if (defined $val && $val eq "compat") {
+		    # Reset symbol template to current name value
+		    $sym->set_symbolname();
+		    $sym->delete_tag("subst");
+		}
+	    }
+	}
 	return out_symfile($symfile);
     }
     return 1;
@@ -306,7 +317,7 @@ sub subcommand_symbolfile {
 
 sub subcommand_postgensymbols {
     warning("postgensymbols has been deprecated. Please remove this call.");
-    return 1;
+    return 0;
 }
 
 # Boilerplate for the common subcommand handler
@@ -325,7 +336,7 @@ my %SUBCOMMANDS = (
     "create"		=> [ 1, \&subcommand_create, "create symbol file template" ],
     "patch"		=> [ 2, \&subcommand_patch, "apply dpkg-gensymbols patch to the symbol file template" ],
     "resort"		=> [ 3, \&subcommand_resort, "resort symbol file" ],
-    "symbolfile"	=> [ 4, \&subcommand_symbolfile, "deprecated. Redumps debian/package.symbols.in." ],
+    "symbolfile"	=> [ 4, \&subcommand_symbolfile, "deprecated by pkgkde-gensymbols wrapper" ],
     "postgensymbols"	=> [ 5, \&subcommand_postgensymbols, "deprecated. Does nothing" ],
 );
 

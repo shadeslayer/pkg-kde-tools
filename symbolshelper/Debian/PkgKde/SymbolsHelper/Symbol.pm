@@ -62,7 +62,7 @@ sub initialize {
 	    $self->{symbol_templ} = $self->{symbol};
 	}
 	if ($self->expand_substitutions(%opts) > 0) {
-	    $self->add_tag('subst');
+	    $self->add_tag('subst', 'compat');
 	}
     }
 
