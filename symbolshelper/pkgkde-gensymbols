@@ -20,21 +20,31 @@ use warnings;
 
 use constant DATADIR => '/usr/share/pkg-kde-tools';
 
-my $dir;
-if ($0 =~ m@^(.+)/[^/]+$@) {
-    $dir = $1;
-    unless ($dir && -f "$dir/dpkg-gensymbols.pl" &&
-        -f "$dir/Dpkg/Shlibs/SymbolFile.pm") {
-        $dir = undef;
+sub find_dpkg_gensymbols {
+    my $dir;
+    if ($0 =~ m@^(.+)/[^/]+$@) {
+	$dir = $1;
+	unless ($dir && -f "$dir/dpkg-gensymbols.pl" &&
+	    -f "$dir/Dpkg/Shlibs/SymbolFile.pm") {
+	    $dir = undef;
+	}
     }
+
+    unless ($dir) {
+	$dir = DATADIR;
+    }
+
+    if (-f "$dir/dpkg-gensymbols.pl") {
+	return ("$dir/dpkg-gensymbols.pl",$dir);
+    }
+    return (undef, undef);
 }
 
-unless ($dir) {
-    $dir = DATADIR;
-}
+# Finally, run stock dpkg-gensymbols
+my ($exe, $dir) = find_dpkg_gensymbols();
 
-unshift @INC, $dir;
-if (-f "$dir/dpkg-gensymbols.pl") {
+if (defined $exe) {
+    unshift @INC, $dir;
     do "$dir/dpkg-gensymbols.pl";
 } else {
     print STDERR "pkgkde-gensymbols: unable to determine execution context.", "\n";
