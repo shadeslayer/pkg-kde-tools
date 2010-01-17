@@ -52,6 +52,20 @@ sub initialize {
 	}
     }
 
+    # NOTE: backwards compatibility with pkgkde-symbolshelper (<< 0.6)
+    # symbol files.
+    if ($self->get_symbolname() =~ /\{.+\}/) {
+	$self->{symbol} =~ s/\{vt:/{vt=/g;
+	if (defined $self->{symbol_templ}) {
+	    $self->{symbol_templ} =~ s/\{vt:/{vt=/g;
+	} else {
+	    $self->{symbol_templ} = $self->{symbol};
+	}
+	if ($self->expand_substitutions(%opts) > 0) {
+	    $self->add_tag('subst');
+	}
+    }
+
     return $self->SUPER::initialize(%opts);
 }
 
