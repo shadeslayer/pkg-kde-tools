@@ -6,7 +6,7 @@ pkg-kde-tools (0.6.0~pre6) UNRELEASED; urgency=low
     (by adding /usr/share/pkg-kde-tools/bin to $PATH).
   * Use my @debian.org address in the Uploaders field.
   * Make cdbs/symbolshelper.mk add /usr/share/pkg-kde-tools/bin to $PATH.
-  * Add pkgkde-symbolshelper addon.
+  * Add pkgkde_symbolshelper dh addon.
   * Port pkgkde-symbolshelper to the latest dpkg-dev symbols API.
     Most subcomands as of 0.4.0 are supported, some are no longer needed.
   * Add support for substitutions directly to pkgkde-gensymbols
