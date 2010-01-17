@@ -1,3 +1,18 @@
+# Copyright (C) 2008-2010 Modestas Vainius <modax@debian.org>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst;
 
 use strict;
@@ -13,12 +28,12 @@ sub neutralize {
     my ($self, $rawname) = @_;
     my $ret = 0;
     my $str = "$rawname";
-    
+
     return undef unless exists $self->{type_re};
 
     while ($str =~ /$self->{type_re}/g) {
-        $rawname->substr(pos($str)-1, 1, $self->{main_type});
-        $ret = 1;
+	$rawname->substr(pos($str)-1, 1, $self->{main_type});
+	$ret = 1;
     }
     return ($ret) ? $rawname : undef;
 }
@@ -32,11 +47,11 @@ sub detect {
 
     # Find architecture with other type
     foreach my $a2 (keys %$arch_rawnames) {
-        $t2 = $self->expand($a2);
-        if ($t2 ne $t1) {
-            $s2 = $arch_rawnames->{$a2};
-            last;
-        }
+	$t2 = $self->expand($a2);
+	if ($t2 ne $t1) {
+	    $s2 = $arch_rawnames->{$a2};
+	    last;
+	}
     }
 
     return undef unless defined $s2;
@@ -46,10 +61,10 @@ sub detect {
     my @s2 = split(//, $s2);
     my $ret = 0;
     for (my $i = 0; $i <= $#s1; $i++) {
-        if ($s1[$i] eq $t1 && $s2[$i] eq $t2) {
-            $rawname->substr($i, 1, $self->{main_type}, $self->{substvar});
-            $ret = 1;
-        }
+	if ($s1[$i] eq $t1 && $s2[$i] eq $t2) {
+	    $rawname->substr($i, 1, $self->{main_type}, $self->{substvar});
+	    $ret = 1;
+	}
     }
     return ($ret) ? $rawname : undef;
 }

@@ -1,3 +1,18 @@
+# Copyright (C) 2008-2010 Modestas Vainius <modax@debian.org>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+
 package Debian::PkgKde::SymbolsHelper::Substs::VirtTable;
 
 use strict;
@@ -39,25 +54,25 @@ sub find_ztc_offset {
 
     my @matches = ($rawname =~ m/(\d+)_/gc);
     if (!@matches) {
-        error("Invalid construction table symbol: $rawname");
+	error("Invalid construction table symbol: $rawname");
     } elsif (@matches == 1) {
-        # Found it
-        return (pos($rawname) - length($1) - 1, $1);
+	# Found it
+	return (pos($rawname) - length($1) - 1, $1);
     } else {
-        # The idea behind the algorithm is that c++filt output does not
-        # change when an offset is changed.
-        $rawname =~ s/@[^@]+$//;
-        my $demangled = cppfilt_demangle($rawname, 'auto');
-        pos($rawname) = undef;
-        while ($rawname =~ m/(\d+)_/g) {
-            my $offset = $1;
-            my $pos = pos($rawname) - length($offset) - 1;
-            my $newsymbol = $rawname; 
-            substr($newsymbol, $pos, length($offset)) = $offset + 1234;
-            my $newdemangled = cppfilt_demangle($newsymbol, 'auto');
-            return ($pos, $offset) if (defined $newdemangled && $newdemangled eq $demangled);
-        }
-        error("Unable to determine construction table offset position in symbol '$rawname'");
+	# The idea behind the algorithm is that c++filt output does not
+	# change when an offset is changed.
+	$rawname =~ s/@[^@]+$//;
+	my $demangled = cppfilt_demangle($rawname, 'auto');
+	pos($rawname) = undef;
+	while ($rawname =~ m/(\d+)_/g) {
+	    my $offset = $1;
+	    my $pos = pos($rawname) - length($offset) - 1;
+	    my $newsymbol = $rawname;
+	    substr($newsymbol, $pos, length($offset)) = $offset + 1234;
+	    my $newdemangled = cppfilt_demangle($newsymbol, 'auto');
+	    return ($pos, $offset) if (defined $newdemangled && $newdemangled eq $demangled);
+	}
+	error("Unable to determine construction table offset position in symbol '$rawname'");
     }
 }
 
@@ -67,21 +82,21 @@ sub neutralize {
 
     # construction vtable: e.g. _ZTCN6KParts15DockMainWindow3E56_NS_8PartBaseE
     if ($rawname =~ /^_ZTC/) {
-        my ($pos, $num) = $self->find_ztc_offset($rawname);
-        $ret = $self->subvt($rawname, $num, $pos) if ($num > 0);
+	my ($pos, $num) = $self->find_ztc_offset($rawname);
+	$ret = $self->subvt($rawname, $num, $pos) if ($num > 0);
     } elsif ($rawname =~ /^_ZThn(\d+)_/) {
-        # non-virtual base override: e.g. _ZThn8_N6KParts13ReadWritePartD0Ev
-        my $num = $1;
-        $ret = $self->subvt($rawname, $num, 5) if ($num > 0);
+	# non-virtual base override: e.g. _ZThn8_N6KParts13ReadWritePartD0Ev
+	my $num = $1;
+	$ret = $self->subvt($rawname, $num, 5) if ($num > 0);
     } elsif ($rawname =~ /^_ZTvn?(\d+)_(n?\d+)/) {
-        # virtual base override, with vcall offset, e.g. _ZTv0_n12_N6KParts6PluginD0Ev
-        my $voffset = $1;
-        my $num = $2;
-        my $numoffset = 4 + length("$voffset") + 1 + (($num =~ /^n/) ? 1 : 0);
-        $num =~ s/^n//;
+	# virtual base override, with vcall offset, e.g. _ZTv0_n12_N6KParts6PluginD0Ev
+	my $voffset = $1;
+	my $num = $2;
+	my $numoffset = 4 + length("$voffset") + 1 + (($num =~ /^n/) ? 1 : 0);
+	$num =~ s/^n//;
 
-        $ret = $self->subvt($rawname, $voffset, 4) if ($voffset > 0);
-        $ret = $self->subvt($rawname, $num, $numoffset) || $ret if ($num > 0);
+	$ret = $self->subvt($rawname, $voffset, 4) if ($voffset > 0);
+	$ret = $self->subvt($rawname, $num, $numoffset) || $ret if ($num > 0);
     }
     return ($ret) ? $rawname : undef;
 }
