@@ -107,6 +107,13 @@ sub detect_cpp_templinst() {
     return 0;
 }
 
+sub mark_cpp_templinst_as_optional {
+    my $self = shift;
+    if (!$self->is_optional() && $self->detect_cpp_templinst()) {
+	$self->add_tag("optional", "templinst");
+    }
+}
+
 # Upgrades symbol template to c++ alias converting
 # substitutions as well. Returns upgraded template.
 sub upgrade_templ_to_cpp_alias {
@@ -254,6 +261,13 @@ sub upgrade_templ_to_cpp_alias {
     return $result;
 }
 
+sub handle_virtual_table_symbol {
+    my $self = shift;
+    if ($self->get_symboltempl() =~ /^_ZT[Chv]/) {
+	$self->upgrade_templ_to_cpp_alias();
+    }
+}
+
 sub set_min_version {
     my ($self, $version, %opts) = @_;
 
@@ -271,6 +285,18 @@ sub normalize_min_version {
 		$minver =~ s/([^~])$/$1~/;
 	    }
 	    $self->{minver} = $minver;
+	}
+    }
+}
+
+sub handle_min_version {
+    my ($self, $version, %opts) = @_;
+
+    if (defined $version) {
+	if ($version) {
+	    return $self->set_min_version($version, %opts);
+	} else {
+	    return $self->normalize_min_version(%opts);
 	}
     }
 }

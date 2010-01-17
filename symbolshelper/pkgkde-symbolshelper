@@ -56,8 +56,7 @@ use Dpkg::ErrorHandling;
 use Dpkg::Arch qw(get_host_arch get_valid_arches);
 use Debian::PkgKde::SymbolsHelper::SymbolFile;
 use Debian::PkgKde::SymbolsHelper::SymbolFileCollection;
-
-my $handlers;
+use Debian::PkgKde::SymbolsHelper::Patch;
 
 ######## Option processing ##################
 my $opt_out;
@@ -141,11 +140,11 @@ sub out_symfile {
     return 0;
 }
 
-sub print_symbol_list($$) {
-    my ($list, $prefix) = @_;
-    for my $item (@$list) {
-	info(sprintf("%s%s %s\n", $prefix, $item->{soname}, $item->get_symbolname()));
-    }
+sub tweak_symbol {
+    my $sym = shift;
+
+    $sym->handle_min_version($opt_version);
+    $sym->handle_virtual_table_symbol();
 }
 
 ############### Subcommands ####################
@@ -191,8 +190,9 @@ sub subcommand_create {
 		$template = $symfiles->create_template();
 	    }
 
-	    $template->handle_min_version($opt_version);
-	    $template->handle_virtual_table_symbols();
+	    foreach my $sym ($template->get_symbols()) {
+		tweak_symbol($sym);
+	    }
 	    return out_symfile($template);
 	} else {
 	    error("no properly named symbol files found in $opt_dir");
@@ -203,8 +203,6 @@ sub subcommand_create {
 }
 
 sub subcommand_patch {
-    error("NOT IMPLEMENTED YET");
-
     my $opt_diff;
     my %opts = (
 	get_common_options("oipav"),
@@ -213,17 +211,38 @@ sub subcommand_patch {
     if (GetOptions(%opts)) {
 	check_mandatory_options("i", "when package (-p) is not specified") unless ($opt_package);
 	unless ($opt_in) {
-	    $opt_in = "debian/$opt_package.symbols.in";
-	    error("symbol template file '$opt_in' was not found for package '$opt_package'") unless (-r $opt_in);
+	    $opt_in = find_package_symbolfile_path($opt_package, $opt_arch);
+	    error("symbol template file was not found for package '$opt_package'")
+		unless (defined $opt_in && -r $opt_in);
 	}
 	$opt_out = $opt_in if (!$opt_out && -w $opt_in);
-
 	$opt_diff = "-" unless ($opt_diff);
+
 	# Open patch
-	open(DIFFINPUT, $opt_diff) or error("unable to open patch '$opt_diff' for reading");
-	my $ret = out_symfile($handlers->apply_patch_to_template(*DIFFINPUT, $opt_in, $opt_arch, $opt_version));
+	open(DIFFINPUT, $opt_diff)
+	    or error("unable to open patch '$opt_diff' for reading");
+
+	my $orig_symfile = Debian::PkgKde::SymbolsHelper::SymbolFile->new(
+	    file => $opt_in, arch => $opt_arch);
+	my $patched_symfile = patch_symbolfile($opt_in, *DIFFINPUT);
+
+	# Read remaning $patchfh stream
+	if ($opt_diff eq "-") {
+	    while (<DIFFINPUT>) {}
+	}
 	close(DIFFINPUT);
-	return $ret;
+
+	error("supplied patch does not apply to the symbols file '$opt_in'")
+	    unless defined $patched_symfile;
+
+	foreach my $info ($patched_symfile->get_new_symbols($orig_symfile)) {
+	    # Retrieve real symbol instance
+	    my $sym = $patched_symfile->{objects}{$info->{soname}}{syms}{$info->get_symbolname()};
+	    tweak_symbol($sym);
+
+	    info("NEW symbol: " . $sym->get_symbolspec(1));
+	}
+	return out_symfile($patched_symfile);
     }
     return 1;
 }
