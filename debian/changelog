@@ -13,6 +13,8 @@ pkg-kde-tools (0.6.0~pre6) UNRELEASED; urgency=low
     (dpkg-gensymbols wrapper). This renders `pkgkde-symbolshelper symbolfile`
     obsolete.
   * Switch to 3.0 (native) format: ignores VCS directories by default.
+  * Update my address in the code copyright notices.
+  * Update debian/copyright.
 
  -- Modestas Vainius <modestas@vainius.eu>  Sun, 06 Dec 2009 22:06:01 +0200
 
