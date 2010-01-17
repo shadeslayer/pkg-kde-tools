@@ -18,6 +18,9 @@
 use strict;
 use warnings;
 
+use Dpkg::Shlibs::SymbolFile;
+use Debian::PkgKde::SymbolsHelper::Symbol;
+
 use constant DATADIR => '/usr/share/pkg-kde-tools';
 
 sub find_dpkg_gensymbols {
@@ -39,6 +42,20 @@ sub find_dpkg_gensymbols {
     }
     return (undef, undef);
 }
+
+# Replace Dpkg::Shlibs::SymbolFile::load with a custom version
+# which uses Debian::PkgKde::SymbolsHelper::Symbol rather than
+# Dpkg::Shlibs::Symbol
+my $old_symbolfile_load = *Dpkg::Shlibs::SymbolFile::load;
+sub new_symbolfile_load {
+    # Use Debian::PkgKde::SymbolsHelper::Symbol as base symbol
+    my ($self, $file, $seen, $obj_ref, $base_symbol) = @_;
+    unless (defined $base_symbol) {
+	$base_symbol = 'Debian::PkgKde::SymbolsHelper::Symbol';
+    }
+    return &$old_symbolfile_load($self, $file, $seen, $obj_ref, $base_symbol);
+}
+*Dpkg::Shlibs::SymbolFile::load = *new_symbolfile_load;
 
 # Finally, run stock dpkg-gensymbols
 my ($exe, $dir) = find_dpkg_gensymbols();
