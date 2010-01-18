@@ -28,10 +28,10 @@ foreach my $pkg (@{$dh{DOPACKAGES}}) {
     my $infile = "debian/$pkg.symbols.in";
     my $outfile = "debian/$pkg.symbols.$arch";
 
+    next unless -f $infile;
+
     if ($0 =~ /_symbolfile$/) {
-        if (-f $infile) {
-            doit('pkgkde-symbolshelper', 'symbolfile', '-p', $pkg, '-o', $outfile);
-        }
+        doit('pkgkde-symbolshelper', 'symbolfile', '-p', $pkg, '-o', $outfile);
     } elsif ($0 =~ /_clean$/) {
         inhibit_log();
         if (-f $outfile) {
