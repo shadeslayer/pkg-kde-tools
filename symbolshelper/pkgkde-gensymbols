@@ -36,6 +36,17 @@ sub find_dpkg_gensymbols {
     return (undef, undef);
 }
 
+my $old_symbolfile_load;
+
+sub new_symbolfile_load {
+    # Use Debian::PkgKde::SymbolsHelper::Symbol as base symbol
+    my ($self, $file, $seen, $obj_ref, $base_symbol) = @_;
+    unless (defined $base_symbol) {
+	$base_symbol = 'Debian::PkgKde::SymbolsHelper::Symbol';
+    }
+    return &$old_symbolfile_load($self, $file, $seen, $obj_ref, $base_symbol);
+}
+
 # Finally, run stock dpkg-gensymbols
 my ($exe, $dir) = find_dpkg_gensymbols();
 
@@ -50,15 +61,7 @@ if (defined $exe) {
     # Replace Dpkg::Shlibs::SymbolFile::load with a custom version
     # which uses Debian::PkgKde::SymbolsHelper::Symbol rather than
     # Dpkg::Shlibs::Symbol
-    my $old_symbolfile_load = *Dpkg::Shlibs::SymbolFile::load;
-    sub new_symbolfile_load {
-	# Use Debian::PkgKde::SymbolsHelper::Symbol as base symbol
-	my ($self, $file, $seen, $obj_ref, $base_symbol) = @_;
-	unless (defined $base_symbol) {
-	    $base_symbol = 'Debian::PkgKde::SymbolsHelper::Symbol';
-	}
-	return &$old_symbolfile_load($self, $file, $seen, $obj_ref, $base_symbol);
-    }
+    $old_symbolfile_load = *Dpkg::Shlibs::SymbolFile::load;
     *Dpkg::Shlibs::SymbolFile::load = *new_symbolfile_load;
 
     do "$exe";
