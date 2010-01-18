@@ -24,13 +24,9 @@ sub find_dpkg_gensymbols {
     my $dir;
     if ($0 =~ m@^(.+)/[^/]+$@) {
 	$dir = $1;
-	unless ($dir && -f "$dir/dpkg-gensymbols.pl" &&
-	    -f "$dir/Dpkg/Shlibs/SymbolFile.pm") {
-	    $dir = undef;
-	}
     }
-
-    unless ($dir) {
+    unless ($dir && -f "$dir/dpkg-gensymbols.pl" &&
+	-f "$dir/Dpkg/Shlibs/SymbolFile.pm") {
 	$dir = DATADIR;
     }
 
@@ -44,7 +40,9 @@ sub find_dpkg_gensymbols {
 my ($exe, $dir) = find_dpkg_gensymbols();
 
 if (defined $exe) {
-    unshift @INC, $dir;
+    if (defined $dir && $dir eq DATADIR) {
+	unshift @INC, DATADIR;
+    }
 
     eval "use Dpkg::Shlibs::SymbolFile";
     eval "use Debian::PkgKde::SymbolsHelper::Symbol";

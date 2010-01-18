@@ -49,34 +49,26 @@ Each subcommand accepts a few common options and a few specific options.
 
 use strict;
 use warnings;
-use File::Spec;
-use Getopt::Long;
-
-use constant DATADIR => '/usr/share/pkg-kde-tools';
 
 # Setup environment
-my $datadir;
-if ($0 =~ m@^(.+)/[^/]+$@) {
-    $datadir = $1;
-    unless ($datadir && -f "$datadir/Dpkg/Shlibs/SymbolFile.pm") {
-	$datadir = undef;
+use constant DATADIR => '/usr/share/pkg-kde-tools';
+BEGIN {
+    my $datadir;
+    if ($0 =~ m@^(.+)/[^/]+$@) {
+	$datadir = $1;
+    }
+    if (!defined $datadir || ! -f "$datadir/Dpkg/Shlibs/SymbolFile.pm") {
+	unshift @INC, DATADIR;
     }
 }
-unless ($datadir) {
-    $datadir = DATADIR;
-}
-unshift @INC, $datadir;
 
-sub _use {
-    my $module = shift;
-    eval "use $module";
-}
-
+use File::Spec;
+use Getopt::Long;
 use Dpkg::ErrorHandling;
 use Dpkg::Arch qw(get_host_arch get_valid_arches);
-_use "Debian::PkgKde::SymbolsHelper::SymbolFile";
-_use "Debian::PkgKde::SymbolsHelper::SymbolFileCollection";
-_use "Debian::PkgKde::SymbolsHelper::Patch";
+use Debian::PkgKde::SymbolsHelper::SymbolFile;
+use Debian::PkgKde::SymbolsHelper::SymbolFileCollection;
+use Debian::PkgKde::SymbolsHelper::Patch;
 
 ######## Option processing ##################
 my $opt_out;
