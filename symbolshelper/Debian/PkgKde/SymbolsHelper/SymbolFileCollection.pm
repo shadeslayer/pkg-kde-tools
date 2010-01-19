@@ -162,14 +162,16 @@ sub create_template {
 		foreach my $name (sort keys %distinct_names) {
 		    info("  $name on: " . join(" ", sort(@{$distinct_names{$name}})));
 		}
-		my $str = "";
-		foreach my $arch (sort(keys %arch_ok)) {
-		    $str .= "$arch " if (defined $arch_ok{$arch} && $arch_ok{$arch} != $arch_ok_i);
-		}
-		info("	- missing on: $str\n");
+		my @miss_arches = grep { $arch_ok{$_} != $arch_ok_i } sort(keys %arch_ok);
+		info("	- missing on: " . join(" ", @miss_arches) . "\n");
 
 		# Schedule as arch-specific symbol
-		$arch_specific = join(" ", sort(keys %{$group->{arches}}));
+		if (@miss_arches == 1) {
+		    # If the symbol is only missing on one arch, negate it
+		    $arch_specific = join(" ", map { "!$_" } @miss_arches);
+		} else {
+		    $arch_specific = join(" ", sort(keys %{$group->{arches}}));
+		}
 		# Determine symbol arch, prefer main_arch though
 		if (!exists $group->{arches}{$main_arch}) {
 		    $sym_arch = (keys %{$group->{arches}})[0];
@@ -177,10 +179,10 @@ sub create_template {
 	    }
 
 	    # Post process symbols in the group
-	    my $main_symbol = $group->{arches}{$sym_arch}->{symbol};
+	    my $sym = $group->{arches}{$sym_arch}->{symbol};
 	    foreach my $subst (@TYPE_SUBSTS) {
-		if ($subst->detect($main_symbol->get_h_name(), $main_arch, $group->{arches})) {
-		    $main_symbol->add_tag("subst");
+		if ($subst->detect($sym->get_h_name(), $sym_arch, $group->{arches})) {
+		    $sym->add_tag("subst");
 		    # Make archsymbols arch independent with regard to his handler
 		    foreach my $arch (keys %{$group->{arches}}) {
 			$subst->neutralize($group->{arches}{$arch});
@@ -188,9 +190,9 @@ sub create_template {
 		}
 	    }
 	    if ($arch_specific) {
-		$main_symbol->add_tag("arch", $arch_specific);
+		$sym->add_tag("arch", $arch_specific);
 		if ($sym_arch ne $main_arch) {
-		    $main_symfile->add_symbol($soname, $main_symbol);
+		    $main_symfile->add_symbol($soname, $sym);
 		}
 	    }
 	}

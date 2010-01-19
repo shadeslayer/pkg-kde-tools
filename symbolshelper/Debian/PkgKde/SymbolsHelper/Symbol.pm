@@ -137,9 +137,10 @@ sub detect_cpp_templinst() {
 }
 
 sub mark_cpp_templinst_as_optional {
-    my $self = shift;
+    my ($self, @tag) = @_;
+    @tag = ("optional", "templinst") unless @tag;
     if (!$self->is_optional() && $self->detect_cpp_templinst()) {
-	$self->add_tag("optional", "templinst");
+	$self->add_tag(@tag);
     }
 }
 

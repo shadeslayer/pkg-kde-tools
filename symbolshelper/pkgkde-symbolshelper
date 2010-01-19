@@ -141,13 +141,13 @@ sub find_package_symbolfile_path {
 }
 
 sub out_symfile {
-    my $symfile = shift;
+    my ($symfile, %opts) = @_;
     return 1 unless $symfile;
 
     if ($opt_out) {
-	$symfile->save($opt_out, template_mode => 1);
+	$symfile->save($opt_out, template_mode => 1, %opts);
     } else {
-	$symfile->dump(*STDOUT, template_mode => 1);
+	$symfile->dump(*STDOUT, template_mode => 1, %opts);
     }
     return 0;
 }
@@ -190,8 +190,12 @@ sub subcommand_create {
 
 	    $symfiles->load_symbol_files(\%files);
 	    # Detect templinst symbols before substitutions
+	    # Do not mark as optional yet to avoid inteferring with template
+	    # creation.
 	    foreach my $symfile ($symfiles->get_symfiles()) {
-		$symfile->mark_cpp_templinst_as_optional();
+		foreach my $sym ($symfile->get_symbols()) {
+		    $sym->mark_cpp_templinst_as_optional("to-be-templinst");
+		}
 	    }
 
 	    # Create a symbols template
@@ -203,6 +207,11 @@ sub subcommand_create {
 	    }
 
 	    foreach my $sym ($template->get_symbols()) {
+		# Set standard optional=templinst tag where scheduled
+		if ($sym->has_tag("to-be-templinst")) {
+		    $sym->delete_tag("to-be-templinst");
+		    $sym->add_tag("optional", "templinst") unless $sym->is_optional();
+		}
 		tweak_symbol($sym);
 	    }
 	    return out_symfile($template);
@@ -250,6 +259,7 @@ sub subcommand_patch {
 	foreach my $info ($patched_symfile->get_new_symbols($orig_symfile)) {
 	    # Retrieve real symbol instance
 	    my $sym = $patched_symfile->{objects}{$info->{soname}}{syms}{$info->get_symbolname()};
+	    $sym->mark_cpp_templinst_as_optional();
 	    tweak_symbol($sym);
 
 	    info("NEW symbol: " . $sym->get_symbolspec(1));
@@ -260,15 +270,20 @@ sub subcommand_patch {
 }
 
 sub subcommand_resort {
+    my $opt_template = 1;
     my %opts = (
-	get_common_options("oi"),
+	get_common_options("oia"),
+	"template!" => \$opt_template,
     );
     if (GetOptions(%opts)) {
 	check_mandatory_options("i");
 
 	if (-f $opt_in) {
 	    my $symfile = Debian::PkgKde::SymbolsHelper::SymbolFile->new(file => $opt_in, arch => $opt_arch);
-	    return out_symfile($symfile);
+	    my %o = (
+		template_mode => $opt_template
+	    );
+	    return out_symfile($symfile, %o);
 	} else {
 	    error("input symbol file ($opt_in) not found");
 	    return 1;
