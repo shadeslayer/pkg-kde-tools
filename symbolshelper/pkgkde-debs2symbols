@@ -1,0 +1,111 @@
+#!/bin/sh
+
+set -e
+
+info() {
+    echo "---" "$@" >&2
+}
+
+info2() {
+    echo "    ---" "$@" >&2
+}
+
+error() {
+    echo "$PROGNAME: error:" "$@" >&2
+    exit 1
+}
+
+warning() {
+    echo "$PROGNAME: warning:" "$@" >&2
+}
+
+usage() {
+    echo "$PROGNAME: usage:" "$0" package version "[ download_url ]" >&2
+}
+
+
+download() {
+    # Download debs
+    info "Downloading packages from $URL ..."
+    wget -e robots=off --timestamping --no-directories --directory-prefix="$debdir" \
+         --recursive --level=1 --no-parent --accept "$DEB_WILDCARD" "$URL"
+}
+
+process_deb() {
+    local deb tmpdir outdir
+    local arch package version outfile
+
+    deb="$1"
+    tmpdir="$2"
+    outdir="$3"
+
+    info2 "Extracting `basename $deb` ..."
+    dpkg-deb -e "$deb" "$tmpdir/DEBIAN"
+    dpkg-deb -x "$deb" "$tmpdir"
+
+    # Collection information about package
+    package=$(sed -n '/^Package:/ {s/[^:]\+:[[:space:]]*\(.\+\)/\1/; p; q}' "$tmpdir/DEBIAN/control")
+    version=$(sed -n '/^Version:/ {s/[^:]\+:[[:space:]]*\(.\+\)/\1/; p; q}' "$tmpdir/DEBIAN/control")
+    arch=$(sed -n '/^Architecture:/ {s/[^:]\+:[[:space:]]*\(.\+\)/\1/; p; q}' "$tmpdir/DEBIAN/control")
+
+    if [ "$arch" = "all" ]; then
+        error "it does not make sense to process arch:all package ($deb)"
+    fi
+
+    outfile="${package}_${arch}"
+    info2 "[$arch] Dumping symbol file as $outfile ..."
+    dpkg-gensymbols "-p$package" "-P$tmpdir" "-v$version" -c0 -I/dev/null "-O$outdir/$outfile"
+}
+
+# Process options
+PACKAGE="$1"
+VERSION="$2"
+URL="$3"
+
+DEB_WILDCARD="${PACKAGE}_${VERSION}_*.deb"
+PROGNAME=`basename "$0"`
+
+if [ -z "$PACKAGE" ] || [ -z "$VERSION" ]; then
+    usage
+    exit 2
+fi
+
+# Create directories to store downloaded debs and symbol files
+debdir="${PACKAGE}_${VERSION}_debs"
+symboldir="${PACKAGE}_${VERSION}_symbols"
+if [ ! -d "$symboldir" ]; then
+    mkdir "$symboldir"
+fi
+
+info "Selected directory for packages (*.deb):" "$debdir/"
+if [ -n "$URL" ]; then
+    if [ "${URL#http://}" != "$URL" ] || [ "${URL#ftp://}" != "$URL" ]; then
+        if [ ! -d "$debdir" ]; then
+            mkdir "$debdir"
+        fi
+        download
+    else
+        error "only http:// and ftp:// download URLs are supported"
+    fi
+fi
+
+# Extract and process debs
+c=0
+if [ -d "$debdir" ]; then
+    tmpdir=`mktemp -d --tmpdir=. tmpdeb.XXXXXX`
+    rmdir "$tmpdir"
+    info "Selected temporary directory:" "$tmpdir/"
+    info "Selected directory for symbol files:" "$symboldir/"
+    for deb in `ls -1 "$debdir"/$DEB_WILDCARD 2>/dev/null | sort`; do
+        mkdir "$tmpdir"
+        process_deb "$deb" "$tmpdir" "$symboldir"
+        rm -rf "$tmpdir"
+        c=$(($c+1))
+    done
+fi
+
+if [ $c -eq 0 ]; then
+    error "no '$DEB_WILDCARD' binary packages found in $debdir/"
+fi
+
+info "$c arch specific symbol files dumped successfully to $symboldir/"

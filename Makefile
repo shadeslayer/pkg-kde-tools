@@ -17,6 +17,7 @@ install:
 	cd $(SYMBOLSHELPER_DIR) && find Debian -type f -name "*.pm" -exec \
 	    install -D -m 0644 {} $(DESTDIR)/$(PERLLIBDIR)/{} \;
 	install -m 0755 $(SYMBOLSHELPER_DIR)/pkgkde-symbolshelper $(BINDIR)/pkgkde-symbolshelper
+	install -m 0755 $(SYMBOLSHELPER_DIR)/pkgkde-debs2symbols $(BINDIR)/pkgkde-debs2symbols
 	
 	# Improved Dpkg::Shlibs and dpkg-gensymbols
 	cd $(SYMBOLSHELPER_DIR) && find Dpkg -type f -name "*.pm" -exec \

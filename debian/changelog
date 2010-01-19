@@ -16,6 +16,11 @@ pkg-kde-tools (0.6.0~pre7) UNRELEASED; urgency=low
   * Switch to 3.0 (native) format: ignores VCS directories by default.
   * Update my address in the code copyright notices.
   * Update debian/copyright.
+  * Add pkgkde-debs2symbols utility which is capable of auto-downloading
+    library binary packages for all architectures and creating raw
+    arch-specific symbol files based on their contents. This utility can be
+    used as an alternative to Mole in order to get symbol files for feeding
+    them to `pkgkde-symbolshelper create`.
 
  -- Modestas Vainius <modestas@vainius.eu>  Sun, 06 Dec 2009 22:06:01 +0200
 
