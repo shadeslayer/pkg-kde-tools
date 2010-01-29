@@ -82,6 +82,8 @@ Options:
   -V                       verbose output. Write deprecated symbols and
                            pattern matching symbols as comments
                            (in template mode only).
+  -a<arch>                 assume <arch> as host architecture when processing
+                           symbol files.
   -d                       display debug information during work.
   -h, --help               show this help message.
       --version            show the version.
@@ -121,6 +123,8 @@ while (@ARGV) {
 	$template_mode = 1;
     } elsif (m/^-V$/) {
 	$verbose_output = 1;
+    } elsif (m/^-a(.+)$/) {
+	$host_arch = $1;
     } elsif (m/^-(h|-help)$/) {
 	usage();
 	exit(0);
@@ -280,9 +284,9 @@ if ($compare) {
 		    $output);
 	}
 	my ($a, $b) = ($before->filename, $after->filename);
-	my $diff_label = sprintf("%s (%s %s)",
+	my $diff_label = sprintf("%s (%s_%s_%s)",
 	($ref_symfile->{file}) ? $ref_symfile->{file} : "new_symbol_file",
-	$oppackage, $host_arch);
+	$oppackage, $sourceversion, $host_arch);
 	system("diff", "-u", "-L", $diff_label, $a, $b) if -x "/usr/bin/diff";
     }
 }

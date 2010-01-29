@@ -80,7 +80,7 @@ sub new {
     my $class = ref($this) || $this;
     my $self = \%opts;
     bless $self, $class;
-    $self->{arch} = get_host_arch() unless exists $self->{arch};
+    $self->{arch} = get_host_arch() unless defined $self->{arch};
     $self->clear();
     if (exists $self->{file}) {
 	$self->load($self->{file}) if -e $self->{file};
@@ -123,14 +123,9 @@ sub add_symbol {
 	    unless (exists $object->{patterns}{aliases}{$alias_type}) {
 		$object->{patterns}{aliases}{$alias_type} = {};
 	    }
-	    my $aliases = $object->{patterns}{aliases}{$alias_type};
-	    # A converter object for transforming a raw symbol name to alias
-	    # of this type. Must support convert_to_alias() method.
-	    unless (exists $aliases->{converter}) {
-		$aliases->{converter} = $symbol;
-	    }
 	    # Alias hash for matching.
-	    $aliases->{names}{$symbol->get_symbolname()} = $symbol;
+	    my $aliases = $object->{patterns}{aliases}{$alias_type};
+	    $aliases->{$symbol->get_symbolname()} = $symbol;
 	} else {
 	    # Otherwise assume this is a generic sequential pattern. This
 	    # should be always safe.
@@ -315,11 +310,12 @@ sub find_matching_pattern {
 
 	my $all_aliases = $obj->{patterns}{aliases};
 	for my $type (Dpkg::Shlibs::Symbol::ALIAS_TYPES) {
-	    if (exists $all_aliases->{$type}) {
+	    if (exists $all_aliases->{$type} && keys(%{$all_aliases->{$type}})) {
 		my $aliases = $all_aliases->{$type};
-		if (my $alias = $aliases->{converter}->convert_to_alias($name)) {
-		    if ($alias && exists $aliases->{names}{$alias}) {
-			$pattern = $aliases->{names}{$alias};
+		my $converter = $aliases->{(keys %$aliases)[0]};
+		if (my $alias = $converter->convert_to_alias($name)) {
+		    if ($alias && exists $aliases->{$alias}) {
+			$pattern = $aliases->{$alias};
 			last if &$pattern_ok($pattern);
 			$pattern = undef; # otherwise not found yet
 		    }
@@ -500,11 +496,13 @@ sub lookup_pattern {
 
 	next unless defined $object;
 	if (my $type = $refpat->get_alias_type()) {
-	    $pat = $object->{patterns}{aliases}{$type}{names}{$refpat->get_symbolname()};
+	    if (exists $object->{patterns}{aliases}{$type}) {
+		$pat = $object->{patterns}{aliases}{$type}{$refpat->get_symbolname()};
+	    }
 	} elsif ($refpat->get_pattern_type() eq "generic") {
 	    for my $p (@{$object->{patterns}{generic}}) {
 		if (($inc_deprecated || !$p->{deprecated}) &&
-		    $p->equals($refpat))
+		    $p->equals($refpat, versioning => 0))
 		{
 		    $pat = $p;
 		    last;
@@ -525,13 +523,15 @@ sub get_soname_patterns {
     my @aliases;
 
     foreach my $alias (values %{$object->{patterns}{aliases}}) {
-	push @aliases, values %{$alias->{names}};
+	push @aliases, values %$alias;
     }
     return (@aliases, @{$object->{patterns}{generic}});
 }
 
 sub get_new_symbols {
-    my ($self, $ref) = @_;
+    my ($self, $ref, %opts) = @_;
+    my $with_optional = (exists $opts{with_optional}) ?
+	$opts{with_optional} : 0;
     my @res;
     foreach my $soname (keys %{$self->{objects}}) {
 	my $mysyms = $self->{objects}{$soname}{syms};
@@ -540,17 +540,16 @@ sub get_new_symbols {
 	my @soname = ( $soname );
 
 	# Scan raw symbols first.
-	foreach my $sym (grep { $_->is_eligible_as_new($self->{arch}) }
+	foreach my $sym (grep { ($with_optional || ! $_->is_optional())
+	                        && $_->is_legitimate($self->{arch}) }
 	                      values %$mysyms)
 	{
 	    my $refsym = $refsyms->{$sym->get_symbolname()};
 	    my $isnew;
 	    if (defined $refsym) {
-		# If the symbol exists in the reference symbol file, it might
-		# still be new if it is either deprecated or from foreign arch
-		# there.
-		$isnew = ($refsym->{deprecated} or
-		    not $refsym->arch_is_concerned($self->{arch}));
+		# If the symbol exists in the $ref symbol file, it might
+		# still be new if $refsym is not legitimate.
+		$isnew = not $refsym->is_legitimate($self->{arch});
 	    } else {
 		# If the symbol does not exist in the $ref symbol file, it does
 		# not mean that it's new. It might still match a pattern in the
@@ -566,14 +565,15 @@ sub get_new_symbols {
 	}
 
 	# Now scan patterns
-	foreach my $p (grep { $_->is_eligible_as_new($self->{arch}) }
+	foreach my $p (grep { ($with_optional || ! $_->is_optional())
+	                      && $_->is_legitimate($self->{arch}) }
 	                    $self->get_soname_patterns($soname))
 	{
 	    my $refpat = $ref->lookup_pattern($p, \@soname, 0);
-	    # If reference pattern was not found or it is deprecated or
-	    # it's from foreign arch, considering current one as new.
+	    # If reference pattern was not found or it is not legitimate,
+	    # considering current one as new.
 	    if (not defined $refpat or
-		not $refpat->arch_is_concerned($self->{arch}))
+	        not $refpat->is_legitimate($self->{arch}))
 	    {
 		push @res, $p->sclone(soname => $soname);
 	    }
@@ -583,8 +583,8 @@ sub get_new_symbols {
 }
 
 sub get_lost_symbols {
-    my ($self, $ref) = @_;
-    return $ref->get_new_symbols($self);
+    my ($self, $ref, %opts) = @_;
+    return $ref->get_new_symbols($self, %opts);
 }
 
 

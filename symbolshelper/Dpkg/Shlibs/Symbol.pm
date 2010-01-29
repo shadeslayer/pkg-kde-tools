@@ -70,7 +70,7 @@ sub dclone {
 sub parse_tagspec {
     my ($self, $tagspec) = @_;
 
-    if ($tagspec =~ /^\((.*?)\)(.*)$/ && $1) {
+    if ($tagspec =~ /^\s*\((.*?)\)(.*)$/ && $1) {
 	# (tag1=t1 value|tag2|...|tagN=tNp)
 	# Symbols ()|= cannot appear in the tag names and values
 	my $tagspec = $1;
@@ -197,11 +197,18 @@ sub get_symboltempl {
 }
 
 sub set_symbolname {
-    my ($self, $name, $quoted) = @_;
-    if (defined $name) {
-	$self->{symbol} = $name;
+    my ($self, $name, $templ, $quoted) = @_;
+    unless (defined $name) {
+	$name = $self->{symbol};
     }
-    $self->{symbol_templ} = undef;
+    if (!defined $templ && $name =~ /\s/) {
+	$templ = $name;
+    }
+    if (!defined $quoted && defined $templ && $templ =~ /\s/) {
+	$quoted = '"';
+    }
+    $self->{symbol} = $name;
+    $self->{symbol_templ} = $templ;
     if ($quoted) {
 	$self->{symbol_quoted} = $quoted;
     } else {
@@ -246,23 +253,32 @@ sub get_tag_value {
     return $self->{tags}{$tag};
 }
 
-# Checks if the symbol is equal to another one (by name and tag set)
+# Checks if the symbol is equal to another one (by name and optionally,
+# tag sets, versioning info (minver and depid))
 sub equals {
-    my ($self, $other) = @_;
+    my ($self, $other, %opts) = @_;
 
-    # Compare names and tag sets
     return 0 if $self->{symbol} ne $other->{symbol};
-    return 0 if scalar(@{$self->{tagorder}}) != scalar(@{$other->{tagorder}});
 
-    for (my $i = 0; $i < scalar(@{$self->{tagorder}}); $i++) {
-	my $tag = $self->{tagorder}->[$i];
-	return 0 if $tag ne $other->{tagorder}->[$i];
-	if (defined $self->{tags}{$tag} && defined $other->{tags}{$tag}) {
-	    return 0 if $self->{tags}{$tag} ne defined $other->{tags}{$tag};
-	} elsif (defined $self->{tags}{$tag} || defined $other->{tags}{$tag}) {
-	    return 0;
+    if (!exists $opts{versioning} || $opts{versioning}) {
+	return 0 if $self->{minver} ne $other->{minver};
+	return 0 if $self->{dep_id} ne $other->{dep_id};
+    }
+
+    if  (!exists $opts{tags} || $opts{tags}) {
+	return 0 if scalar(@{$self->{tagorder}}) != scalar(@{$other->{tagorder}});
+
+	for (my $i = 0; $i < scalar(@{$self->{tagorder}}); $i++) {
+	    my $tag = $self->{tagorder}->[$i];
+	    return 0 if $tag ne $other->{tagorder}->[$i];
+	    if (defined $self->{tags}{$tag} && defined $other->{tags}{$tag}) {
+		return 0 if $self->{tags}{$tag} ne defined $other->{tags}{$tag};
+	    } elsif (defined $self->{tags}{$tag} || defined $other->{tags}{$tag}) {
+		return 0;
+	    }
 	}
     }
+
     return 1;
 }
 
@@ -365,7 +381,7 @@ sub convert_to_alias {
 	    # rawname.
 	    return "$1" if ($rawname =~ /\@([^@]+)$/);
 	} elsif ($rawname =~ /^_Z/ && $type eq "c++") {
-	    return cppfilt_demangle($rawname, "auto");
+	    return cppfilt_demangle_cpp($rawname);
 	}
     }
     return undef;
@@ -453,12 +469,11 @@ sub mark_not_found_in_library {
     }
 }
 
-# Quickly checks if the symbol (or pattern) can be considered as new due to its
-# status or current environment settings.
-sub is_eligible_as_new {
+# Checks if the symbol (or pattern) is legitimate as a real symbol for the
+# specified architecture.
+sub is_legitimate {
     my ($self, $arch) = @_;
     return ! $self->{deprecated} &&
-           ! $self->is_optional() &&
            $self->arch_is_concerned($arch);
 }
 
