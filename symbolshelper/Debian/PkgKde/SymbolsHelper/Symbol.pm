@@ -22,6 +22,7 @@ use base 'Dpkg::Shlibs::Symbol';
 use Dpkg::Gettext;
 use Dpkg::Shlibs::Cppfilt;
 use Dpkg::Arch qw(get_valid_arches);
+use Dpkg::ErrorHandling;
 use Debian::PkgKde::SymbolsHelper::Substs;
 use Debian::PkgKde::SymbolsHelper::String;
 
@@ -31,8 +32,41 @@ sub get_h_name {
 	$self->{h_name} = Debian::PkgKde::SymbolsHelper::String->new(
 	    $self->get_symbolname()
 	);
+	if (exists $self->{substs}) {
+	    # We need to recreate string2 from the templ
+	    $self->{h_name}->init_string2_by_re($self->get_symboltempl(),
+		qr/\{([^}]+)\}/, $self->{substs});
+	    if ($self->{h_name}->get_string2() ne $self->get_symboltempl()) {
+		internerr("unsupported substitutions/alterations to the the symbol name '%s' " .
+		    "from the symbol template '%s'. Cannot continue.",
+		    $self->get_symbolname(), $self->get_symboltempl());
+	    }
+	}
     }
     return $self->{h_name};
+}
+
+sub reset_h_name {
+    my ($self, $new_h_name) = @_;
+    if (defined $new_h_name) {
+	$self->{h_name} = $new_h_name;
+    } else {
+	delete $self->{h_name};
+    }
+}
+
+sub resync_name_with_h_name {
+    my $self = shift;
+    if (exists $self->{h_name}) {
+	my $h_name = $self->{h_name};
+	$self->set_symbolname($h_name->get_string(), $h_name->get_string2());
+    }
+}
+
+# Needed for h_name above
+sub get_substs {
+    my $self = shift;
+    return $self->{substs};
 }
 
 sub is_vtt {
@@ -96,6 +130,7 @@ sub expand_substitutions {
     }
 
     $self->{symbol} = $symbol;
+    $self->{substs} = \%substs;
     return keys %substs;
 }
 
@@ -103,7 +138,7 @@ sub get_cppname {
     my $self = shift;
     unless (exists $self->{cppname}) {
 	$self->{cppname} = ($self->get_symbolname() =~ /^_Z/) ?
-	    cppfilt_demangle($self->get_symbolname(), 'auto') :
+	    cppfilt_demangle_cpp($self->get_symbolname()) :
 	    undef;
     }
     return $self->{cppname};
@@ -114,9 +149,6 @@ sub detect_cpp_templinst() {
 
     my $cppname = $self->get_cppname();
     if (defined $cppname) {
-	# Deprecate template instantiations as they are not
-	# useful public symbols
-
 	# Prepare for tokenizing: wipe out unnecessary spaces
 	$cppname =~ s/([,<>()])\s+/$1/g;
 	$cppname =~ s/\s+([,<>()])/$1/g;
@@ -137,6 +169,7 @@ sub detect_cpp_templinst() {
     return 0;
 }
 
+# Typically template instantiations are not useful public symbols
 sub mark_cpp_templinst_as_optional {
     my ($self, @tag) = @_;
     @tag = ("optional", "templinst") unless @tag;
@@ -145,17 +178,17 @@ sub mark_cpp_templinst_as_optional {
     }
 }
 
-# Upgrades symbol template to c++ alias converting
-# substitutions as well. Returns upgraded template.
-sub upgrade_templ_to_cpp_alias {
-    my $self = shift;
-    my $templ = $self->get_symboltempl();
+# Converts symbol template to c++ alias converting substitutions as well.
+# Returns converted template string or undef in case of failure.
+sub convert_templ_to_cpp_alias {
+    my ($self, $templ) = @_;
+    $templ = $self->get_symboltempl() unless defined $templ;
     my $result;
 
     return undef unless $templ =~ /^_Z/;
 
     if (! $self->has_tag('subst')) {
-	$result = cppfilt_demangle($templ, 'auto');
+	$result = cppfilt_demangle_cpp($templ);
     } else {
 	my (%mangled, @possible_substs);
 
@@ -169,7 +202,7 @@ sub upgrade_templ_to_cpp_alias {
 	# Prepare for checking of demangled symbols
 	my (@demangled, @arches);
 	foreach my $mangled (keys %mangled) {
-	    my $d = cppfilt_demangle($mangled, 'auto');
+	    my $d = cppfilt_demangle_cpp($mangled);
 	    # Fail immediatelly if couldn't demangle a variant
 	    return undef unless defined $d;
 
@@ -281,22 +314,22 @@ sub upgrade_templ_to_cpp_alias {
 
 	$result = join("", @result);
     }
-
-    if (defined $result) {
-	$self->{symbol_templ} = $result;
-	if ($result =~ /\s/) {
-	    $self->{symbol_quoted} = '"';
-	}
-	$self->add_tag("c++");
-    }
     return $result;
 }
 
-sub handle_virtual_table_symbol {
-    my $self = shift;
+sub upgrade_virtual_table_symbol {
+    my ($self, $arch) = @_;
     if ($self->get_symboltempl() =~ /^_ZT[Chv]/) {
-	$self->upgrade_templ_to_cpp_alias();
+	my $newtempl = $self->convert_templ_to_cpp_alias();
+	if (defined $newtempl) {
+	    $self->set_symbolname($newtempl, $newtempl);
+	    $self->add_tag("c++");
+	    # Finally, reinitialize
+	    $self->initialize(arch => $arch);
+	}
+	return $newtempl;
     }
+    return undef;
 }
 
 sub set_min_version {

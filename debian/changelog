@@ -25,6 +25,11 @@ pkg-kde-tools (0.6.0~pre8) UNRELEASED; urgency=low
       symbol file template and actual contents of the (later) binary packages.
       Like build logs, those patches can be later fed to `pkgkde-symbolshelper
       patch`.
+  * Add multi-arch/multi-patch support to `pkgkde-symbolshelper patch`. Now, it
+    is capable of patching symbol file template for multiple arches (using
+    multiple patches) at the same time. All revelevant information is
+    kept/merged, arch tags are managed automatically whenever possible.
+    Incremental patching is also supported.
 
  -- Modestas Vainius <modestas@vainius.eu>  Sun, 06 Dec 2009 22:06:01 +0200
 

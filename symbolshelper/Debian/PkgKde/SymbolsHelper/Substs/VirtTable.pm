@@ -62,14 +62,14 @@ sub find_ztc_offset {
 	# The idea behind the algorithm is that c++filt output does not
 	# change when an offset is changed.
 	$rawname =~ s/@[^@]+$//;
-	my $demangled = cppfilt_demangle($rawname, 'auto');
+	my $demangled = cppfilt_demangle_cpp($rawname, 'auto');
 	pos($rawname) = undef;
 	while ($rawname =~ m/(\d+)_/g) {
 	    my $offset = $1;
 	    my $pos = pos($rawname) - length($offset) - 1;
 	    my $newsymbol = $rawname;
 	    substr($newsymbol, $pos, length($offset)) = $offset + 1234;
-	    my $newdemangled = cppfilt_demangle($newsymbol, 'auto');
+	    my $newdemangled = cppfilt_demangle_cpp($newsymbol, 'auto');
 	    return ($pos, $offset) if (defined $newdemangled && $newdemangled eq $demangled);
 	}
 	error("Unable to determine construction table offset position in symbol '$rawname'");

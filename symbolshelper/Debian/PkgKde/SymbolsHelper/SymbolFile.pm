@@ -19,7 +19,12 @@ use strict;
 use warnings;
 use base 'Dpkg::Shlibs::SymbolFile';
 
+use File::Temp qw();
+use File::Copy qw();
+use Storable qw();
+use IO::Handle;
 use Dpkg::ErrorHandling;
+use Dpkg::Version;
 use Debian::PkgKde::SymbolsHelper::Symbol;
 use Debian::PkgKde::SymbolsHelper::Substs;
 
@@ -29,7 +34,85 @@ sub load {
     unless (defined $base_symbol) {
 	$base_symbol = 'Debian::PkgKde::SymbolsHelper::Symbol';
     }
+    if (!defined $seen) {
+	# Read 'SymbolsHelper-Confirmed' header
+	open(my $fh, "<", $file)
+	    or error("unable to open symbol file '$file' for reading");
+	my $line = <$fh>;
+	close $fh;
+
+	chop $line;
+	if ($line =~ /^#\s*SymbolsHelper-Confirmed:\s+(.+)$/) {
+	    $self->set_confirmed(split(/\s+/, $1));
+	}
+    }
     return $self->SUPER::load($file, $seen, $obj_ref, $base_symbol);
+}
+
+# TODO: Add to Dpkg::Shlibs::SymbolFile
+sub get_arch {
+    my $self = shift;
+    return $self->{arch};
+}
+
+sub set_confirmed {
+    my ($self, $version, @arches) = @_;
+    $self->{h_confirmed_version} = $version;
+    $self->{h_confirmed_arches} = (@arches) ? \@arches : undef;
+}
+
+sub get_confirmed_version {
+    my $self = shift;
+    return $self->{h_confirmed_version};
+}
+
+sub get_confirmed_arches {
+    my $self = shift;
+    return (defined $self->{h_confirmed_arches}) ?
+	@{$self->{h_confirmed_arches}} : ();
+}
+
+sub create_symbol {
+    my ($self, $spec, $symbol) = @_;
+    $symbol = Debian::PkgKde::SymbolsHelper::Symbol->new() unless defined $symbol;
+    return $self->SUPER::create_symbol($spec, $symbol);
+}
+
+# Get symbol object reference either by symbol *name* or by reference object.
+sub get_symbol_object {
+    my ($self, $refsym, $soname) = @_;
+    my $name = (ref $refsym) ? $refsym->get_symbolname() : $refsym;
+    my $sonameobj = (ref $soname) ? $soname : $self->{objects}{$soname};
+
+    if (exists $sonameobj->{syms}{$name}) {
+	return $sonameobj->{syms}{$name};
+    } else {
+	if (!ref($refsym)) {
+	    # If by name, we need to create a dummy ref symbol. Append a dummy
+	    # version to the name to make it valid spec.
+	    $refsym = $self->create_symbol($refsym.' 1');
+	}
+	if (defined $refsym) {
+	    return $self->lookup_pattern($refsym, [ $sonameobj ], 1);
+	} else {
+	    internerr("invalid symbol name (%s) supplied to get_symbol_object()",
+		$name);
+	}
+    }
+}
+
+sub dump {
+    my ($self, $fh, %opts) = @_;
+    $opts{with_confirmed} = 1 unless exists $opts{with_confirmed};
+    # Write SymbolsHelper-Confirmed header
+    if ($opts{with_confirmed}) {
+	my @carches = $self->get_confirmed_arches();
+	if (@carches) {
+	    print $fh '# SymbolsHelper-Confirmed: ', $self->get_confirmed_version(),
+		" ", join(" ", sort @carches), "\n";
+	}
+    }
+    return $self->SUPER::dump($fh, %opts);
 }
 
 sub get_symbols {
@@ -46,46 +129,225 @@ sub get_symbols {
     }
 }
 
+sub get_sonames {
+    my $self = shift;
+    return keys %{$self->{objects}};
+}
+
+sub _resync_symbol_cache {
+    my ($self, $soname, $cache) = @_;
+    my %rename;
+
+    foreach my $symkey (keys %$cache) {
+	my $sym = $cache->{$symkey};
+	if ($sym->get_symbolname() ne $symkey) {
+	    $rename{$sym->get_symbolname()} = $sym;
+	    delete $cache->{$symkey};
+	}
+    }
+    foreach my $newname (keys %rename) {
+	my $e = $self->get_symbol_object($rename{$newname}, $soname);
+	if ($e && ! $rename{$newname}->equals($e)) {
+	    warning("caution: newly generated symbol '%s' will replace not exactly equal '%s'. Please readd if unappropriate",
+		$rename{$newname}->get_symbolspec(1),
+		$e->get_symbolspec(1));
+	}
+	$self->add_symbol($soname, $rename{$newname});
+    }
+}
+
+sub resync_soname_symbol_caches {
+    my ($self, $soname) = @_;
+    my $obj = (ref $soname) ? $soname : $self->{objects}{$soname};
+
+    # We need this to avoid removal of symbols which names clash when renaming
+    $self->_resync_symbol_cache($obj, $obj->{syms});
+
+    # Resync aliases too
+    foreach my $alias (values %{$obj->{patterns}{aliases}}) {
+	$self->_resync_symbol_cache($obj, $alias);
+    }
+}
+
 sub resync_soname_with_h_name {
     my ($self, $soname) = @_;
     my $obj = (ref $soname) ? $soname : $self->{objects}{$soname};
 
-    # We need this to avoid removal of symbols which names clash when renaming	  
-    my %rename;
-    foreach my $symkey (keys %{$obj->{syms}}) {
-	my $sym = $obj->{syms}{$symkey};
-	my $h_name = $sym->get_h_name();
-	$sym->{symbol} = $h_name->get_string();
-	$sym->{symbol_templ} = $h_name->get_string2();
-	if ($sym->get_symbolname() ne $symkey) {
-	    $rename{$sym->get_symbolname()} = $sym;
-	    delete $obj->{syms}{$symkey};
+    sub _resync_with_h_name {
+	my $cache = shift;
+	foreach my $symkey (keys %$cache) {
+	    $cache->{$symkey}->resync_name_with_h_name();
 	}
     }
-    foreach my $newname (keys %rename) {
-	$obj->{syms}{$newname} = $rename{$newname};
+
+    # First resync h_name with symbol name and templ
+    _resync_with_h_name($obj->{syms});
+    foreach my $alias (values %{$obj->{patterns}{aliases}}) {
+	_resync_with_h_name($alias);
     }
+    return $self->resync_soname_symbol_caches($soname);
 }
 
-# Detects (or just neutralizes) substitutes which can be guessed
-# from symbol name alone.
-sub detect_standalone_substs {
-    my ($self, $detect) = @_;
+# Detects (or just neutralizes) substitutes which can be guessed from the
+# symbol name alone. Currently unused.
+#sub detect_standalone_substs {
+#    my ($self, $detect) = @_;
+#
+#    foreach my $sym ($self->get_symbols()) {
+#        my $str = $sym->get_h_name();
+#        foreach my $subst (@STANDALONE_SUBSTS) {
+#	    if ($detect) {
+#	        $subst->detect($str, $self->{arch});
+#	    } else {
+#	        $subst->neutralize($str);
+#	    }
+#	}
+#    }
+#    foreach my $soname (keys %{$self->{objects}}) {
+#        # Rename soname object with data in h_name
+#	$self->resync_soname_with_h_name($soname);
+#    }
+#}
 
-    foreach my $sym ($self->get_symbols()) {
-        my $str = $sym->get_h_name();
-        foreach my $subst (@STANDALONE_SUBSTS) {
-	    if ($detect) {
-	        $subst->detect($str, $self->{arch});
-	    } else {
-	        $subst->neutralize($str);
+# Upgrade virtual table symbols. Needed for templating.
+sub prepare_for_templating {
+    my $self = shift;
+    my %sonames;
+
+    foreach my $soname ($self->get_sonames()) {
+	foreach my $sym ($self->get_symbols($soname)) {
+	    if ($sym->upgrade_virtual_table_symbol($self->get_arch())) {
+		$sonames{$soname} = 1;
 	    }
 	}
     }
-    foreach my $soname (keys %{$self->{objects}}) {
-        # Rename soname object with data in h_name
-	$self->resync_soname_with_h_name($soname);
+
+    foreach my $soname (keys %sonames) {
+	$self->resync_soname_symbol_caches($soname);
     }
+}
+
+sub patch_template {
+    my ($self, @patches) = @_;
+    my @symfiles;
+    my %dumped;
+
+    foreach my $patch (@patches) {
+	my $package = $patch->{package} || '';
+	my $tmpfile;
+	if (!exists $dumped{$package}) {
+	    $tmpfile = File::Temp->new(
+		TEMPLATE => "${package}_orig.symbolsXXXXXX",
+		UNLINK => 0,
+	    );
+	    $self->dump($tmpfile,
+		package => $package,
+		template_mode => 1,
+		with_confirmed => 0,
+	    );
+	    $tmpfile->close();
+	    $dumped{$package} = $tmpfile->filename;
+	}
+	$tmpfile = File::Temp->new(
+	    TEMPLATE => "${package}_patched.symbolsXXXXXX",
+	    UNLINK => 1,
+	);
+	$tmpfile->close();
+	unless (File::Copy::copy($dumped{$package}, $tmpfile->filename)) {
+	    syserror("unable to copy file '%s' to '%s'",
+		$dumped{$package}, $tmpfile->filename);
+	}
+	if ($patch->apply($tmpfile->filename)) {
+	    # Patching was successful. Parse new SymbolFile and return it
+	    my $symfile = Debian::PkgKde::SymbolsHelper::SymbolFile->new(
+		file => $tmpfile->filename,
+		arch => $patch->{arch},
+	    );
+	    if ($patch->has_info()) {
+		$symfile->set_confirmed($patch->{version}, $patch->{arch});
+	    } else {
+		$symfile->set_confirmed(undef);
+	    }
+	    push @symfiles, $symfile;
+	    last unless wantarray;
+	}
+    }
+    foreach my $file (values %dumped) {
+	unless ($FILE::Temp::KEEP_ALL) {
+	    unlink $file;
+	}
+    }
+    return (wantarray) ? @symfiles : $symfiles[0];
+}
+
+sub fork {
+    my ($self, @instances) = @_;
+    my @symfiles;
+    unshift @instances, {} unless @instances;
+
+    my $dump;
+    open(my $fh, ">", \$dump) or syserr("unable to open in-memory file");
+    $self->dump($fh, template_mode => 1, with_deprecated => 1);
+    close $fh;
+
+    foreach my $opts (@instances) {
+	$opts->{arch} = $self->get_arch() if not exists $opts->{arch};
+	my $symfile = ref($self)->new(%$opts);
+	$symfile->load(\$dump);
+	$symfile->{file} = '';
+	push @symfiles, $symfile;
+    }
+    return (wantarray) ? @symfiles : shift @symfiles;
+}
+
+sub _dclone_exclude {
+    my ($target, @exclude) = @_;
+    my %saved;
+    foreach my $e (@exclude) {
+	if (exists $target->{$e}) {
+	    $saved{$e} = $target->{$e};
+	    delete $target->{$e};
+	}
+    }
+    my $clone = Storable::dclone($target);
+    $target->{$_} = $saved{$_} foreach @exclude;
+    return $clone;
+}
+
+# Forks an empty symbol file (without symbols and patterns) from the current
+# one. Other properties are retained.
+sub fork_empty {
+    my $self = shift;
+
+    my $symfile = _dclone_exclude($self, qw(objects));
+    $symfile->clear();
+    foreach my $soname (keys %{$self->{objects}}) {
+	$symfile->create_object($soname);
+	my $obj = $symfile->{objects}{$soname};
+	my $cloned = _dclone_exclude($self->{objects}{$soname},
+	    qw(syms patterns minver_cache));
+	$obj->{$_} = $cloned->{$_} foreach keys %$cloned;
+    }
+    return $symfile;
+}
+
+sub get_highest_version {
+    my $self = shift;
+    my $maxver;
+
+    foreach my $soname ($self->get_sonames()) {
+	foreach my $sym ($self->get_symbols($soname),
+	                 $self->get_soname_patterns($soname))
+	{
+	    if (!$sym->{deprecated} &&
+	        (!defined $maxver || version_compare($sym->{minver}, $maxver) > 0))
+	    {
+		$maxver = $sym->{minver};
+	    }
+	}
+    }
+
+    return $maxver;
 }
 
 1;

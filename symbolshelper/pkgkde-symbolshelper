@@ -63,12 +63,15 @@ BEGIN {
 }
 
 use File::Spec;
-use Getopt::Long;
+use File::Basename qw();
+use Getopt::Long qw(:config noignore_case);
 use Dpkg::ErrorHandling;
 use Dpkg::Arch qw(get_host_arch get_valid_arches);
+use Dpkg::Version;
+use Dpkg::IPC;
 use Debian::PkgKde::SymbolsHelper::SymbolFile;
 use Debian::PkgKde::SymbolsHelper::SymbolFileCollection;
-use Debian::PkgKde::SymbolsHelper::Patch;
+use Debian::PkgKde::SymbolsHelper::Patching;
 
 ######## Option processing ##################
 my $opt_out;
@@ -76,6 +79,7 @@ my $opt_in;
 my $opt_package;
 my $opt_arch = get_host_arch();
 my $opt_version;
+my $opt_verbose;
 
 sub verify_opt_arch {
     my ($opt, $arch) = @_;
@@ -101,6 +105,7 @@ sub get_common_options {
     $res{"package|p=s"} = \$opt_package if ($args{p});
     $res{"architecture|a=s"} = \&verify_opt_arch if ($args{a});
     $res{"version|v:s"} = \$opt_version if ($args{v});
+    $res{"verbose|V!"} = \$opt_verbose if ($args{V});
 
     return %res;
 }
@@ -126,6 +131,15 @@ sub check_mandatory_options {
 }
 
 ############### Common subroutines #################
+sub regular_print {
+    my $msg = shift;
+    print STDERR sprintf($msg, @_), "\n";
+}
+
+sub verbose_print {
+    regular_print(@_) if $opt_verbose;
+}
+
 sub find_package_symbolfile_path {
     my ($package, $arch) = @_;
     my @PATHS = (
@@ -145,78 +159,119 @@ sub out_symfile {
     return 1 unless $symfile;
 
     if ($opt_out) {
-	$symfile->save($opt_out, template_mode => 1, %opts);
+	$symfile->save($opt_out, template_mode => 1, with_deprecated => 1, %opts);
     } else {
-	$symfile->dump(*STDOUT, template_mode => 1, %opts);
+	$symfile->dump(*STDOUT, template_mode => 1, with_deprecated => 1, %opts);
     }
     return 0;
 }
 
 sub tweak_symbol {
     my $sym = shift;
-
     $sym->handle_min_version($opt_version);
-    $sym->handle_virtual_table_symbol();
 }
 
 ############### Subcommands ####################
+sub _create_symfile {
+    my ($file, $filename_re) = @_;
+    my $filename = File::Basename::basename($file);
+    my $symfile;
+    if ($filename =~ $filename_re) {
+	regular_print("* Loading \"%s\" symbol file '%s' ...", $1, $file);
+	$symfile = Debian::PkgKde::SymbolsHelper::SymbolFile->new(
+		file => $file,
+		arch => "$1"
+	);
+    } else {
+	warning("%s is not named properly. Expected *_<arch> or *.<arch>", $file);
+    }
+    return $symfile;
+}
+
 sub subcommand_create {
-    my $opt_dir;
+    my @opt_dirs;
     my %opts = (
 	get_common_options("oav"),
-	"directory|d=s" => \$opt_dir,
+	"directory|d=s" => \@opt_dirs,
     );
     if (GetOptions(%opts)) {
 	check_mandatory_options("", "",
-	    $opt_dir => "symbol file directory option (-d) is mandatory");
+	    scalar(@opt_dirs), "symbol file directory option (-d) is mandatory");
 
-	opendir(DIR, $opt_dir) or error("Unable to open directory: $opt_dir");
-	my %files;
+	# Load symbol files
+	my %symfiles;
 	my $str_arches = join("|", get_valid_arches());
-
-	while (my $file = readdir(DIR)) {
-	    next if ($file =~ /^.{1,2}$/);
-	    $file = File::Spec->catfile($opt_dir, $file);
-	    if ($file =~ /.*?[_.]($str_arches)$/) {
-		$files{$1} = $file;
+	my $filename_re = qr/.*?[_.]($str_arches)$/;
+	for my $f (@opt_dirs) {
+	    if (-d $f) {
+		opendir(DIR, $f) or error("unable to open directory: $f");
+		while (my $filename = readdir(DIR)) {
+		    next if ($filename =~ /^.{1,2}$/);
+		    my $file = File::Spec->catfile($f, $filename);
+		    if (my $symfile = _create_symfile($file, $filename_re)) {
+			if (exists $symfiles{$symfile->get_arch()}) {
+			    error("duplicate symbol file (%s) for arch %s", $file,
+				$symfile->get_arch());
+			}
+			$symfiles{$symfile->get_arch()} = $symfile;
+		    }
+		}
+		closedir DIR;
+	    } elsif (-r $f) {
+		if (my $symfile = _create_symfile($f, $filename_re)) {
+		    if (exists $symfiles{$symfile->get_arch()}) {
+			error("duplicate symbol file (%s) for arch (%s)", $f,
+			    $symfile->get_arch());
+		    }
+		    $symfiles{$symfile->get_arch()} = $symfile;
+		}
 	    } else {
-		warning("$file is not named properly. Expected *_<arch> or *.<arch>");
+		error("unreadale file/directory: %s", $f);
 	    }
 	}
 
-	if (scalar(keys %files) > 0) {
-	    # This one is needed by most subcommands
-	    my $symfiles = Debian::PkgKde::SymbolsHelper::SymbolFileCollection->new($opt_arch);
+	if (scalar(keys %symfiles) > 0) {
+	    unless (exists $symfiles{$opt_arch}) {
+		error("symbol file for the specified arch (%s) could not be found/loaded. ".
+		      "Please specify another arch with -a option", $opt_arch);
+	    }
+	    # Set confirmed version
+	    unless ($opt_version) {
+		$opt_version = $symfiles{$opt_arch}->get_highest_version();
+	    }
+	    foreach my $symfile (values %symfiles) {
+		$symfile->set_confirmed($opt_version, $symfile->get_arch());
+	    }
 
-	    $symfiles->load_symbol_files(\%files);
-	    # Detect templinst symbols before substitutions
-	    # Do not mark as optional yet to avoid inteferring with template
-	    # creation.
+	    # Create collection and generate template
+	    my $orig_symfile = $symfiles{$opt_arch}->fork_empty();
+	    my $symfiles = Debian::PkgKde::SymbolsHelper::SymbolFileCollection->new($orig_symfile);
+	    $symfiles->add_new_symfiles(values %symfiles);
+
+	    # Detect templinst symbols before substitutions and create template
+	    regular_print("Generating symbol file template.... (this might take a while)");
 	    foreach my $symfile ($symfiles->get_symfiles()) {
 		foreach my $sym ($symfile->get_symbols()) {
-		    $sym->mark_cpp_templinst_as_optional("to-be-templinst");
+		    $sym->mark_cpp_templinst_as_optional();
+		}
+	    }
+	    my $template = $symfiles->create_template();
+
+	    # Set confirmed header
+	    $template->set_confirmed($symfiles->get_latest_version(),
+		$symfiles->get_latest_arches());
+
+	    foreach my $soname ($template->get_sonames()) {
+		foreach my $sym ($template->get_symbols($soname),
+		                 $template->get_soname_patterns($soname))
+		{
+		    tweak_symbol($sym);
 		}
 	    }
 
-	    # Create a symbols template
-	    my $template;
-	    if (scalar(keys %files) == 1) {
-		$template = $symfiles->create_template_standalone();
-	    } else {
-		$template = $symfiles->create_template();
-	    }
-
-	    foreach my $sym ($template->get_symbols()) {
-		# Set standard optional=templinst tag where scheduled
-		if ($sym->has_tag("to-be-templinst")) {
-		    $sym->delete_tag("to-be-templinst");
-		    $sym->add_tag("optional", "templinst") unless $sym->is_optional();
-		}
-		tweak_symbol($sym);
-	    }
 	    return out_symfile($template);
 	} else {
-	    error("no properly named symbol files found in $opt_dir");
+	    error("no properly named symbol files located");
 	}
 	return 0;
     }
@@ -224,50 +279,244 @@ sub subcommand_create {
 }
 
 sub subcommand_patch {
-    my $opt_diff;
+    my @opt_diffs;
+    my $opt_base;
     my %opts = (
-	get_common_options("oipav"),
-	"diff|d=s" => \$opt_diff,
+	get_common_options("oipavV"),
+	"diff|d=s" => \@opt_diffs,
+	"base|b=s" => \$opt_base,
     );
     if (GetOptions(%opts)) {
-	check_mandatory_options("i", "when package (-p) is not specified") unless ($opt_package);
+	check_mandatory_options("ip", "");
 	unless ($opt_in) {
 	    $opt_in = find_package_symbolfile_path($opt_package, $opt_arch);
 	    error("symbol template file was not found for package '$opt_package'")
 		unless (defined $opt_in && -r $opt_in);
 	}
-	$opt_out = $opt_in if (!$opt_out && -w $opt_in);
-	$opt_diff = "-" unless ($opt_diff);
+	$opt_base = $opt_in unless $opt_base;
+	push @opt_diffs, "-" unless @opt_diffs;
 
-	# Open patch
-	open(DIFFINPUT, $opt_diff)
-	    or error("unable to open patch '$opt_diff' for reading");
-
-	my $orig_symfile = Debian::PkgKde::SymbolsHelper::SymbolFile->new(
-	    file => $opt_in, arch => $opt_arch);
-	my $patched_symfile = patch_symbolfile($opt_in, *DIFFINPUT);
-
-	# Read remaning $patchfh stream
-	if ($opt_diff eq "-") {
-	    while (<DIFFINPUT>) {}
+	# Load input symfile
+	my $symfile = Debian::PkgKde::SymbolsHelper::SymbolFile->new(
+	    file => $opt_in, arch => $opt_arch
+	);
+	my $version = $symfile->get_confirmed_version();
+	unless ($version) {
+	    error("multipatch needs a symbol file template with 'SymbolsHelper-Confirmed' header");
 	}
-	close(DIFFINPUT);
+	if ($opt_version && version_compare($opt_version, $version) < 0) {
+	    error("you specified lower version (%s) than one of the input symbol file template (%s)",
+		$opt_version, $version);
+	}
+	my $base_symfile = $symfile;
+	if ($opt_base ne $opt_in) {
+	    $base_symfile = Debian::PkgKde::SymbolsHelper::SymbolFile->new(
+		file => $opt_base, arch => $opt_arch
+	    );
+	}
 
-	error("supplied patch does not apply to the symbols file '$opt_in'")
-	    unless defined $patched_symfile;
+	# Load patches. Take only those for our package
+	my @patches;
+	sub grep_patches {
+	    my @patches;
+	    foreach my $patch (@_) {
+		if (!$patch->has_info()) {
+		    verbose_print("* patch '%s' discarded due to absence of the info header",
+			$patch->get_name());
+		    next;
+		}
+		if ($patch->{package} eq $opt_package) {
+		    push @patches, $patch;
+		}
+	    }
+	    return @patches;
+	};
+	for my $f (@opt_diffs) {
+	    if (-d $f) {
+		opendir(DIR, $f) or error("unable to open directory with patches: $f");
+		while (my $filename = readdir(DIR)) {
+		    next if ($filename =~ /^.{1,2}$/);
+		    my $file = File::Spec->catfile($f, $filename);
+		    push @patches, grep_patches(parse_patches_from_file($file));
+		}
+		closedir DIR;
+	    } elsif (-r $f) {
+		push @patches, grep_patches(parse_patches_from_file($f));
+	    } elsif ($f eq "-") {
+		push @patches, grep_patches(parse_patches_from_handle(\*STDOUT));
+	    }
+	}
 
-	foreach my $info ($patched_symfile->get_new_symbols($orig_symfile)) {
+	# Patch the base template with our patches and pick symbol files with
+	# the highest version for each architecture.
+	my (%psymfiles, %pversions);
+	if (@patches) {
+	    regular_print("Patching symbol file '%s' with supplied patches ...",
+		$base_symfile->{file});
+	    my @psymfiles = $base_symfile->patch_template(@patches);
+	    foreach my $patch (@patches) {
+		my $arch = $patch->{arch};
+		my $str = sprintf("* patch '%s' for %s ... ",
+		    $patch->get_name(), $arch);
+		if ($patch->is_applied() && $psymfiles[0]->get_arch() eq $arch) {
+		    regular_print($str . "OK.");
+
+		    my $psymfile = shift @psymfiles;
+		    if (!exists $pversions{$arch} ||
+			version_compare($patch->{version}, $pversions{$arch}) > 0)
+		    {
+			$psymfiles{$arch} = $psymfile;
+			$pversions{$arch} = $patch->{version};
+		    }
+		} else {
+		    warning($str . "FAILED.");
+		    info("%s symbol file ignored. Failure output below:\n" .
+			$patch->get_apply_output());
+		}
+	    }
+	}
+	unless (keys %psymfiles) {
+	    error("no valid symbol files could be loaded from supplied patch files");
+	}
+
+	# Reset version if requested and drop patched symbol files which have
+	# lower version than original one
+	foreach my $arch (keys %psymfiles) {
+	    my $psymfile = $psymfiles{$arch};
+	    if ($opt_version) {
+		$psymfile->set_confirmed($opt_version, $psymfile->get_confirmed_arches());
+	    }
+	    my $pver = $psymfile->get_confirmed_version();
+	    if (version_compare($pver, $version) < 0) {
+		warning("ignoring obsolete %s symbol file (its version (%s) < original (%s))",
+		    $arch, $pver, $version);
+		delete $psymfiles{$arch};
+		delete $pversions{$arch};
+	    }
+	}
+	error("no valid patched symbol files found") unless keys %psymfiles;
+
+	# Fork $orig symbol file for the rest (unpatched) confirmed arches.
+	my @carches = grep { ! exists $psymfiles{$_} } $symfile->get_confirmed_arches();
+
+	# Finally create a SymbolFile collection and generate template
+	my $symfiles = new Debian::PkgKde::SymbolsHelper::SymbolFileCollection($symfile);
+	$symfiles->fork_orig_symfile(@carches);
+	$symfiles->add_new_symfiles(values %psymfiles);
+
+	# Detect templinst symbols before substitutions and create template
+	regular_print("Generating symbol file template.... (this might take a while)");
+	foreach my $arch ($symfiles->get_new_arches()) {
+	    my $symfile = $symfiles->get_symfile($arch);
+	    foreach my $sym ($symfile->get_symbols()) {
+		$sym->mark_cpp_templinst_as_optional();
+	    }
+	}
+	my $template = $symfiles->create_template()->fork();
+
+	# Post process template
+	my $printed_header;
+	my $prev_soname = '';
+	foreach my $info (sort { $a->{soname} cmp $b->{soname} ||
+	                         $a->get_symboltempl() cmp $b->get_symboltempl() }
+	                       $template->get_new_symbols($symfile, with_optional => 1)) {
 	    # Retrieve real symbol instance
-	    my $sym = $patched_symfile->{objects}{$info->{soname}}{syms}{$info->get_symbolname()};
-	    $sym->mark_cpp_templinst_as_optional();
+	    my $sym = $template->get_symbol_object($info, $info->{soname});
 	    tweak_symbol($sym);
-
-	    info("NEW symbol: " . $sym->get_symbolspec(1));
+	    if ($opt_verbose && !$printed_header) {
+		info("there are NEW symbols (the list includes optional):");
+		$printed_header = 1;
+	    }
+	    if ($prev_soname ne $info->{soname}) {
+		$prev_soname = $info->{soname};
+		verbose_print(" SONAME: %s", $prev_soname);
+	    }
+	    verbose_print(" %s", $sym->get_symbolspec(1));
 	}
-	return out_symfile($patched_symfile);
+
+	$printed_header = 0;
+	$prev_soname = '';
+	foreach my $info (sort { $a->{soname} cmp $b->{soname} ||
+	                         $a->get_symboltempl() cmp $b->get_symboltempl() }
+	                       $template->get_lost_symbols($symfile, with_optional => 1)) {
+	    if (!$printed_header) {
+		warning("there are LOST symbols (the list includes optional):");
+		$printed_header = 1;
+	    }
+	    if ($prev_soname ne $info->{soname}) {
+		$prev_soname = $info->{soname};
+		regular_print(" SONAME: %s", $prev_soname);
+	    }
+	    regular_print(" %s", $info->get_symbolspec(1));
+	}
+
+	# Finally adjust confirmed arches list
+	$template->set_confirmed($symfiles->get_latest_version(),
+	    $symfiles->get_latest_arches());
+
+	# Generate diff
+	if ($opt_verbose) {
+	    my $tmpfile = File::Temp->new(TEMPLATE => "${opt_in}.newXXXXXX");
+	    $template->dump($tmpfile,
+		package => $opt_package,
+		template_mode => 1,
+		with_deprecated => 1,
+	    );
+	    $tmpfile->close();
+	    fork_and_exec(exec => ["diff", "-u", $symfile->{file}, $tmpfile->filename],
+		to_handle => \*STDERR, wait_child => 1, nocheck => 1);
+	}
+
+	return out_symfile($template);
     }
     return 1;
 }
+
+#sub subcommand_patch {
+#    my $opt_diff;
+#    my %opts = (
+#	get_common_options("oipav"),
+#	"diff|d=s" => \$opt_diff,
+#    );
+#    if (GetOptions(%opts)) {
+#	check_mandatory_options("i", "when package (-p) is not specified") unless ($opt_package);
+#	unless ($opt_in) {
+#	    $opt_in = find_package_symbolfile_path($opt_package, $opt_arch);
+#	    error("symbol template file was not found for package '$opt_package'")
+#		unless (defined $opt_in && -r $opt_in);
+#	}
+#	$opt_out = $opt_in if (!$opt_out && -w $opt_in);
+#	$opt_diff = "-" unless ($opt_diff);
+#
+#	# Open patch
+#	open(DIFFINPUT, $opt_diff)
+#	    or error("unable to open patch '$opt_diff' for reading");
+#
+#	my $orig_symfile = Debian::PkgKde::SymbolsHelper::SymbolFile->new(
+#	    file => $opt_in, arch => $opt_arch);
+#	my $patched_symfile = patch_symbolfile($opt_in, *DIFFINPUT);
+#
+#	# Read remaning $patchfh stream
+#	if ($opt_diff eq "-") {
+#	    while (<DIFFINPUT>) {}
+#	}
+#	close(DIFFINPUT);
+#
+#	error("supplied patch does not apply to the symbols file '$opt_in'")
+#	    unless defined $patched_symfile;
+#
+#	foreach my $info ($patched_symfile->get_new_symbols($orig_symfile)) {
+#	    # Retrieve real symbol instance
+#	    my $sym = $patched_symfile->{objects}{$info->{soname}}{syms}{$info->get_symbolname()};
+#	    $sym->mark_cpp_templinst_as_optional();
+#	    tweak_symbol($sym);
+#
+#	    info("NEW symbol: " . $sym->get_symbolspec(1));
+#	}
+#	return out_symfile($patched_symfile);
+#    }
+#    return 1;
+#}
 
 sub subcommand_resort {
     my $opt_template = 1;
@@ -341,7 +590,7 @@ sub subcommand_boilerplate {
 
 my %SUBCOMMANDS = (
     "create"		=> [ 1, \&subcommand_create, "create symbol file template" ],
-    "patch"		=> [ 2, \&subcommand_patch, "apply dpkg-gensymbols patch to the symbol file template" ],
+    "patch"		=> [ 2, \&subcommand_patch, "apply dpkg-gensymbols patch(es) to the symbol file template" ],
     "resort"		=> [ 3, \&subcommand_resort, "resort symbol file" ],
     "symbolfile"	=> [ 4, \&subcommand_symbolfile, "deprecated by pkgkde-gensymbols wrapper" ],
     "postgensymbols"	=> [ 5, \&subcommand_postgensymbols, "deprecated. Does nothing" ],
