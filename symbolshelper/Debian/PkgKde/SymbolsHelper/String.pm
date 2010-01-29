@@ -25,6 +25,23 @@ sub new {
     return bless { str => $str }, $class;
 }
 
+sub init_string2_by_re {
+    my ($self, $str2, $re, $values) = @_;
+    my @str2 = split(//, $self->get_string());
+    my $offset = 0;
+    while ($str2 =~ m/$re/g) {
+	my $key = $1;
+	my $i = pos($str2) - length($&) - $offset;
+	$str2[$i] = "$&";
+	my $count = $i + length($values->{$key})-1;
+	for ($i++; $i < $count; $i++) {
+	    $str2[$i] = undef;
+	}
+	$offset += length($&) - length($values->{$key});
+    }
+    $self->{str2} = \@str2;
+}
+
 sub substr {
     my ($self, $offset, $length, $repl1, $repl2) = @_;
     if (defined $repl2 || exists $self->{str2}) {
@@ -34,19 +51,24 @@ sub substr {
 	}
 	# Keep offset information intact with $repl1
 	my @repl2;
-	if (!defined $repl2) {
-	    for (my $i = 0; $i < length($repl1); $i++) {
-		if ($i < $length) {
-		    push @repl2, $self->{str2}[$offset+$i];
-		} else {
-		    push @repl2, undef;
+	my $edit_str2 = 1;
+	if (defined $repl2) {
+	    @repl2 = map { undef } split(//, $repl1);
+	    $repl2[0] = $repl2;
+	} elsif ($length != length($repl1)) {
+	    if (!defined $repl2) {
+		for (my $i = 0; $i < length($repl1); $i++) {
+		    if ($i < $length) {
+			push @repl2, $self->{str2}[$offset+$i];
+		    } else {
+			push @repl2, undef;
+		    }
 		}
 	    }
 	} else {
-	    @repl2 = map { undef } split(//, $repl1);
-	    $repl2[0] = $repl2;
+	    $edit_str2 = 0;
 	}
-	splice @{$self->{str2}}, $offset, $length, @repl2;
+	splice @{$self->{str2}}, $offset, $length, @repl2 if $edit_str2;
     }
     substr($self->{str}, $offset, $length) = $repl1;
 }
