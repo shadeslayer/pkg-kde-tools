@@ -21,7 +21,7 @@ use Debian::PkgKde::SymbolsHelper::Substs::VirtTable;
 use Debian::PkgKde::SymbolsHelper::Substs::TypeSubst;
 use base 'Exporter';
 
-our @EXPORT = qw(%SUBSTS @SUBSTS @STANDALONE_SUBSTS @TYPE_SUBSTS);
+our @EXPORT = qw(%SUBSTS @SUBSTS @STANDALONE_SUBSTS @TYPE_SUBSTS @CPP_TYPE_SUBSTS);
 
 my $NS = 'Debian::PkgKde::SymbolsHelper::Substs';
 
@@ -37,7 +37,7 @@ our @TYPE_SUBSTS = (
     "${NS}::TypeSubst::qreal"->new(),
 );
 
-my @CPP_TYPE_SUBSTS;
+our @CPP_TYPE_SUBSTS;
 foreach my $subst (@TYPE_SUBSTS) {
     push @CPP_TYPE_SUBSTS, "${NS}::TypeSubst::Cpp"->new($subst);
 }

@@ -19,20 +19,36 @@ use strict;
 use warnings;
 use base 'Debian::PkgKde::SymbolsHelper::Subst';
 
+sub new {
+    my $class = shift;
+    my $self = $class->SUPER::new(@_);
+    $self->{'length'} = 1; # Basic typesubt must be one letter
+    return $self;
+}
+
 sub get_name {
     my $self = shift;
     return substr($self->{substvar}, 1, -1);
+}
+
+sub get_types_re {
+    my $self = shift;
+    unless (exists $self->{types_re}) {
+	my $s = '[' . join("", @{$self->{types}}) . ']';
+	$self->{types_re} = qr/$s/;
+    }
+    return $self->{types_re};
 }
 
 sub neutralize {
     my ($self, $rawname) = @_;
     my $ret = 0;
     my $str = "$rawname";
+    my $l = $self->{'length'};
+    my $re = $self->get_types_re();
 
-    return undef unless exists $self->{type_re};
-
-    while ($str =~ /$self->{type_re}/g) {
-	$rawname->substr(pos($str)-1, 1, $self->{main_type});
+    while ($str =~ /$re/g) {
+	$rawname->substr(pos($str)-$l, $l, $self->{types}->[0]);
 	$ret = 1;
     }
     return ($ret) ? $rawname : undef;
@@ -41,6 +57,7 @@ sub neutralize {
 sub detect {
     my ($self, $rawname, $arch, $arch_rawnames) = @_;
 
+    my $l = $self->{'length'};
     my $s1 = $rawname;
     my $t1 = $self->expand($arch);
     my ($s2, $t2);
@@ -56,17 +73,55 @@ sub detect {
 
     return undef unless defined $s2;
 
-    # Compare letter by letter until difference is found
-    my @s1 = split(//, $s1);
-    my @s2 = split(//, $s2);
+    # Verify subst and replace them with types[0] and substvar
     my $ret = 0;
-    for (my $i = 0; $i <= $#s1; $i++) {
-	if ($s1[$i] eq $t1 && $s2[$i] eq $t2) {
-	    $rawname->substr($i, 1, $self->{main_type}, $self->{substvar});
+    my $pos = 0;
+    while (($pos = index($s1, $t1, $pos)) != -1) {
+	if ($t2 eq substr($s2, $pos, $l)) {
+	    $rawname->substr($pos, $l, $self->{types}->[0], $self->{substvar});
 	    $ret = 1;
 	}
+	$pos += $l;
     }
     return ($ret) ? $rawname : undef;
+}
+
+# Operates on %l% etc. same length types that cannot be present in demanged
+# symbols. Used by ::Cpp wrapper.
+package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::CppPrivate;
+
+use strict;
+use warnings;
+use base 'Debian::PkgKde::SymbolsHelper::Substs::TypeSubst';
+
+sub new {
+    my ($class, $base) = @_;
+    my $self = $class->SUPER::new();
+    $self->{base} = $base;
+    $self->{'length'} = 3; # raw type + length('%%')
+    $self->{substvar} = '{' . $self->get_name() . '}';
+    $self->{types} = [ map { '%' . $_ . '%' } @{$base->{types}} ];
+    return $self;;
+}
+
+sub get_name {
+    my $self = shift;
+    return "c++:" . $self->{base}->get_name();
+}
+
+sub get_types_re {
+    my $self = shift;
+    unless (exists $self->{types_re}) {
+	my $s = '%[' . join("", @{$self->{base}{types}}) . ']%';
+	$self->{types_re} = qr/$s/;
+    }
+    return $self->{types_re};
+}
+
+
+sub _expand {
+    my ($self, $arch) = @_;
+    return '%'.$self->{base}->_expand($arch).'%';
 }
 
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::Cpp;
@@ -86,19 +141,63 @@ my %CPP_MAP = (
     d => 'double',
 );
 
+my %CPPRE_MAP = (
+    '%m%' => qr/\bunsigned long(?! long)\b/,
+    '%j%' => qr/\bunsigned int\b/,
+    '%i%' => qr/\b(?<!unsigned )int\b/,
+    '%l%' => qr/\b(?<!unsigned )long(?! long)\b/,
+    '%x%' => qr/\b(?<!unsigned )long long\b/,
+    '%y%' => qr/\bunsigned long long\b/,
+    '%f%' => qr/\bfloat\b/,
+    '%d%' => qr/\bdouble\b/,
+);
+
 sub new {
     my ($class, $base) = @_;
-    return bless { base => $base }, $class;
+    my $self = $class->SUPER::new();
+    $self->{private} =
+	Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::CppPrivate->new($base);
+    return $self;
 }
 
 sub _expand {
     my ($self, $arch) = @_;
-    return $CPP_MAP{$self->{base}->_expand($arch)};
+    return $CPP_MAP{$self->{private}{base}->_expand($arch)};
 }
 
 sub get_name {
     my $self = shift;
-    return "c++:" . $self->{base}->get_name();
+    return $self->{private}->get_name();
+}
+
+# In order for detect()/neutralize() to work, all substs must be of the same
+# length. Therefore replace demangled names with %l% etc.
+sub prep {
+    my ($self, $rawname, $arch) = @_;
+
+    # We need to prepare $rawname only once for all Cpp substs
+    return if exists $rawname->{cpp_prepped};
+
+    my $str = "$rawname";
+    foreach my $key (keys %CPPRE_MAP) {
+	my $re = $CPPRE_MAP{$key};
+	while ($str =~ /$re/g) {
+	    my $l = length($&);
+	    $rawname->substr(pos($str)-$l, $l, $key, $&);
+	    $str = "$rawname" if $l != length($key);
+	}
+    }
+    $rawname->{cpp_prepped} = 1;
+}
+
+sub detect {
+    my $self = shift;
+    return $self->{private}->detect(@_);
+}
+
+sub neutralize {
+    my $self = shift;
+    return $self->{private}->neutralize(@_);
 }
 
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::size_t;
@@ -111,8 +210,7 @@ sub new {
     my $class = shift;
     my $self = $class->SUPER::new(@_);
     $self->{substvar} = "{size_t}";
-    $self->{main_type} = "m"; # unsigned long (amd64)
-    $self->{type_re} = qr/[jm]/;
+    $self->{types} = [ qw(m j) ]; # unsigned long / unsigned int
     return $self;
 }
 
@@ -131,8 +229,7 @@ sub new {
     my $class = shift;
     my $self = $class->SUPER::new(@_);
     $self->{substvar} = "{ssize_t}";
-    $self->{main_type} = "l"; # long (amd64)
-    $self->{type_re} = qr/[il]/;
+    $self->{types} = [ qw(l i) ]; # long / int
     return $self;
 }
 
@@ -151,8 +248,7 @@ sub new {
     my $class = shift;
     my $self = $class->SUPER::new(@_);
     $self->{substvar} = "{int64_t}";
-    $self->{main_type} = "l"; # long (amd64)
-    $self->{type_re} = qr/[xl]/;
+    $self->{types} = [ qw(l x) ]; # long / long long
     return $self;
 }
 
@@ -171,8 +267,7 @@ sub new {
     my $class = shift;
     my $self = $class->SUPER::new(@_);
     $self->{substvar} = "{uint64_t}";
-    $self->{main_type} = "m"; # unsigned long (64bit)
-    $self->{type_re} = qr/[ym]/;
+    $self->{types} = [ qw(m y) ]; # unsigned long / unsigned long long
     return $self;
 }
 
@@ -191,8 +286,7 @@ sub new {
     my $class = shift;
     my $self = $class->SUPER::new(@_);
     $self->{substvar} = "{qreal}";
-    $self->{main_type} = "d"; # double (not arm)
-    $self->{type_re} = qr/[fd]/;
+    $self->{types} = [ qw(d f) ]; # double / float
     return $self;
 }
 

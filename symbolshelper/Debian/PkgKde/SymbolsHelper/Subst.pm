@@ -43,9 +43,14 @@ sub expand {
     return $self->{cache}{$cache};
 }
 
+# Prepare $rawname before detect()/neutralize()
+# my ($self, $rawname, $arch) = @_;
+sub prep {
+}
+
 # Make the raw symbol name architecture neutral
+# my ($self, $rawname) = @_;
 sub neutralize {
-    my ($self, $rawname) = @_;
     return undef;
 }
 
