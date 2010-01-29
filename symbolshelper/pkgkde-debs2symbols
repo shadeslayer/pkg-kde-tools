@@ -20,7 +20,7 @@ warning() {
 }
 
 usage() {
-    echo "$PROGNAME: usage:" "$0" package version "[ download_url ]" >&2
+    echo "$PROGNAME: usage:" "$0" "[ -i symbol_file ]" package version "[ download_url ]" >&2
 }
 
 
@@ -31,7 +31,7 @@ download() {
          --recursive --level=1 --no-parent --accept "$DEB_WILDCARD" "$URL"
 }
 
-process_deb() {
+extract_deb() {
     local deb tmpdir outdir
     local arch package version outfile
 
@@ -42,6 +42,15 @@ process_deb() {
     info2 "Extracting `basename $deb` ..."
     dpkg-deb -e "$deb" "$tmpdir/DEBIAN"
     dpkg-deb -x "$deb" "$tmpdir"
+}
+
+dump_symbols() {
+    local tmpdir outdir reffile
+    local arch package version outfile outpatch
+
+    tmpdir="$1"
+    outdir="$2"
+    reffile="$3"
 
     # Collection information about package
     package=$(sed -n '/^Package:/ {s/[^:]\+:[[:space:]]*\(.\+\)/\1/; p; q}' "$tmpdir/DEBIAN/control")
@@ -52,12 +61,31 @@ process_deb() {
         error "it does not make sense to process arch:all package ($deb)"
     fi
 
-    outfile="${package}_${arch}"
-    info2 "[$arch] Dumping symbol file as $outfile ..."
-    dpkg-gensymbols "-p$package" "-P$tmpdir" "-v$version" -c0 -I/dev/null "-O$outdir/$outfile"
+    if [ -n "$reffile" ]; then
+	outfile="${package}_${arch}.symbols"
+	outpatch="${package}_${arch}.patch"
+	info2 "[$arch] Dumping patch+symbol file as $outfile/$outpatch ..."
+	pkgkde-gensymbols "-p$package" "-P$tmpdir" "-v$version" "-a$arch" \
+	    -c1 "-I$reffile" -O"$outdir/$outfile" > "$outdir/$outpatch" || true
+    else
+	outfile="${package}_${arch}"
+	info2 "[$arch] Dumping symbol file as $outfile ..."
+	pkgkde-gensymbols "-p$package" "-P$tmpdir" "-v$version" "-a$arch" \
+	    -c0 -I/dev/null "-O$outdir/$outfile"
+    fi
 }
 
 # Process options
+REFFILE=""
+while getopts "i:" name; do
+    case "$name" in
+	i)  REFFILE="$OPTARG" ;;
+	\?)  usage; exit 2 ;;
+    esac
+done
+
+shift `expr $OPTIND - 1`
+
 PACKAGE="$1"
 VERSION="$2"
 URL="$3"
@@ -98,7 +126,8 @@ if [ -d "$debdir" ]; then
     info "Selected directory for symbol files:" "$symboldir/"
     for deb in `ls -1 "$debdir"/$DEB_WILDCARD 2>/dev/null | sort`; do
         mkdir "$tmpdir"
-        process_deb "$deb" "$tmpdir" "$symboldir"
+        extract_deb "$deb" "$tmpdir" "$symboldir"
+        dump_symbols "$tmpdir" "$symboldir" "$REFFILE"
         rm -rf "$tmpdir"
         c=$(($c+1))
     done
