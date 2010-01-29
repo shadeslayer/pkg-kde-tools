@@ -119,6 +119,7 @@ sub detect_cpp_templinst() {
 
 	# Prepare for tokenizing: wipe out unnecessary spaces
 	$cppname =~ s/([,<>()])\s+/$1/g;
+	$cppname =~ s/\s+([,<>()])/$1/g;
 	$cppname =~ s/\s*((?:(?:un)?signed|volatile|restrict|const|long)[*&]*)\s*/$1/g;
 	if (my @tokens = split(/\s+/, $cppname)) {
 	    my $func;
