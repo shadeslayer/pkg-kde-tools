@@ -33,7 +33,7 @@ sub init_string2_by_re {
 	my $key = $1;
 	my $i = pos($str2) - length($&) - $offset;
 	$str2[$i] = "$&";
-	my $count = $i + length($values->{$key})-1;
+	my $count = $i + length($values->{$key});
 	for ($i++; $i < $count; $i++) {
 	    $str2[$i] = undef;
 	}

@@ -37,9 +37,9 @@ sub get_h_name {
 	    $self->{h_name}->init_string2_by_re($self->get_symboltempl(),
 		qr/\{([^}]+)\}/, $self->{substs});
 	    if ($self->{h_name}->get_string2() ne $self->get_symboltempl()) {
-		internerr("unsupported substitutions/alterations to the the symbol name '%s' " .
-		    "from the symbol template '%s'. Cannot continue.",
-		    $self->get_symbolname(), $self->get_symboltempl());
+		internerr("unsupported substitutions/alterations in the symbol template '%s'. " .
+		    "Parsed as '%s'. Cannot continue.",
+		    $self->get_symboltempl(), $self->{h_name}->get_string2());
 	    }
 	}
     }
