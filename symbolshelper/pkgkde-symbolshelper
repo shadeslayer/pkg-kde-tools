@@ -434,7 +434,7 @@ sub subcommand_patch {
 
 	# Post process template and print various information about result
 	my (@changes_new, @changes_lost, @changes_arch);
-	foreach my $soname ($template->get_sonames()) {
+	foreach my $soname (sort $template->get_sonames()) {
 	    push @changes_new, $soname;
 	    push @changes_lost, $soname;
 	    push @changes_arch, $soname;
