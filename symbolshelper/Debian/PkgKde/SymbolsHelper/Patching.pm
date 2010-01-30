@@ -62,10 +62,12 @@ sub parse_patches_from_handle {
 	    $patch->set_info($2, $3, $4);
 	}
     }
-    if (defined $patch && $patch->complete()) {
-	push @patches, $patch;
-    } else {
-	warning("patch: '".$patch->get_name()."' is invalid");
+    if (defined $patch) {
+	if ($patch->complete()) {
+	    push @patches, $patch;
+	} else {
+	    warning("patch: '".$patch->get_name()."' is invalid");
+	}
     }
     return @patches;
 }
