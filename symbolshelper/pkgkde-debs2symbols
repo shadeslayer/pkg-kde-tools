@@ -3,11 +3,11 @@
 set -e
 
 info() {
-    echo "---" "$@" >&2
+    echo "* $@" >&2
 }
 
 info2() {
-    echo "    ---" "$@" >&2
+    echo "  -" "$@" >&2
 }
 
 error() {
@@ -62,11 +62,10 @@ dump_symbols() {
     fi
 
     if [ -n "$reffile" ]; then
-	outfile="${package}_${arch}.symbols"
-	outpatch="${package}_${arch}.patch"
-	info2 "[$arch] Dumping patch+symbol file as $outfile/$outpatch ..."
+	outfile="${package}_${arch}"
+	info2 "[$arch] Dumping patch & symbol file as $outfile/$outfile.{patch,symbols} ..."
 	pkgkde-gensymbols "-p$package" "-P$tmpdir" "-v$version" "-a$arch" \
-	    -c1 "-I$reffile" -O"$outdir/$outfile" > "$outdir/$outpatch" || true
+	    -c1 "-I$reffile" -O"$outdir/$outfile.symbols" > "$outdir/$outfile.patch" || true
     else
 	outfile="${package}_${arch}"
 	info2 "[$arch] Dumping symbol file as $outfile ..."
