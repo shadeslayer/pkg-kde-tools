@@ -287,7 +287,7 @@ sub subcommand_patch {
 	"base|b=s" => \$opt_base,
     );
     if (GetOptions(%opts)) {
-	check_mandatory_options("ip", "");
+	check_mandatory_options("p", "");
 	unless ($opt_in) {
 	    $opt_in = find_package_symbolfile_path($opt_package, $opt_arch);
 	    error("symbol template file was not found for package '$opt_package'")
