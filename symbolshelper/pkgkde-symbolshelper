@@ -171,6 +171,23 @@ sub tweak_symbol {
     $sym->handle_min_version($opt_version);
 }
 
+sub print_changes_list {
+    my ($changes, $header, $print_header_sub, $print_sub) = @_;
+
+    if (@$changes) {
+	&$print_header_sub($header);
+	foreach my $info (@$changes) {
+	    if ($info =~ /^\s/) {
+		    # Symbol
+		    &$print_sub(" %s", $info);
+	    } else {
+		# Soname
+		&$print_sub(" SONAME: %s", $info);
+	    }
+	}
+    }
+}
+
 ############### Subcommands ####################
 sub _create_symfile {
     my ($file, $filename_re) = @_;
@@ -415,41 +432,54 @@ sub subcommand_patch {
 	}
 	my $template = $symfiles->create_template()->fork();
 
-	# Post process template
-	my $printed_header;
-	my $prev_soname = '';
-	foreach my $info (sort { $a->{soname} cmp $b->{soname} ||
-	                         $a->get_symboltempl() cmp $b->get_symboltempl() }
-	                       $template->get_new_symbols($symfile, with_optional => 1)) {
-	    # Retrieve real symbol instance
-	    my $sym = $template->get_symbol_object($info, $info->{soname});
-	    tweak_symbol($sym);
-	    if ($opt_verbose && !$printed_header) {
-		info("there are NEW symbols on %s (including optional):", $opt_arch);
-		$printed_header = 1;
+	# Post process template and print various information about result
+	my (@changes_new, @changes_lost, @changes_arch);
+	foreach my $soname ($template->get_sonames()) {
+	    push @changes_new, $soname;
+	    push @changes_lost, $soname;
+	    push @changes_arch, $soname;
+	    foreach my $sym (sort { $a->get_symboltempl() cmp $b->get_symboltempl() }
+	                           $template->get_symbols($soname),
+	                           $template->get_soname_patterns($soname))
+	    {
+		my $osym = $symfile->get_symbol_object($sym, $soname);
+		if (defined $osym) {
+		    if ($sym->{deprecated} && ! $osym->{deprecated}) {
+			push @changes_lost, " ".$sym->get_symbolspec(1);
+		    } elsif (! $sym->{deprecated} && $osym->{deprecated}) {
+			# Tweak symbol
+			tweak_symbol($sym);
+			push @changes_new, " ".$sym->get_symbolspec(1);
+		    } else {
+			my $arches = $sym->get_tag_value("arch") || '';
+			my $oarches = $osym->get_tag_value("arch") || '';
+
+			if ($arches ne $oarches) {
+			    push @changes_arch,
+				" ".$sym->get_symbolspec(1)." (was arch=$oarches)";
+			}
+		    }
+		} else {
+		    # Tweak symbol
+		    tweak_symbol($sym);
+		    push @changes_new, " ".$sym->get_symbolspec(1);
+		}
 	    }
-	    if ($prev_soname ne $info->{soname}) {
-		$prev_soname = $info->{soname};
-		verbose_print(" SONAME: %s", $prev_soname);
-	    }
-	    verbose_print(" %s", $sym->get_symbolspec(1));
+	    # Pop sonames if no symbols added
+	    pop @changes_new if $changes_new[$#changes_new] eq $soname;
+	    pop @changes_lost if $changes_lost[$#changes_lost] eq $soname;
+	    pop @changes_arch if $changes_arch[$#changes_arch] eq $soname;
 	}
 
-	$printed_header = 0;
-	$prev_soname = '';
-	foreach my $info (sort { $a->{soname} cmp $b->{soname} ||
-	                         $a->get_symboltempl() cmp $b->get_symboltempl() }
-	                       $template->get_lost_symbols($symfile, with_optional => 1)) {
-	    if (!$printed_header) {
-		warning("there are LOST symbols on %s (including optional):", $opt_arch);
-		$printed_header = 1;
-	    }
-	    if ($prev_soname ne $info->{soname}) {
-		$prev_soname = $info->{soname};
-		regular_print(" SONAME: %s", $prev_soname);
-	    }
-	    regular_print(" %s", $info->get_symbolspec(1));
-	}
+	print_changes_list(\@changes_new,
+	    "there are NEW symbols (including optional):",
+	    \&info, \&verbose_print) if $opt_verbose;
+	print_changes_list(\@changes_lost,
+	    "there are LOST symbols (including optional):",
+	    \&warning, \&regular_print);
+	print_changes_list(\@changes_arch,
+	    "architecture set changed for the symbols below:",
+	    \&info, \&regular_print);
 
 	# Finally adjust confirmed arches list
 	$template->set_confirmed($symfiles->get_latest_version(),
