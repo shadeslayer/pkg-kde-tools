@@ -172,8 +172,12 @@ sub create_template {
 	my $symfile1 = $self->get_symfile($arch1);
 	foreach my $arch2 (keys %$symfiles, undef) {
 	    my $symfile2 = $self->get_symfile($arch2);
-
 	    next if ($arch1 || '') eq ($arch2 || '');
+
+	    # Change template arch of the original template. For grouping
+	    # purposes, we don't need to reexpand substs.
+	    $symfile1->{arch} = $arch2 unless defined $arch1;
+	    $symfile2->{arch} = $arch1 unless defined $arch2;
 	    my @new = $symfile1->get_new_symbols($symfile2, with_optional => 1);
 	    foreach my $n (@new) {
 		my $s = $n->{soname};
@@ -229,10 +233,13 @@ sub create_template {
 	    }
 	}
     }
+    $orig->{arch} = $orig_arch; # Restore original arch
 
     # Readd all untouched symbols in $orig back to the $template
     foreach my $soname ($orig->get_sonames()) {
-	foreach my $sym ($orig->get_symbols($soname), $orig->get_soname_patterns($soname)) {
+	foreach my $sym ($orig->get_symbols($soname),
+	                 $orig->get_soname_patterns($soname))
+	{
 	    if (!exists $self->{h_touched}) {
 		$template->add_symbol($soname, $sym);
 	    }
