@@ -143,7 +143,7 @@ sub get_name {
     my $self = shift;
     if ($self->{source}) {
 	if ($self->has_info()) {
-	    return sprintf("%s_%s_%s (%s)", $self->{package},
+	    return sprintf("%s_%s_%s (--- %s)", $self->{package},
 		$self->{version}, $self->{arch}, $self->{source});
 	} else {
 	    return sprintf("--- %s +++ %s", $self->{source}, $self->{target});

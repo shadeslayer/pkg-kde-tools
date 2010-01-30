@@ -249,7 +249,7 @@ sub subcommand_create {
 	    $symfiles->add_new_symfiles(values %symfiles);
 
 	    # Detect templinst symbols before substitutions and create template
-	    regular_print("Generating symbol file template.... (this might take a while)");
+	    regular_print("Generating symbol file template .... (this might take a while)");
 	    foreach my $symfile ($symfiles->get_symfiles()) {
 		foreach my $sym ($symfile->get_symbols()) {
 		    $sym->mark_cpp_templinst_as_optional();
@@ -370,13 +370,13 @@ sub subcommand_patch {
 		    }
 		} else {
 		    warning($str . "FAILED.");
-		    info("%s symbol file ignored. Failure output below:\n" .
+		    info("the patch has been ignored. Failure output below:\n" .
 			$patch->get_apply_output());
 		}
 	    }
 	}
 	unless (keys %psymfiles) {
-	    error("no valid symbol files could be loaded from supplied patch files");
+	    error("no valid symbol files could be loaded from the supplied patch files");
 	}
 
 	# Reset version if requested and drop patched symbol files which have
@@ -401,11 +401,12 @@ sub subcommand_patch {
 
 	# Finally create a SymbolFile collection and generate template
 	my $symfiles = new Debian::PkgKde::SymbolsHelper::SymbolFileCollection($symfile);
+	regular_print("Duplicating symbol file template on %s ...", join(", ", @carches));
 	$symfiles->fork_orig_symfile(@carches);
 	$symfiles->add_new_symfiles(values %psymfiles);
 
 	# Detect templinst symbols before substitutions and create template
-	regular_print("Generating symbol file template.... (this might take a while)");
+	regular_print("Generating symbol file template .... (this might take a while)");
 	foreach my $arch ($symfiles->get_new_arches()) {
 	    my $symfile = $symfiles->get_symfile($arch);
 	    foreach my $sym ($symfile->get_symbols()) {
@@ -424,7 +425,7 @@ sub subcommand_patch {
 	    my $sym = $template->get_symbol_object($info, $info->{soname});
 	    tweak_symbol($sym);
 	    if ($opt_verbose && !$printed_header) {
-		info("there are NEW symbols (the list includes optional):");
+		info("there are NEW symbols on %s (including optional):", $opt_arch);
 		$printed_header = 1;
 	    }
 	    if ($prev_soname ne $info->{soname}) {
@@ -440,7 +441,7 @@ sub subcommand_patch {
 	                         $a->get_symboltempl() cmp $b->get_symboltempl() }
 	                       $template->get_lost_symbols($symfile, with_optional => 1)) {
 	    if (!$printed_header) {
-		warning("there are LOST symbols (the list includes optional):");
+		warning("there are LOST symbols on %s (including optional):", $opt_arch);
 		$printed_header = 1;
 	    }
 	    if ($prev_soname ne $info->{soname}) {
