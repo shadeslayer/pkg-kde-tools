@@ -34,6 +34,8 @@ our @TYPE_SUBSTS = (
     "${NS}::TypeSubst::ssize_t"->new(),
     "${NS}::TypeSubst::int64_t"->new(),
     "${NS}::TypeSubst::uint64_t"->new(),
+    "${NS}::TypeSubst::qptrdiff"->new(),
+    "${NS}::TypeSubst::quintptr"->new(),
     "${NS}::TypeSubst::qreal"->new(),
 );
 

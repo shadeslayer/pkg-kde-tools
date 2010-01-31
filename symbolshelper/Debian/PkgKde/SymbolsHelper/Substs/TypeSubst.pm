@@ -339,6 +339,44 @@ sub _expand {
     return ($arch =~ /amd64|ia64|alpha/) ? 'm' : 'y';
 }
 
+package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::qptrdiff;
+
+use strict;
+use warnings;
+use base 'Debian::PkgKde::SymbolsHelper::Substs::TypeSubst';
+
+sub new {
+    my $class = shift;
+    my $self = $class->SUPER::new(@_);
+    $self->{substvar} = "{qptrdiff}";
+    $self->{types} = [ qw(x i) ]; # long long / int
+    return $self;
+}
+
+sub _expand {
+    my ($self, $arch) = @_;
+    return ($arch =~ /amd64|ia64|alpha/) ? 'x' : 'i';
+}
+
+package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::quintptr;
+
+use strict;
+use warnings;
+use base 'Debian::PkgKde::SymbolsHelper::Substs::TypeSubst';
+
+sub new {
+    my $class = shift;
+    my $self = $class->SUPER::new(@_);
+    $self->{substvar} = "{quintptr}";
+    $self->{types} = [ qw(y j) ]; # unsigned long long / unsigned int
+    return $self;
+}
+
+sub _expand {
+    my ($self, $arch) = @_;
+    return ($arch =~ /amd64|ia64|alpha/) ? 'y' : 'j';
+}
+
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::qreal;
 
 use strict;

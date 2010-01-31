@@ -30,6 +30,8 @@ pkg-kde-tools (0.6.0~rc2) UNRELEASED; urgency=low
     multiple patches) at the same time. All revelevant information is
     kept/merged, arch tags are managed automatically whenever possible.
     Incremental patching is also supported.
+  * Add support for detection/expansion of the qprtdiff and quintptr substs (Qt
+    types).
 
  -- Modestas Vainius <modestas@vainius.eu>  Sun, 06 Dec 2009 22:06:01 +0200
 
