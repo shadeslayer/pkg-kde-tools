@@ -95,8 +95,24 @@ sub initialize {
 	} else {
 	    $self->{symbol_templ} = $self->{symbol};
 	}
-	if ($self->expand_substitutions(%opts) > 0) {
-	    $self->add_tag('subst', 'compat');
+	my @substs = $self->expand_substitutions(%opts);
+
+	my $templ = $self->get_symboltempl();
+	my $vt = 0;
+	foreach my $subst (@substs) {
+	    # Drop obsolete vt subst completely
+	    if ($subst =~ /^vt=/) {
+		$templ =~ s/\Q{$subst}\E/$self->{substs}{$subst}/g;
+		$vt++;
+	    }
+	}
+	$self->set_symbolname(undef, $templ) if $vt > 0;
+	if ($vt < scalar(@substs)) {
+	    if ($vt) {
+		$self->add_tag('subst', 'compat-no-vt');
+	    } else {
+		$self->add_tag('subst', 'compat');
+	    }
 	}
     }
 
