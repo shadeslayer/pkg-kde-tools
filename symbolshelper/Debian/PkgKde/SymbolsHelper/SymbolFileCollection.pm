@@ -636,6 +636,12 @@ sub calc_properties {
 	    }
 	}
     }
+
+    # Bump symbol minver if new arches added
+    if (defined $result && keys %add) {
+	$result->{minver} = $collection->get_latest_version();
+    }
+
     return $result;
 }
 
