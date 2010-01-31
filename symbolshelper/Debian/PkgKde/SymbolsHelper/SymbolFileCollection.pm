@@ -147,6 +147,18 @@ sub calc_group_name {
     return $str->get_string();
 }
 
+sub get_symbols_regrouped_by_name {
+    my ($self, $group) = @_;
+    my $byname = $group->regroup_by_name();
+    my @byname;
+    foreach my $grp (sort values %$byname) {
+	if (my $sym = $grp->calc_properties($self)) {
+	    push @byname, $sym;
+	}
+    }
+    return sort { $a->get_symboltempl() cmp $b->get_symboltempl() } @byname;
+}
+
 # Create a new template from the collection of symbol files 
 sub create_template {
     my ($self, %opts) = @_;
@@ -257,36 +269,46 @@ sub create_template {
 
 	    # Take care of ambiguous groups
 	    if ($group->is_ambiguous()) {
-		my $byname = $group->regroup_by_name();
-		my @byname;
-		foreach my $grp (values %$byname) {
-		    if (my $sym = $grp->calc_properties($self)) {
-			push @byname, $sym->get_symbolspec(1);
-			$template->add_symbol($soname, $sym);
-		    }
-		}
-		if (@byname) {
+		if (my @byname = $self->get_symbols_regrouped_by_name($group)) {
+		    $template->add_symbol($soname, $_) foreach @byname;
 		    info("ambiguous symbols for subst detection (%s). Processed by name:\n" .
-		         "  %s", "$groupname/$soname", join("\n  ", @byname));
+		         "  %s", "$groupname/$soname",
+			join("\n  ", map { $_->get_symbolspec(1) } @byname));
 		}
 		next;
 	    }
 	    # Calculate properties and detect substs.
 	    if (my $sym = $group->calc_properties($self)) {
 		# Then detect substs (we need two or more arch specific symbols for that)
-		if ($group->get_arches() > 1) {
+		my $substs_ok = 0;
+		if (scalar($group->get_arches()) > 1 && ! $group->are_symbols_equal()) {
 		    my $substs_arch = ($group->has_symbol($orig_arch)) ?
 			$orig_arch : ($group->get_arches())[0];
-
 		    if ($group->detect_substs($substs_arch)) {
-			    my $substs_sym = $group->get_symbol($substs_arch);
-			    $sym->add_tag("subst");
-			    $sym->reset_h_name($substs_sym->get_h_name());
+			my $substs_sym = $group->get_symbol($substs_arch);
+			$sym->add_tag("subst");
+			$sym->reset_h_name($substs_sym->get_h_name());
+			$substs_ok = $group->verify_substs();
 		    }
+		} else {
+		    $substs_ok = 1;
 		}
 
-		# Finally add to template
-		$template->add_symbol($soname, $sym);
+		if ($substs_ok) {
+		    # Finally add to template
+		    $template->add_symbol($soname, $sym);
+		} else {
+		    # Substitutions do not verify. Regroup by name what remains
+		    foreach my $sym ($group->get_symbols()) {
+			$sym->resync_name_with_h_name();
+		    }
+		    if (my @byname = $self->get_symbols_regrouped_by_name($group)) {
+			$template->add_symbol($soname, $_) foreach @byname;
+			info("possible incomplete subst detection (%s). Processed by name:\n" .
+			     "  %s", "$groupname/$soname",
+			     join("\n  ", map { $_->get_symbolspec(1) } @byname));
+		    }
+		}
 	    }
 	}
     }
@@ -335,6 +357,11 @@ sub get_symbol {
 sub get_arches {
     my $self = shift;
     return keys %{$self->{arches}};
+}
+
+sub get_symbols {
+    my $self = shift;
+    return values %{$self->{arches}};
 }
 
 sub get_result {
@@ -412,16 +439,31 @@ sub regroup_by_name {
 sub are_symbols_equal {
     my $self = shift;
     my @arches = $self->get_arches();
-    my $name = $self->get_symbol(shift @arches);
+    my $name;
+
+    $name = ($self->get_symbol()) ?
+	$self->get_symbol() : $self->get_symbol(shift @arches);
+    $name = $name->get_symbolname();
     foreach my $arch (@arches) {
 	if ($self->get_symbol($arch)->get_symbolname() ne $name) {
-	    $name = undef;
-	    last;
+	    return 0;
 	}
     }
-    return $name;
+    return 1;
 }
 
+# Verify if all substs have been replaced (i.e. hint-neutralized)
+sub verify_substs {
+    my $self = shift;
+    my @arches = $self->get_arches();
+    my $str = $self->get_symbol(shift @arches)->get_h_name()->get_string();
+    foreach my $arch (@arches) {
+	if ($self->get_symbol($arch)->get_h_name()->get_string() ne $str) {
+	    return 0;
+	}
+    }
+    return 1;
+}
 
 # Calculate group properties and instantiates 'result'. At the moment, this
 # method will take care of arch tags and deprecated status. "Result" symbol is
@@ -602,19 +644,18 @@ sub detect_substs {
 
     my %h_names = map { $_ => $self->get_symbol($_)->get_h_name() } $self->get_arches();
     my $h_name = $h_names{$main_arch};
-    delete $h_names{$main_arch};
 
-    my @substs;
+    my $detected = 0;
     foreach my $subst (@{$self->{substs}}) {
 	if ($subst->detect($h_name, $main_arch, \%h_names)) {
-	    push @substs, $subst;
+	    $detected++;
 	    # Make other h_names arch independent with regard to this handler.
 	    foreach my $arch (keys %h_names) {
-		$subst->neutralize($h_names{$arch}, $arch);
+		$subst->hinted_neutralize($h_names{$arch}, $h_name);
 	    }
 	}
     }
-    return @substs;
+    return $detected;
 }
 
 1;

@@ -77,6 +77,15 @@ sub get_string {
     return shift()->{str};
 }
 
+sub has_string2 {
+    return exists shift()->{str2};
+}
+
+sub get_string2_char {
+    my ($self, $index) = @_;
+    return $self->{str2}->[$index];
+}
+
 sub get_string2 {
     my $self = shift;
     if (defined $self->{str2}) {

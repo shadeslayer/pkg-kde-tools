@@ -29,7 +29,7 @@ our @STANDALONE_SUBSTS = (
     "${NS}::VirtTable"->new(),
 );
 
-our @TYPE_SUBSTS = (  
+our @TYPE_SUBSTS = (
     "${NS}::TypeSubst::size_t"->new(),
     "${NS}::TypeSubst::ssize_t"->new(),
     "${NS}::TypeSubst::int64_t"->new(),

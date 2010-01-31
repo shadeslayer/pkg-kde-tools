@@ -54,10 +54,23 @@ sub neutralize {
     return undef;
 }
 
+# Hinted neutralize where $hint is an already "detected"
+# SymbolsHelper::String
+# my ($self, $rawname, $hint) = @_;
+sub hinted_neutralize {
+    return undef;
+}
+
 # Detect if the substitution can be applied to a bunch of
 # arch specific raw names.
+# my ($self, $rawname, $arch, $arch_rawnames) = @_;
 sub detect {
-    my ($self, $rawname, $arch, $arch_rawnames) = @_;
+    return 0;
+}
+
+# Verifies if the subst is correct at $pos
+# my ($self, $pos, $arch_rawnames) = @_;
+sub verify_at {
     return undef;
 }
 

@@ -19,6 +19,8 @@ use strict;
 use warnings;
 use base 'Debian::PkgKde::SymbolsHelper::Subst';
 
+use Debian::PkgKde::SymbolsHelper::Substs;
+
 sub new {
     my $class = shift;
     my $self = $class->SUPER::new(@_);
@@ -54,6 +56,21 @@ sub neutralize {
     return ($ret) ? $rawname : undef;
 }
 
+sub hinted_neutralize {
+    my ($self, $rawname, $hint) = @_;
+    my $hintstr = $hint->{str2};
+    my $ret = 1;
+    my $l = $self->{'length'};
+
+    for (my $i = 0; $i < @$hintstr; $i++) {
+	if (defined $hintstr->[$i] && $hintstr->[$i] eq $self->{substvar}) {
+	    $rawname->substr($i, $l, $self->{types}->[0]);
+	    $ret = 1;
+	}
+    }
+    return ($ret) ? $rawname : undef;
+}
+
 sub detect {
     my ($self, $rawname, $arch, $arch_rawnames) = @_;
 
@@ -71,19 +88,55 @@ sub detect {
 	}
     }
 
-    return undef unless defined $s2;
+    return 0 unless defined $s2;
 
-    # Verify subst and replace them with types[0] and substvar
+    # Verify subst and replace it with types[0] and substvar
     my $ret = 0;
-    my $pos = 0;
-    while (($pos = index($s1, $t1, $pos)) != -1) {
+    search_next: for (my $pos = 0; ($pos = index($s1, $t1, $pos)) != -1; $pos++) {
+	# Verify on the selected $a2
 	if ($t2 eq substr($s2, $pos, $l)) {
-	    $rawname->substr($pos, $l, $self->{types}->[0], $self->{substvar});
-	    $ret = 1;
+	    # Maybe subst is already there?
+	    if ($rawname->has_string2() &&
+	        (my $char = $rawname->get_string2_char($pos)))
+	    {
+		if ($char eq $self->{substvar}) {
+		    # Nothing to do
+		    $ret = 1;
+		    $pos += $l-1;
+		    next search_next;
+		} elsif ($char =~ /^{(.*)}$/) {
+		    # Another subst. Verify it
+		    # NOTE: %SUBSTS won't work here due to recursive "use"
+		    my $othersubst = $Debian::PkgKde::SymbolsHelper::Substs::SUBSTS{$1};
+		    if (defined $othersubst && $othersubst->verify_at($pos, $arch_rawnames)) {
+			$ret = 1;
+			next search_next;
+		    }
+		}
+	    }
+	    # Now verify detection on other arches
+	    if ($self->verify_at($pos, $arch_rawnames)) {
+		$rawname->substr($pos, $l, $self->{types}->[0], $self->{substvar});
+		$ret = 1;
+		$pos += $l-1;
+	    }
 	}
-	$pos += $l;
     }
-    return ($ret) ? $rawname : undef;
+    return $ret;
+}
+
+sub verify_at {
+    my ($self, $pos, $arch_rawnames) = @_;
+    my $l = $self->{'length'};
+    my $verified = 1;
+    foreach my $a (keys %$arch_rawnames) {
+	my $t = $self->expand($a);
+	if ($t ne substr($arch_rawnames->{$a}, $pos, $l)) {
+	    $verified = 0;
+	    last;
+	}
+    }
+    return $verified;
 }
 
 # Operates on %l% etc. same length types that cannot be present in demanged
@@ -198,6 +251,16 @@ sub detect {
 sub neutralize {
     my $self = shift;
     return $self->{private}->neutralize(@_);
+}
+
+sub hinted_neutralize {
+    my $self = shift;
+    return $self->{private}->hinted_neutralize(@_);
+}
+
+sub verify_at {
+    my $self = shift;
+    return $self->{private}->verify_at(@_);
 }
 
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::size_t;
