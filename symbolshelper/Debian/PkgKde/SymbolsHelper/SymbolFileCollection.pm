@@ -271,21 +271,22 @@ sub create_template {
 		}
 		next;
 	    }
-
 	    # Calculate properties and detect substs.
 	    if (my $sym = $group->calc_properties($self)) {
-		# Then detect substs
-		my $substs_arch = ($group->has_symbol($orig_arch)) ?
-		    $orig_arch : ($group->get_arches())[0];
-		if ($group->detect_substs($substs_arch)) {
-			my $substs_sym = $group->get_symbol($substs_arch);
-			$sym->add_tag("subst");
-			$sym->reset_h_name($substs_sym->get_h_name());
+		# Then detect substs (we need two or more arch specific symbols for that)
+		if ($group->get_arches() > 1) {
+		    my $substs_arch = ($group->has_symbol($orig_arch)) ?
+			$orig_arch : ($group->get_arches())[0];
+
+		    if ($group->detect_substs($substs_arch)) {
+			    my $substs_sym = $group->get_symbol($substs_arch);
+			    $sym->add_tag("subst");
+			    $sym->reset_h_name($substs_sym->get_h_name());
+		    }
 		}
 
 		# Finally add to template
 		$template->add_symbol($soname, $sym);
-	    } else {
 	    }
 	}
     }
