@@ -1,4 +1,6 @@
-pkg-kde-tools (0.6.0~rc7) UNRELEASED; urgency=low
+pkg-kde-tools (0.6.0) unstable; urgency=low
+
+  * "SymbolsHelper Reloaded" release.
 
   * Remove DMUA field from debian/control which was added for me.
   * Provide newer dpkg-gensymbols as pkgkde-gensymbols.
@@ -38,7 +40,7 @@ pkg-kde-tools (0.6.0~rc7) UNRELEASED; urgency=low
   * Fix lintian "I: hyphen-used-as-minus-sign
     usr/share/man/man1/pkgkde-vcs.1.gz:97"
 
- -- Modestas Vainius <modestas@vainius.eu>  Sun, 06 Dec 2009 22:06:01 +0200
+ -- Modestas Vainius <modax@debian.org>  Mon, 01 Feb 2010 20:09:10 +0200
 
 pkg-kde-tools (0.5.3) unstable; urgency=low
 
