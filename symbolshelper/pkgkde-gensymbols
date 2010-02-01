@@ -18,6 +18,8 @@
 use strict;
 use warnings;
 
+use Dpkg;
+
 use constant DATADIR => '/usr/share/pkg-kde-tools';
 
 sub find_dpkg_gensymbols {
@@ -47,25 +49,48 @@ sub new_symbolfile_load {
     return &$old_symbolfile_load($self, $file, $seen, $obj_ref, $base_symbol);
 }
 
-# Finally, run stock dpkg-gensymbols
-my ($exe, $dir) = find_dpkg_gensymbols();
-
-if (defined $exe) {
-    if (defined $dir && $dir eq DATADIR) {
-	unshift @INC, DATADIR;
+sub check_dpkg_version {
+    my @need = @_;
+    my @ver = split(/[.]/, $Dpkg::version);
+    my $ok = 0;
+    for (my $i = 0; ! $ok && $i < @need && $i < @ver; $i++) {
+	if ($ver[$i] > $need[$i]) {
+	    $ok = 1;
+	} elsif ($ver[$i] == $need[$i]) {
+	    if ($i == $#need) {
+		$ok = 1;
+	    }
+	} else {
+	    # Less
+	    last;
+	}
     }
+    return $ok;
+}
 
-    eval "use Dpkg::Shlibs::SymbolFile";
-    eval "use Debian::PkgKde::SymbolsHelper::Symbol";
+if (check_dpkg_version(1, 15, 5)) {
+    # Finally, run stock dpkg-gensymbols
+    my ($exe, $dir) = find_dpkg_gensymbols();
 
-    # Replace Dpkg::Shlibs::SymbolFile::load with a custom version
-    # which uses Debian::PkgKde::SymbolsHelper::Symbol rather than
-    # Dpkg::Shlibs::Symbol
-    $old_symbolfile_load = *Dpkg::Shlibs::SymbolFile::load;
-    *Dpkg::Shlibs::SymbolFile::load = *new_symbolfile_load;
+    if (defined $exe) {
+	if (defined $dir && $dir eq DATADIR) {
+	    unshift @INC, DATADIR;
+	}
 
-    do "$exe";
+	eval "use Dpkg::Shlibs::SymbolFile";
+	eval "use Debian::PkgKde::SymbolsHelper::Symbol";
+
+	# Replace Dpkg::Shlibs::SymbolFile::load with a custom version
+	# which uses Debian::PkgKde::SymbolsHelper::Symbol rather than
+	# Dpkg::Shlibs::Symbol
+	$old_symbolfile_load = *Dpkg::Shlibs::SymbolFile::load;
+	*Dpkg::Shlibs::SymbolFile::load = *new_symbolfile_load;
+
+	do "$exe";
+    } else {
+	print STDERR "pkgkde-gensymbols: unable to determine execution context.", "\n";
+	exit 1;
+    }
 } else {
-    print STDERR "pkgkde-gensymbols: unable to determine execution context.", "\n";
-    exit 1;
+    exec '/usr/bin/dpkg-gensymbols', @ARGV;
 }
