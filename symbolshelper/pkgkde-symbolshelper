@@ -550,9 +550,11 @@ sub subcommand_patch {
 
 sub subcommand_rewrite {
     my $opt_template = 1;
+    my $opt_convert;
     my %opts = (
 	get_common_options("oia"),
 	"template!" => \$opt_template,
+	"convert" => \$opt_convert,
     );
     if (GetOptions(%opts)) {
 	check_mandatory_options("i");
@@ -562,6 +564,16 @@ sub subcommand_rewrite {
 	    my %o = (
 		template_mode => $opt_template
 	    );
+
+	    if ($opt_convert) {
+		foreach my $soname ($symfile->get_sonames()) {
+		    foreach my $sym ($symfile->get_symbols($soname)) {
+			$sym->upgrade_virtual_table_symbol($opt_arch);
+			tweak_symbol($sym);
+		    }
+		}
+	    }
+
 	    return out_symfile($symfile, %o);
 	} else {
 	    error("input symbol file ($opt_in) not found");
