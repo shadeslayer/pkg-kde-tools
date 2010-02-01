@@ -15,38 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-=head1 NAME
-
-B<pkgkde-symbolshelper> - a helper tool for handling debian symbol files
-
-=head1 SYNOPSIS
-
-B<pkgkde-symbolshelper> U<subcommand> U<options>
-
-=head1 DESCRIPTION
-
-B<pkgkde-symbolshelper> is designed to ease maintainance of symbols files when
-the package needs a different one for each architecture. This is especially true
-for C++ libraries. However, differences in symbol names are usually minor and
-can be defined using some rules for each architecture. The program also
-introduces the concept of private symbols which, if actually exist, are written
-to the final symbols file but, if do not exist, they are simply ignored
-and do not cause failure at package build time.
-
-B<pkgkde-symbolshelper> works by generating a template symbols file 
-
-B<pkgkde-symbolshelper> U<symbolfile> subcommand should be called before
-F<dpkg-gensymbols(1)> to generate a real symbols file from the template and
-U<postgensymbols> subcommand should be called after F<dpkg-gensymbols(1)> to
-post process the final symbols file that F<dpkg-gensymbols(1)> has generated.
-
-Each subcommand accepts a few common options and a few specific options.
-
-=head1 OPTIONS
-=back
-
-=cut
-
 use strict;
 use warnings;
 
