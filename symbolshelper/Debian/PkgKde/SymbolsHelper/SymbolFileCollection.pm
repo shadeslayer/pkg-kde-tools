@@ -118,6 +118,8 @@ sub add_confirmed_arches {
 	    error("new symbol file has already been added for arch (%s)", $arch);
 	}
     }
+    push @{$self->{versions}{$self->get_symfile()->get_confirmed_version()}},
+	@arches;
     push @{$self->{confirmed_arches}}, @arches;
 }
 
