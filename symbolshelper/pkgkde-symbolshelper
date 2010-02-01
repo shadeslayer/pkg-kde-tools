@@ -548,7 +548,7 @@ sub subcommand_patch {
 #    return 1;
 #}
 
-sub subcommand_resort {
+sub subcommand_rewrite {
     my $opt_template = 1;
     my %opts = (
 	get_common_options("oia"),
@@ -621,7 +621,7 @@ sub subcommand_boilerplate {
 my %SUBCOMMANDS = (
     "create"		=> [ 1, \&subcommand_create, "create symbol file template" ],
     "patch"		=> [ 2, \&subcommand_patch, "apply dpkg-gensymbols patch(es) to the symbol file template" ],
-    "resort"		=> [ 3, \&subcommand_resort, "resort symbol file" ],
+    "rewrite"		=> [ 3, \&subcommand_rewrite, "filter/rewrite symbol file" ],
     "symbolfile"	=> [ 4, \&subcommand_symbolfile, "deprecated by pkgkde-gensymbols wrapper" ],
     "postgensymbols"	=> [ 5, \&subcommand_postgensymbols, "deprecated. Does nothing" ],
 );
