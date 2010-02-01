@@ -418,9 +418,8 @@ sub subcommand_patch {
 
 	# Finally create a SymbolFile collection and generate template
 	my $symfiles = new Debian::PkgKde::SymbolsHelper::SymbolFileCollection($symfile);
-	regular_print("Duplicating symbol file template on %s ...", join(", ", @carches));
-	$symfiles->fork_orig_symfile(@carches);
 	$symfiles->add_new_symfiles(values %psymfiles);
+	$symfiles->add_confirmed_arches(@carches);
 
 	# Detect templinst symbols before substitutions and create template
 	regular_print("Generating symbol file template .... (this might take a while)");

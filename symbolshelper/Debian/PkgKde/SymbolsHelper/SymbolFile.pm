@@ -78,6 +78,14 @@ sub create_symbol {
     return $self->SUPER::create_symbol($spec, $symbol);
 }
 
+sub fork_symbol {
+    my ($self, $sym, $arch) = @_;
+    $arch = $self->get_arch() unless $arch;
+    my $nsym = $sym->dclone(symbol => $sym->get_symboltempl());
+    $nsym->initialize(arch => $arch);
+    return $nsym;
+}
+
 # Get symbol object reference either by symbol *name* or by reference object.
 sub get_symbol_object {
     my ($self, $refsym, $soname) = @_;
@@ -280,26 +288,6 @@ sub patch_template {
     return (wantarray) ? @symfiles : $symfiles[0];
 }
 
-sub fork {
-    my ($self, @instances) = @_;
-    my @symfiles;
-    unshift @instances, {} unless @instances;
-
-    my $dump;
-    open(my $fh, ">", \$dump) or syserr("unable to open in-memory file");
-    $self->dump($fh, template_mode => 1, with_deprecated => 1);
-    close $fh;
-
-    foreach my $opts (@instances) {
-	$opts->{arch} = $self->get_arch() if not exists $opts->{arch};
-	my $symfile = ref($self)->new(%$opts);
-	$symfile->load(\$dump);
-	$symfile->{file} = '';
-	push @symfiles, $symfile;
-    }
-    return (wantarray) ? @symfiles : shift @symfiles;
-}
-
 sub _dclone_exclude {
     my ($target, @exclude) = @_;
     my %saved;
@@ -330,6 +318,35 @@ sub fork_empty {
     }
     return $symfile;
 }
+
+sub fork {
+    my ($self, @optinstances) = @_;
+    unshift @optinstances, {} unless @optinstances;
+    @optinstances = ( $optinstances[0] ) unless wantarray;
+
+    my @symfiles;
+    foreach my $opts (@optinstances) {
+	my $symfile = $self->fork_empty();
+	$symfile->{$_} = $opts->{$_} foreach keys %$opts;
+	$symfile->{file} = '';
+	push @symfiles, $symfile;
+    }
+
+    # Fork symbols
+    foreach my $soname ($self->get_sonames()) {
+	foreach my $sym ($self->get_symbols($soname),
+	                 $self->get_soname_patterns($soname))
+	{
+	    foreach my $symfile (@symfiles) {
+		my $nsym = $self->fork_symbol($sym, $symfile->get_arch());
+		$nsym->{h_origin_symbol} = $sym;
+		$symfile->add_symbol($soname, $nsym);
+	    }
+	}
+    }
+    return (wantarray) ? @symfiles : shift @symfiles;
+}
+
 
 sub get_highest_version {
     my $self = shift;

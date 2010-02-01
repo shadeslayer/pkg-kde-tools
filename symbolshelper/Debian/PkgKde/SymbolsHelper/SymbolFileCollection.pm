@@ -33,6 +33,7 @@ sub new {
     return bless { orig_symfile => $orig_symfile,
                    new_arches => {},
                    new_non_latest => [],
+                   confirmed_arches => [],
                    symfiles => {},
                    versions => {},
                    latest => undef }, $class;
@@ -110,13 +111,19 @@ sub add_symfiles {
     $self->{latest} = $latest;
 }
 
-sub fork_orig_symfile {
+sub add_confirmed_arches {
     my ($self, @arches) = @_;
-    my @symfiles = $self->get_symfile()->fork(
-	map +{ arch => $_ }, @arches
-    );
-    $self->add_symfiles(@symfiles);
-    return @symfiles;
+    foreach my $arch (@arches) {
+	if ($self->get_symfile($arch)) {
+	    error("new symbol file has already been added for arch (%s)", $arch);
+	}
+    }
+    push @{$self->{confirmed_arches}}, @arches;
+}
+
+sub get_confirmed_arches {
+    my ($self, @arches) = @_;
+    return $self->{confirmed_arches};
 }
 
 sub add_new_symfiles {
@@ -134,6 +141,14 @@ sub add_new_symfiles {
 	}
     }
     $self->{new_non_latest} = \@new_non_latest;
+}
+
+sub fork_orig_symfile {
+    my ($self, @arches) = @_;
+    my @symfiles = $self->get_symfile()->fork(
+	map +{ arch => $_ }, @arches
+    );
+    return map { $_->{arch} => $_ } @symfiles;
 }
 
 sub calc_group_name {
@@ -159,6 +174,37 @@ sub get_symbols_regrouped_by_name {
     return sort { $a->get_symboltempl() cmp $b->get_symboltempl() } @byname;
 }
 
+sub select_group {
+    my ($self, $sym, $soname, $arch, $gsubsts, $gother) = @_;
+
+    # Substitution detection is only supported for regular symbols and c++
+    # aliases.
+    if (! $sym->is_pattern() || $sym->get_alias_type() eq "c++") {
+	my $substs = ($sym->has_tag("c++")) ? \@CPP_TYPE_SUBSTS : \@TYPE_SUBSTS;
+	my $groupname = $self->calc_group_name($sym->get_symbolname(), $arch, @$substs);
+
+	# Prep for substs
+	my $h_name = $sym->get_h_name();
+	foreach my $subst (@$substs) {
+	    $subst->prep($h_name, $arch);
+	}
+
+	unless (exists $gsubsts->{$soname}{$groupname}) {
+	    $gsubsts->{$soname}{$groupname} =
+		Debian::PkgKde::SymbolsHelper::SymbolFileCollection::Group->new($substs);
+	}
+	return $gsubsts->{$soname}{$groupname};
+    } else {
+	# Symbol of some other kind. Then just group by name
+	my $name = $sym->get_symbolname();
+	unless (exists $gother->{$soname}{$name}) {
+	    $gother->{$soname}{$name} =
+		Debian::PkgKde::SymbolsHelper::SymbolFileCollection::Group->new();
+	}
+	return $gother->{$soname}{$name};
+    }
+}
+
 # Create a new template from the collection of symbol files 
 sub create_template {
     my ($self, %opts) = @_;
@@ -180,79 +226,71 @@ sub create_template {
     # Group new symbols by fully arch-neutralized name or, if unsupported,
     # simply by name.
     my (%gsubsts, %gother);
-    foreach my $arch1 (undef, keys %$symfiles) {
-	my $symfile1 = $self->get_symfile($arch1);
-	foreach my $arch2 (keys %$symfiles, undef) {
-	    my $symfile2 = $self->get_symfile($arch2);
-	    next if ($arch1 || '') eq ($arch2 || '');
+    my %osymfiles = $self->fork_orig_symfile($self->get_new_arches());
 
-	    # Change template arch of the original template. For grouping
-	    # purposes, we don't need to reexpand substs.
-	    $symfile1->{arch} = $arch2 unless defined $arch1;
-	    $symfile2->{arch} = $arch1 unless defined $arch2;
-	    my @new = $symfile1->get_new_symbols($symfile2, with_optional => 1);
-	    foreach my $n (@new) {
-		my $s = $n->{soname};
-		# Get a real reference
-		my $sym = $symfile1->get_symbol_object($n, $s);
-		my $group;
+    foreach my $arch ($self->get_new_arches()) {
+	my $nsymfile = $self->get_symfile($arch);
+	my $osymfile = $osymfiles{$arch};
 
-		unless (defined $sym) {
-		    internerr("get_symbol_object() was unable to lookup new symbol");
-		}
-		# Substitution detection is only supported for regular symbols
-		# and c++ aliases.
-		if (! $n->is_pattern() || $n->get_alias_type() eq "c++") {
-		    my $substs = ($n->has_tag("c++")) ? \@CPP_TYPE_SUBSTS : \@TYPE_SUBSTS;
-		    my $groupname = $self->calc_group_name($n->get_symbolname(), $arch1, @$substs);
+	my @new = $nsymfile->get_new_symbols($osymfile, with_optional => 1);
+	foreach my $n (@new) {
+	    my $soname = $n->{soname};
+	    # Get real references
+	    my $nsym = $nsymfile->get_symbol_object($n, $soname);
+	    my $osym = $osymfile->get_symbol_object($n, $soname);
 
-		    # Prep for substs
-		    if (not $sym->{h_prepped}) {
-			my $h_name = $sym->get_h_name();
-			foreach my $subst (@$substs) {
-			    $subst->prep($h_name, $arch1);
-			}
-			$sym->{h_prepped} = 1;
-		    }
-		    unless (exists $gsubsts{$s}{$groupname}) {
-			$gsubsts{$s}{$groupname} =
-			    Debian::PkgKde::SymbolsHelper::SymbolFileCollection::Group->new($substs);
-		    }
-		    $group = $gsubsts{$s}{$groupname};
-		} else {
-		    # Symbol of some other kind. Then just group by name
-		    my $name = $n->get_symbolname();
-		    unless (exists $gother{$s}{$name}) {
-			$gother{$s}{$name} =
-			    Debian::PkgKde::SymbolsHelper::SymbolFileCollection::Group->new();
-		    }
-		    $group = $gother{$s}{$name};
-		}
+	    unless (defined $nsym) {
+		internerr("get_symbol_object() was unable to lookup new symbol");
+	    }
 
-		# Add symbol to the group
-		$group->add_symbol($arch1, $sym);
-		# "Touch" the $orig symbol if that's what we are dealing with
-		$sym->{h_touched} = 1 if ! defined $arch1;
-		if (! defined $arch2 && ! defined $group->get_symbol()) {
-		    # We need to associate this group with $orig deprecated symbol
-		    # if such exists.
-		    my $sym2 = $symfile2->get_symbol_object($n, $s);
-		    if (defined $sym2) {
-			$sym2->{h_touched} = 1;
-			$group->add_symbol(undef, $sym2);
+	    my $group = $self->select_group($nsym, $soname, $arch, \%gsubsts, \%gother);
+
+	    # Add symbol to the group
+	    $group->add_symbol($arch, $nsym);
+
+	    if (defined $osym) {
+		my $origin = $osym->{h_origin_symbol};
+		$group->add_symbol(undef, $origin);
+		# "Touch" the origin symbol
+		$origin->{h_touched} = 1;
+	    }
+	}
+
+	my @lost = $nsymfile->get_lost_symbols($osymfile, with_optional => 1);
+	foreach my $l (@lost) {
+	    my $soname = $l->{soname};
+	    my $sym = $osymfile->get_symbol_object($l, $soname);
+	    unless (defined $sym) {
+		internerr("get_symbol_object() was unable to lookup lost symbol");
+	    }
+	    my $origin = $sym->{h_origin_symbol};
+	    my $group = $self->select_group($sym, $soname, $arch, \%gsubsts, \%gother);
+
+	    $group->add_symbol(undef, $origin);
+	    # "Touch" the origin symbol
+	    $origin->{h_touched} = 1;
+	}
+    }
+
+    # Fork confirmed symbols where it matters
+    if (my @carches = $self->get_confirmed_arches()) {
+	foreach my $soname (values %gsubsts) {
+	    foreach my $group (values %$soname) {
+		if ($group->get_arches() && (my $osym = $group->get_symbol())) {
+		    foreach my $arch (@carches) {
+			$group->add_symbol($arch, $orig->fork_symbol($osym, $arch));
 		    }
 		}
 	    }
 	}
     }
-    $orig->{arch} = $orig_arch; # Restore original arch
 
     # Readd all untouched symbols in $orig back to the $template
     foreach my $soname ($orig->get_sonames()) {
 	foreach my $sym ($orig->get_symbols($soname),
 	                 $orig->get_soname_patterns($soname))
 	{
-	    if (!exists $self->{h_touched}) {
+	    if (!exists $sym->{h_touched}) {
 		$template->add_symbol($soname, $sym);
 	    }
 	}
