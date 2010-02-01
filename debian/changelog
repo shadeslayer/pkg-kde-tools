@@ -32,6 +32,8 @@ pkg-kde-tools (0.6.0~rc6) UNRELEASED; urgency=low
     Incremental patching is also supported.
   * Add support for detection/expansion of the qprtdiff and quintptr substs (Qt
     types).
+  * Promote dpkg-dev to Recommends, bump needed version to 1.15.5~.
+  * Remove dpkg-dev from Breaks.
 
  -- Modestas Vainius <modestas@vainius.eu>  Sun, 06 Dec 2009 22:06:01 +0200
 
