@@ -619,7 +619,7 @@ sub calc_properties {
 		    }
 		    if ($fail) {
 			# Set unsorted @narches
-			$result->add_tag("arch", join(" ", @narches));
+			$result->add_tag("arch", join(" ", sort @narches));
 		    }
 		} else {
 		    # If deprecated on all but a single arch, add that one
