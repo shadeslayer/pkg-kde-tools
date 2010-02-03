@@ -246,12 +246,10 @@ sub subcommand_create {
 	    $template->set_confirmed($symfiles->get_latest_version(),
 		$symfiles->get_latest_arches());
 
-	    foreach my $soname ($template->get_sonames()) {
-		foreach my $sym ($template->get_symbols($soname),
-		                 $template->get_soname_patterns($soname))
-		{
-		    tweak_symbol($sym);
-		}
+	    foreach my $sym ($template->get_symbols(),
+	                     $template->get_patterns())
+	    {
+		tweak_symbol($sym);
 	    }
 
 	    return out_symfile($template);
@@ -407,7 +405,7 @@ sub subcommand_patch {
 	    push @changes_arch, $soname;
 	    foreach my $sym (sort { $a->get_symboltempl() cmp $b->get_symboltempl() }
 	                           $template->get_symbols($soname),
-	                           $template->get_soname_patterns($soname))
+	                           $template->get_patterns($soname))
 	    {
 		my $osym = $symfile->get_symbol_object($sym, $soname);
 		if (defined $osym) {
@@ -534,11 +532,9 @@ sub subcommand_rewrite {
 	    );
 
 	    if ($opt_convert) {
-		foreach my $soname ($symfile->get_sonames()) {
-		    foreach my $sym ($symfile->get_symbols($soname)) {
-			$sym->upgrade_virtual_table_symbol($opt_arch);
-			tweak_symbol($sym);
-		    }
+		foreach my $sym ($symfile->get_symbols()) {
+		    $sym->upgrade_virtual_table_symbol($opt_arch);
+		    tweak_symbol($sym);
 		}
 	    }
 

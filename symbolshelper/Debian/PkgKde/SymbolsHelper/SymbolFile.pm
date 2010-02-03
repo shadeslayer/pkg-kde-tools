@@ -49,12 +49,6 @@ sub load {
     return $self->SUPER::load($file, $seen, $obj_ref, $base_symbol);
 }
 
-# TODO: Add to Dpkg::Shlibs::SymbolFile
-sub get_arch {
-    my $self = shift;
-    return $self->{arch};
-}
-
 sub set_confirmed {
     my ($self, $version, @arches) = @_;
     $self->{h_confirmed_version} = $version;
@@ -73,40 +67,18 @@ sub get_confirmed_arches {
 }
 
 sub create_symbol {
-    my ($self, $spec, $symbol) = @_;
-    $symbol = Debian::PkgKde::SymbolsHelper::Symbol->new() unless defined $symbol;
-    return $self->SUPER::create_symbol($spec, $symbol);
+    my ($self, $spec, %opts) = @_;
+    $opts{base} = Debian::PkgKde::SymbolsHelper::Symbol->new()
+	unless exists $opts{base};
+    return $self->SUPER::create_symbol($spec, %opts);
 }
 
 sub fork_symbol {
     my ($self, $sym, $arch) = @_;
     $arch = $self->get_arch() unless $arch;
-    my $nsym = $sym->dclone(symbol => $sym->get_symboltempl());
+    my $nsym = $sym->clone(symbol => $sym->get_symboltempl());
     $nsym->initialize(arch => $arch);
     return $nsym;
-}
-
-# Get symbol object reference either by symbol *name* or by reference object.
-sub get_symbol_object {
-    my ($self, $refsym, $soname) = @_;
-    my $name = (ref $refsym) ? $refsym->get_symbolname() : $refsym;
-    my $sonameobj = (ref $soname) ? $soname : $self->{objects}{$soname};
-
-    if (exists $sonameobj->{syms}{$name}) {
-	return $sonameobj->{syms}{$name};
-    } else {
-	if (!ref($refsym)) {
-	    # If by name, we need to create a dummy ref symbol. Append a dummy
-	    # version to the name to make it valid spec.
-	    $refsym = $self->create_symbol($refsym.' 1');
-	}
-	if (defined $refsym) {
-	    return $self->lookup_pattern($refsym, [ $sonameobj ], 1);
-	} else {
-	    internerr("invalid symbol name (%s) supplied to get_symbol_object()",
-		$name);
-	}
-    }
 }
 
 sub dump {
@@ -121,25 +93,6 @@ sub dump {
 	}
     }
     return $self->SUPER::dump($fh, %opts);
-}
-
-sub get_symbols {
-    my ($self, $soname) = @_;
-    if (defined $soname) {
-	my $obj = (ref $soname) ? $soname : $self->{objects}{$soname};
-	return values %{$obj->{syms}};
-    } else {
-	my @syms;
-	foreach my $soname (keys %{$self->{objects}}) {
-	    push @syms, $self->get_symbols($soname);
-	}
-	return @syms;
-    }
-}
-
-sub get_sonames {
-    my $self = shift;
-    return keys %{$self->{objects}};
 }
 
 sub _resync_symbol_cache {
@@ -160,13 +113,13 @@ sub _resync_symbol_cache {
 		$rename{$newname}->get_symbolspec(1),
 		$e->get_symbolspec(1));
 	}
-	$self->add_symbol($soname, $rename{$newname});
+	$self->add_symbol($rename{$newname}, $soname);
     }
 }
 
 sub resync_soname_symbol_caches {
     my ($self, $soname) = @_;
-    my $obj = (ref $soname) ? $soname : $self->{objects}{$soname};
+    my $obj = $self->get_object($soname);
 
     # We need this to avoid removal of symbols which names clash when renaming
     $self->_resync_symbol_cache($obj, $obj->{syms});
@@ -179,7 +132,7 @@ sub resync_soname_symbol_caches {
 
 sub resync_soname_with_h_name {
     my ($self, $soname) = @_;
-    my $obj = (ref $soname) ? $soname : $self->{objects}{$soname};
+    my $obj = $self->get_object($soname);
 
     sub _resync_with_h_name {
 	my $cache = shift;
@@ -309,10 +262,10 @@ sub fork_empty {
 
     my $symfile = _dclone_exclude($self, qw(objects));
     $symfile->clear();
-    foreach my $soname (keys %{$self->{objects}}) {
+    foreach my $soname ($self->get_sonames()) {
 	$symfile->create_object($soname);
-	my $obj = $symfile->{objects}{$soname};
-	my $cloned = _dclone_exclude($self->{objects}{$soname},
+	my $obj = $symfile->get_object($soname);
+	my $cloned = _dclone_exclude($self->get_object($soname),
 	    qw(syms patterns minver_cache));
 	$obj->{$_} = $cloned->{$_} foreach keys %$cloned;
     }
@@ -335,12 +288,12 @@ sub fork {
     # Fork symbols
     foreach my $soname ($self->get_sonames()) {
 	foreach my $sym ($self->get_symbols($soname),
-	                 $self->get_soname_patterns($soname))
+	                 $self->get_patterns($soname))
 	{
 	    foreach my $symfile (@symfiles) {
 		my $nsym = $self->fork_symbol($sym, $symfile->get_arch());
 		$nsym->{h_origin_symbol} = $sym;
-		$symfile->add_symbol($soname, $nsym);
+		$symfile->add_symbol($nsym, $soname);
 	    }
 	}
     }
@@ -352,15 +305,12 @@ sub get_highest_version {
     my $self = shift;
     my $maxver;
 
-    foreach my $soname ($self->get_sonames()) {
-	foreach my $sym ($self->get_symbols($soname),
-	                 $self->get_soname_patterns($soname))
+    foreach my $sym ($self->get_symbols(),
+                     $self->get_patterns()) {
+	if (!$sym->{deprecated} &&
+	    (!defined $maxver || version_compare($sym->{minver}, $maxver) > 0))
 	{
-	    if (!$sym->{deprecated} &&
-	        (!defined $maxver || version_compare($sym->{minver}, $maxver) > 0))
-	    {
-		$maxver = $sym->{minver};
-	    }
+	    $maxver = $sym->{minver};
 	}
     }
 

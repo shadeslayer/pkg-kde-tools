@@ -237,13 +237,9 @@ sub create_template {
 	my @new = $nsymfile->get_new_symbols($osymfile, with_optional => 1);
 	foreach my $n (@new) {
 	    my $soname = $n->{soname};
-	    # Get real references
-	    my $nsym = $nsymfile->get_symbol_object($n, $soname);
-	    my $osym = $osymfile->get_symbol_object($n, $soname);
-
-	    unless (defined $nsym) {
-		internerr("get_symbol_object() was unable to lookup new symbol");
-	    }
+	    my $nsym = $n->{symbol};
+	    # Get a reference in the orig symfile if any
+	    my $osym = $osymfile->get_symbol_object($nsym, $soname);
 
 	    my $group = $self->select_group($nsym, $soname, $arch, \%gsubsts, \%gother);
 
@@ -261,10 +257,7 @@ sub create_template {
 	my @lost = $nsymfile->get_lost_symbols($osymfile, with_optional => 1);
 	foreach my $l (@lost) {
 	    my $soname = $l->{soname};
-	    my $sym = $osymfile->get_symbol_object($l, $soname);
-	    unless (defined $sym) {
-		internerr("get_symbol_object() was unable to lookup lost symbol");
-	    }
+	    my $sym = $l->{symbol};
 	    my $origin = $sym->{h_origin_symbol};
 	    my $group = $self->select_group($sym, $soname, $arch, \%gsubsts, \%gother);
 
@@ -290,10 +283,10 @@ sub create_template {
     # Readd all untouched symbols in $orig back to the $template
     foreach my $soname ($orig->get_sonames()) {
 	foreach my $sym ($orig->get_symbols($soname),
-	                 $orig->get_soname_patterns($soname))
+	                 $orig->get_patterns($soname))
 	{
 	    if (!exists $sym->{h_touched}) {
-		$template->add_symbol($soname, $sym);
+		$template->add_symbol($sym, $soname);
 	    }
 	}
     }
@@ -310,7 +303,7 @@ sub create_template {
 	    # Take care of ambiguous groups
 	    if ($group->is_ambiguous()) {
 		if (my @byname = $self->get_symbols_regrouped_by_name($group)) {
-		    $template->add_symbol($soname, $_) foreach @byname;
+		    $template->add_symbol($_, $soname) foreach @byname;
 		    info("ambiguous symbols for subst detection (%s). Processed by name:\n" .
 		         "  %s", "$groupname/$soname",
 			join("\n  ", map { $_->get_symbolspec(1) } @byname));
@@ -336,14 +329,14 @@ sub create_template {
 
 		if ($substs_ok) {
 		    # Finally add to template
-		    $template->add_symbol($soname, $sym);
+		    $template->add_symbol($sym, $soname);
 		} else {
 		    # Substitutions do not verify. Regroup by name what remains
 		    foreach my $sym ($group->get_symbols()) {
 			$sym->resync_name_with_h_name();
 		    }
 		    if (my @byname = $self->get_symbols_regrouped_by_name($group)) {
-			$template->add_symbol($soname, $_) foreach @byname;
+			$template->add_symbol($_, $soname) foreach @byname;
 			info("possible incomplete subst detection (%s). Processed by name:\n" .
 			     "  %s", "$groupname/$soname",
 			     join("\n  ", map { $_->get_symbolspec(1) } @byname));
@@ -360,7 +353,7 @@ sub create_template {
 	foreach my $groupname (keys %$groups) {
 	    my $group = $groups->{$groupname};
 	    if (my $sym = $group->calc_properties($self)) {
-		$template->add_symbol($soname, $sym);
+		$template->add_symbol($sym, $soname);
 	    }
 	}
     }
@@ -411,7 +404,7 @@ sub get_result {
 
 sub init_result {
     my ($self, $based_on_arch) = @_;
-    $self->{result} = $self->get_symbol($based_on_arch)->dclone();
+    $self->{result} = $self->get_symbol($based_on_arch)->clone();
     return $self->{result};
 }
 
