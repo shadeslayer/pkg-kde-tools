@@ -244,11 +244,11 @@ sub create_template {
 	    my $group = $self->select_group($nsym, $soname, $arch, \%gsubsts, \%gother);
 
 	    # Add symbol to the group
-	    $group->add_symbol($arch, $nsym);
+	    $group->add_symbol($nsym, $arch);
 
 	    if (defined $osym) {
 		my $origin = $osym->{h_origin_symbol};
-		$group->add_symbol(undef, $origin);
+		$group->add_symbol($origin);
 		# "Touch" the origin symbol
 		$origin->{h_touched} = 1;
 	    }
@@ -261,7 +261,7 @@ sub create_template {
 	    my $origin = $sym->{h_origin_symbol};
 	    my $group = $self->select_group($sym, $soname, $arch, \%gsubsts, \%gother);
 
-	    $group->add_symbol(undef, $origin);
+	    $group->add_symbol($origin);
 	    # "Touch" the origin symbol
 	    $origin->{h_touched} = 1;
 	}
@@ -273,7 +273,7 @@ sub create_template {
 	    foreach my $group (values %$soname) {
 		if ($group->get_arches() && (my $osym = $group->get_symbol())) {
 		    foreach my $arch (@carches) {
-			$group->add_symbol($arch, $orig->fork_symbol($osym, $arch));
+			$group->add_symbol($orig->fork_symbol($osym, $arch), $arch);
 		    }
 		}
 	    }
@@ -409,7 +409,7 @@ sub init_result {
 }
 
 sub add_symbol {
-    my ($self, $arch, $sym) = @_;
+    my ($self, $sym, $arch) = @_;
 
     if (my $esym = $self->get_symbol($arch)) {
 	if ($esym != $sym) {
@@ -447,7 +447,7 @@ sub regroup_by_name {
 		$groups{$name} = ref($self)->new();
 	    }
 	    my $group = $groups{$name};
-	    $group->add_symbol($arch, $sym);
+	    $group->add_symbol($sym, $arch);
 	}
     }
     if (exists $self->{ambiguous}) {
@@ -460,7 +460,7 @@ sub regroup_by_name {
 			$groups{$name} = ref($self)->new();
 		    }
 		    my $group = $groups{$name};
-		    $group->add_symbol($arch, $sym);
+		    $group->add_symbol($sym, $arch);
 		}
 	    }
 	}
