@@ -68,7 +68,7 @@ sub get_common_options {
     my (%args, %res);
 
     map { $args{$_} = 1 } split(//, $args);
-    $res{"output|o=s"} = \$opt_out if ($args{o});
+    $res{"output|o:s"} = \$opt_out if ($args{o});
     $res{"input|i=s"} = \&verify_opt_in if ($args{i});
     $res{"package|p=s"} = \$opt_package if ($args{p});
     $res{"architecture|a=s"} = \&verify_opt_arch if ($args{a});
@@ -126,10 +126,22 @@ sub out_symfile {
     my ($symfile, %opts) = @_;
     return 1 unless $symfile;
 
+    my $out_fh;
+    if (defined $opt_out) {
+	# If -o is specified, dump to STDOUT if it does not have an argument or
+	# save to specified file otherwise.
+	$out_fh = *STDOUT unless $opt_out;
+    } else {
+	# If -o is not specified, save to the input file.
+	$opt_out = $opt_in;
+    }
+
     if ($opt_out) {
 	$symfile->save($opt_out, template_mode => 1, with_deprecated => 1, %opts);
+    } elsif ($out_fh) {
+	$symfile->dump($out_fh, template_mode => 1, with_deprecated => 1, %opts);
     } else {
-	$symfile->dump(*STDOUT, template_mode => 1, with_deprecated => 1, %opts);
+	error("output file could not be determined");
     }
     return 0;
 }

@@ -5,6 +5,11 @@ pkg-kde-tools (0.6.1) UNRELEASED; urgency=low
   * Now `pkgkde-symbolshelper create` bases its template on the arch specific
     symbol file (as specified with -a option). This alters arch tag generation
     a bit (negative arches are used more frequently than before).
+  * Alter behaviour of -o option:
+    - if it is not specified, output is dumped to the same file as input was
+      read from;
+    - if it is specified without argument, dump to stdout;
+    - if it is specified with argument, dump to the file in argument.
 
  -- Modestas Vainius <modax@debian.org>  Sat, 06 Feb 2010 15:05:44 +0200
 
