@@ -1,4 +1,4 @@
-pkg-kde-tools (0.6.1) UNRELEASED; urgency=low
+pkg-kde-tools (0.6.1) unstable; urgency=low
 
   * Rework detection of arch specific symbols. This should fix some bugs
     with arch symbol tag processing and generation.
@@ -15,7 +15,7 @@ pkg-kde-tools (0.6.1) UNRELEASED; urgency=low
   * pkgkde-symbolshelper create/patch: prompt for version if -v is not
     specified on the command line. Good defaults are also suggested.
 
- -- Modestas Vainius <modax@debian.org>  Sat, 06 Feb 2010 15:05:44 +0200
+ -- Modestas Vainius <modax@debian.org>  Sat, 06 Feb 2010 23:43:07 +0200
 
 pkg-kde-tools (0.6.0) unstable; urgency=low
 
