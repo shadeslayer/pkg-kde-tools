@@ -98,6 +98,33 @@ sub check_mandatory_options {
     return 1;
 }
 
+sub sanitize_version {
+    my ($ver, $default, $prompt) = @_;
+    my %choices = ( v => $ver );
+    my $answer;
+    if ($ver =~ m/^(.+)-(.*[^~])$/) {
+	# Non-native debian package
+	$choices{u} = $1;
+    }
+    $choices{'d'} = $choices{v}.'~';
+
+    if ($prompt && -t STDIN) {
+	regular_print("Do you want to assign one version to all new symbols %s?",
+	    ($default) ? "(default is '$default')" : "(ENTER if no)");
+	print STDERR sprintf("What version? [ %s / enter other ]: ", join(" / ",
+	    (map { sprintf("%s = %s", ($_ eq ($default || '')) ? uc($_) : $_, $choices{$_}) }
+		grep { exists $choices{$_} } qw(u d v))));
+	$answer = lc(<STDIN>);
+	chop $answer;
+	$answer = $choices{$answer} if exists $choices{$answer};
+    }
+    if (! $answer) {
+	$answer = (defined $default) ? $choices{$default} : $default;
+    }
+
+    return (wantarray) ? (\%choices, $answer) : $answer;
+}
+
 ############### Common subroutines #################
 sub regular_print {
     my $msg = shift;
@@ -238,7 +265,8 @@ sub subcommand_create {
 	    }
 	    # Set confirmed version
 	    unless ($opt_version) {
-		$opt_version = $symfiles{$opt_arch}->get_highest_version();
+		my $ver = $symfiles{$opt_arch}->get_highest_version();
+		$opt_version = sanitize_version($ver, 'd', 1) || $ver;
 	    }
 	    foreach my $symfile (values %symfiles) {
 		$symfile->set_confirmed($opt_version, $symfile->get_arch());
@@ -303,12 +331,9 @@ sub subcommand_patch {
 	);
 	my $version = $symfile->get_confirmed_version();
 	unless ($version) {
-	    error("multipatch needs a symbol file template with 'SymbolsHelper-Confirmed' header");
+	    error("`patch` needs a symbol file template with 'SymbolsHelper-Confirmed' header");
 	}
-	if ($opt_version && version_compare($opt_version, $version) < 0) {
-	    error("you specified lower version (%s) than one of the input symbol file template (%s)",
-		$opt_version, $version);
-	}
+
 	my $base_symfile = $symfile;
 	if ($opt_base ne $opt_in) {
 	    $base_symfile = Debian::PkgKde::SymbolsHelper::SymbolFile->new(
@@ -351,6 +376,7 @@ sub subcommand_patch {
 	# Patch the base template with our patches and pick symbol files with
 	# the highest version for each architecture.
 	my (%psymfiles, %pversions);
+	my $latest_ver;
 	if (@patches) {
 	    regular_print("Patching symbol file '%s' with supplied patches ...",
 		$base_symfile->{file});
@@ -368,6 +394,11 @@ sub subcommand_patch {
 		    {
 			$psymfiles{$arch} = $psymfile;
 			$pversions{$arch} = $patch->{version};
+			if (!defined $latest_ver ||
+			    version_compare($patch->{version}, $latest_ver) > 0)
+			{
+			    $latest_ver = $patch->{version};
+			}
 		    }
 		} else {
 		    warning($str . "FAILED.");
@@ -378,6 +409,15 @@ sub subcommand_patch {
 	}
 	unless (keys %psymfiles) {
 	    error("no valid symbol files could be loaded from the supplied patch files");
+	}
+
+	# Sanitize version
+	unless (defined $opt_version) {
+	    $opt_version = sanitize_version($latest_ver, undef, 1);
+	}
+	if ($opt_version && version_compare($opt_version, $version) < 0) {
+	    error("input symbol file template version (%s) is higher than the specified one (%s)",
+		$version, $opt_version);
 	}
 
 	# Reset version if requested and drop patched symbol files which have

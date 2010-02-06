@@ -12,6 +12,8 @@ pkg-kde-tools (0.6.1) UNRELEASED; urgency=low
     - if it is specified with argument, dump to the file in argument.
   * pkgkde-symbolshelper create/patch: arch specific files/patches are passed
     via @ARGV now.
+  * pkgkde-symbolshelper create/patch: prompt for version if -v is not
+    specified on the command line. Good defaults are also suggested.
 
  -- Modestas Vainius <modax@debian.org>  Sat, 06 Feb 2010 15:05:44 +0200
 
