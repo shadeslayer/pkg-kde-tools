@@ -10,6 +10,8 @@ pkg-kde-tools (0.6.1) UNRELEASED; urgency=low
       read from;
     - if it is specified without argument, dump to stdout;
     - if it is specified with argument, dump to the file in argument.
+  * pkgkde-symbolshelper create/patch: arch specific files/patches are passed
+    via @ARGV now.
 
  -- Modestas Vainius <modax@debian.org>  Sat, 06 Feb 2010 15:05:44 +0200
 

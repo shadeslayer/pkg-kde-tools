@@ -186,20 +186,24 @@ sub _create_symfile {
 }
 
 sub subcommand_create {
-    my @opt_dirs;
     my %opts = (
 	get_common_options("oav"),
-	"directory|d=s" => \@opt_dirs,
     );
     if (GetOptions(%opts)) {
-	check_mandatory_options("", "",
-	    scalar(@opt_dirs), "symbol file directory option (-d) is mandatory");
+	unless (defined $opt_out) {
+	    error("output file option (-o) is mandatory");
+	}
 
 	# Load symbol files
+	my @input_files = @ARGV;
 	my %symfiles;
 	my $str_arches = join("|", get_valid_arches());
 	my $filename_re = qr/.*?[_.]($str_arches)$/;
-	for my $f (@opt_dirs) {
+
+	unless (@input_files) {
+	    error("please pass files/directory with arch specific symbol files");
+	}
+	for my $f (@input_files) {
 	    if (-d $f) {
 		opendir(DIR, $f) or error("unable to open directory: $f");
 		while (my $filename = readdir(DIR)) {
@@ -276,22 +280,22 @@ sub subcommand_create {
 }
 
 sub subcommand_patch {
-    my @opt_diffs;
     my $opt_base;
+    my @input_patches;
     my %opts = (
 	get_common_options("oipavV"),
-	"diff|d=s" => \@opt_diffs,
 	"base|b=s" => \$opt_base,
     );
     if (GetOptions(%opts)) {
 	check_mandatory_options("p", "");
+	@input_patches = @ARGV;
 	unless ($opt_in) {
 	    $opt_in = find_package_symbolfile_path($opt_package, $opt_arch);
 	    error("symbol template file was not found for package '$opt_package'")
 		unless (defined $opt_in && -r $opt_in);
 	}
 	$opt_base = $opt_in unless $opt_base;
-	push @opt_diffs, "-" unless @opt_diffs;
+	push @input_patches, "-" unless @input_patches;
 
 	# Load input symfile
 	my $symfile = Debian::PkgKde::SymbolsHelper::SymbolFile->new(
@@ -328,7 +332,7 @@ sub subcommand_patch {
 	    }
 	    return @patches;
 	};
-	for my $f (@opt_diffs) {
+	for my $f (@input_patches) {
 	    if (-d $f) {
 		opendir(DIR, $f) or error("unable to open directory with patches: $f");
 		while (my $filename = readdir(DIR)) {
