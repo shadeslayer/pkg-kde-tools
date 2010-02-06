@@ -256,6 +256,7 @@ sub create_template {
 	    my $origin = $sym->{h_origin_symbol};
 	    my $group = $self->select_group($sym, $soname, $arch, \%gsubsts, \%gother);
 
+	    $group->add_lost_symbol($sym, $arch);
 	    $group->add_symbol($origin);
 	    # "Touch" the origin symbol
 	    $origin->{h_touched} = 1;
@@ -372,6 +373,7 @@ sub new {
     my ($class, $substs) = @_;
     return bless {
 	arches => {},
+	lost => {},
 	orig => undef,
 	result => undef,
 	substs => $substs}, $class;
@@ -402,6 +404,21 @@ sub get_result {
     return $self->{result};
 }
 
+# There might be a new version available (e.g. with corrected substs).
+sub is_lost {
+    my ($self, $arch) = @_;
+    return exists $self->{lost}{$arch} && ! $self->has_symbol($arch);
+}
+
+sub is_new {
+    my ($self, $arch) = @_;
+    if (my $osym = $self->get_symbol()) {
+	return ! $osym->is_legitimate($arch);
+    } else {
+	return 1;
+    }
+}
+
 sub init_result {
     my ($self, $based_on_arch) = @_;
     $self->{result} = $self->get_symbol($based_on_arch)->clone();
@@ -409,23 +426,55 @@ sub init_result {
 }
 
 sub add_symbol {
-    my ($self, $sym, $arch) = @_;
+    my ($self, $sym, $arch, $lost) = @_;
+    my $status = ($lost) ? "lost" : "arches";
 
-    if (my $esym = $self->get_symbol($arch)) {
+    if (my $esym = ($lost) ? $self->{lost}{$arch} : $self->get_symbol($arch)) {
 	if ($esym != $sym) {
 	    # Another symbol already exists in this group for $arch.
 	    # Add to other syms
-	    push @{$self->{ambiguous}{$arch || ''}}, $sym;
+	    push @{$self->{ambiguous}{$status}{$arch || ''}}, $sym;
 	}
 	# Otherwise, don't do anything. This symbol has already been added.
 	return 0;
     } else {
 	if (defined $arch) {
-	    $self->{arches}{$arch} = $sym;
+	    $self->{$status}{$arch} = $sym;
 	} else {
 	    $self->{orig} = $sym;
 	}
 	return 1;
+    }
+}
+
+sub add_lost_symbol {
+    my ($self, $sym, $arch) = @_;
+    return $self->add_symbol($sym, $arch, 1);
+}
+
+sub dump {
+    my ($self, $fh) = @_;
+    $fh = \*STDERR unless defined $fh;
+    if (my $sym = $self->get_symbol()) {
+	print $fh "orig:", $sym->get_symbolspec(1), "\n";
+    }
+    foreach my $arch ($self->get_arches()) {
+	my $sym = $self->get_symbol($arch);
+	print $fh "arches{$arch}:", $sym->get_symbolspec(1), "\n";
+    }
+    foreach my $arch (keys %{$self->{lost}}) {
+	my $sym = $self->{lost}{$arch};
+	print $fh "lost{$arch}:", $sym->get_symbolspec(1), "\n";
+    }
+    if ($self->is_ambiguous()) {
+	foreach my $status (sort keys %{$self->{ambiguous}}) {
+	    my $arches = $self->{ambiguous}{$status};
+	    foreach my $arch (keys %$arches) {
+		foreach my $sym (@{$arches->{$arch}}) {
+		    print $fh "ambiguous{$status}{$arch}:", $sym->get_symbolspec(1), "\n";
+		}
+	    }
+	}
     }
 }
 
@@ -447,20 +496,32 @@ sub regroup_by_name {
 		$groups{$name} = ref($self)->new();
 	    }
 	    my $group = $groups{$name};
-	    $group->add_symbol($sym, $arch);
+	    $group->add_symbol($sym, $arch, defined $arch &&
+		$self->is_lost($arch));
 	}
     }
-    if (exists $self->{ambiguous}) {
-	foreach my $arch (keys %{$self->{ambiguous}}) {
-	    foreach my $sym (@{$self->{ambiguous}{$arch}}) {
-		$arch = undef if ! $arch;
-		if (defined $sym) {
+    foreach my $arch (keys %{$self->{lost}}) {
+	my $sym = $self->{lost}{$arch};
+	my $name = $sym->get_symbolname();
+	unless (exists $groups{$name}) {
+	    $groups{$name} = ref($self)->new();
+	}
+	my $group = $groups{$name};
+	$group->add_lost_symbol($sym, $arch);
+    }
+    if ($self->is_ambiguous()) {
+	foreach my $status (keys %{$self->{ambiguous}}) {
+	    my $arches = $self->{ambiguous}{$status};
+	    my $lost = ($status eq "lost");
+	    foreach my $arch (keys %$arches) {
+		foreach my $sym (@{$arches->{$arch}}) {
+		    $arch = undef if ! $arch;
 		    my $name = $sym->get_symbolname();
 		    unless (exists $groups{$name}) {
 			$groups{$name} = ref($self)->new();
 		    }
 		    my $group = $groups{$name};
-		    $group->add_symbol($sym, $arch);
+		    $group->add_symbol($sym, $arch, $lost);
 		}
 	    }
 	}
@@ -498,180 +559,230 @@ sub verify_substs {
     return 1;
 }
 
+sub verify_result_arches {
+    my ($self, $add, $deprecate) = @_;
+    my $result = $self->get_result();
+    my $ok = 1;
+    foreach my $arch (keys %$add) {
+	unless ($result->arch_is_concerned($arch)) {
+	    $ok = 0;
+	    last;
+	}
+    }
+    if ($ok) {
+	foreach my $arch (keys %$deprecate) {
+	    if ($result->arch_is_concerned($arch)) {
+		$ok = 0;
+		last;
+	    }
+	}
+    }
+    return $ok;
+}
+
+# Gets symbol status on $arch:
+#  -2 - if symbol got LOST;
+#  -1 - if symbol is deprecated and has been such (status hasn't changed);
+#   0 - symbol is NOT present on $arch and original symbol is not available;
+#   1 - symbol is present and has been been such (status hasn't changed);
+#   2 - symbol is NEW.
+sub get_symbol_arch_status {
+    my ($self, $arch) = @_;
+    my $status;
+
+    # If $self->is_lost($arch) returns true, it means a symbol is really
+    # NOT (or no longer) present on that arch in comparision to original
+    # symbol file. If $self->has_symbol($arch) returns true, the symbol is
+    # KNOWN to be have BEEN present on that arch (and it still is if it is
+    # not deprecated). Otherwise, the symbol the symbols status has not changed
+    # so it is is either: 1) present on $arch if $osym is legitimate on $arch;
+    # 2) absent on $arch otherwise.
+    if ($self->is_lost($arch)) {
+	$status = -2;
+    } elsif ($self->has_symbol($arch)) {
+	if ($self->get_symbol($arch)->{deprecated}) {
+	    $status = -1;
+	} else {
+	    $status = ($self->is_new($arch)) ? 2 : 1;
+	}
+    } elsif ($self->has_symbol()) {
+	$status = ($self->get_symbol()->is_legitimate($arch)) ? 1 : -1;
+    } else {
+	$status = 0;
+    }
+    return $status;
+}
+
+sub is_arch_in_db {
+    my ($self, $arch, $db) = @_;
+    if ($arch =~ /any/) { # Might be a wildcard
+	foreach my $adb ((ref $db eq 'ARRAY') ? @$db : keys %$db) {
+	    return 2 if debarch_is($adb, $arch);
+	}
+    } elsif (ref $db eq 'ARRAY') {
+	return 1 if grep { $arch eq $_ } @$db;
+    } else {
+	return exists $db->{$arch};
+    }
+    return 0;
+}
+
 # Calculate group properties and instantiates 'result'. At the moment, this
 # method will take care of arch tags and deprecated status. "Result" symbol is
 # returned if symbol is not useless in the group.
 sub calc_properties {
     my ($self, $collection) = @_;
 
-    # NOTE: if the symbol is NOT present in the group on the arch, it either:
-    # 1) is not present on that arch;
-    # 2) is deprecated on that arch;
-    # 3) does not concern that arch.
-
     my @latest = $collection->get_latest_arches();
     my @non_latest = $collection->get_new_non_latest_arches();
     my $total_arches = scalar(@latest) + scalar(@non_latest);
-    my (%add, %deprecate);
-    my ($dont_add_all, $dont_deprecate_all) = (0, 0);
-
+    my (%present, %absent);
+    my (@oarches, @narches, $arch_neg);
+    my $arch_added = 0;
     my $osym = $self->get_symbol();
     my $result;
 
     if (defined $osym) {
-	# The symbol exists in the template
-	my @oarches;
+	# The symbol exists in the template. This might complicate things a lot.
 	if ($osym->has_tag("arch")) {
 	    @oarches = split(/[\s,]+/, $osym->get_tag_value("arch"))
 	}
+    }
+
+    # Calculate status of @latest arches
+    foreach my $arch (@latest) {
+	my $status = $self->get_symbol_arch_status($arch);
+	if ($status > 0) {
+	    $present{$arch} = $status;
+	} else {
+	    $absent{$arch} = $status;
+	}
+    }
+
+    # Initialize $result
+    if (defined $osym) {
 	$result = $self->init_result(); # base result on original
-	foreach my $arch (@latest) {
-	    if ($osym->arch_is_concerned($arch)) {
-		if ($self->has_symbol($arch)) {
-		    # The symbol is NOT missing on all latest concerned arches.
-		    # Hence do not deprecate it on all.
-		    $dont_deprecate_all++;
-		} else {
-		    # Add to the list of arches the symbol should be removed
-		    # from
-		    $deprecate{$arch} = 1;
-		}
+    } elsif (keys %present) {
+	$result = $self->init_result((keys %present)[0]);
+    } else {
+	return undef;
+    }
+
+    if (scalar(keys %absent) == scalar(@latest) &&
+        (grep { $absent{$_} == -2 } keys %absent))
+    {
+	if (!$osym->{deprecated} || $osym->is_optional()) {
+	    $result->{deprecated} = $collection->get_latest_version();
+	}
+    } elsif (scalar(keys %present) == scalar(@latest) &&
+	     (@oarches == 0 || @latest > 1))
+    {
+	# Do not remove arch tag if we based our findings only on a single
+	# arch.
+	$result->{deprecated} = 0;
+	if (@oarches > 0) {
+	    $result->delete_tag("arch");
+	    $arch_added += scalar(keys %present);
+	}
+    } else {
+	# We will need to add appropriate arch tag. But in addition,
+	# collect info from NEW non-latest arches (provided we had
+	# info about them from latest)
+	foreach my $arch (@non_latest) {
+	    my $status = $self->get_symbol_arch_status($arch);
+	    if ($status > 0) {
+		$present{$arch} = $status  if keys(%present) > 0 &&
+		    ! exists $absent{$arch};
 	    } else {
-		if ($self->has_symbol($arch)) {
-		    # The symbol is NEW on the latest non-concerned arch. Add
-		    # to the list.
-		    $add{$arch} = 1;
-		} else {
-		    # The symbol is NOT NEW on all latest non-concerned arches.
-		    # We will need arch tag.
-		    $dont_add_all++;
-		}
+		$absent{$arch} = $status if keys(%absent) > 0 &&
+		    ! exists $present{$arch};
 	    }
 	}
 
-	if (keys %deprecate && ! $dont_deprecate_all && ! keys %add) {
-	    if (!$osym->{deprecated} || $osym->is_optional()) {
-		$result->{deprecated} = $collection->get_latest_version();
-	    }
-	} elsif (keys %add && (@oarches == 0 || scalar(keys %add) > 1) &&
-	         ! $dont_add_all && ! keys %deprecate) {
-	    # Do not remove arch tag if it already exists and we based
-	    # our findings only on a single arch.
-	    $result->{deprecated} = 0;
-	    $result->delete_tag("arch");
-	} else {
-	    # We will need to add appropriate arch tag. But in addition,
-	    # collect info from NEW non-latest arches (provided we had
-	    # info about them from latest)
-	    foreach my $arch (@non_latest) {
-		if ($osym->arch_is_concerned($arch)) {
-		    $deprecate{$arch} = 1
-			if ! $self->has_symbol($arch) &&
-			   keys(%deprecate) > 0 && ! exists $add{$arch};
-		} else {
-		    $add{$arch} = 1
-			if $self->has_symbol($arch) &&
-			   keys(%add) > 0 && ! exists $deprecate{$arch};
-		}
-	    }
-
-	    if (keys(%add) || keys(%deprecate)) {
-		$osym->{deprecated} = 0;
-		if (@oarches > 0) {
-		    my @narches;
-		    # We need to combine original and new data
-		    foreach my $arch (@oarches) {
-			my $not_arch;
-			$not_arch = $1 if $arch =~ /^!+(.*)$/;
-			unless (($not_arch && exists $add{$not_arch}) ||
-			        exists $deprecate{$arch})
-			{
+	if (keys %present || keys %absent) {
+	    $result->{deprecated} = 0 if keys %present;
+	    if (@oarches > 0) {
+		# We need to combine original and new data. Filter out hits
+		# (exact and wildcards) in @oarches first.
+		my $fail;
+		foreach my $arch (@oarches) {
+		    my $not_arch = $1 if $arch =~ /^!+(.*)$/;
+		    if (! defined $arch_neg) {
+			$arch_neg = ($not_arch) ? '!' : '';
+		    } elsif ($arch_neg ne (($not_arch) ? '!' : '')) {
+			$fail = 1;
+			$osym->add_tag("helper-arch", "mixed-arch-tag-not-supported");
+			last;
+		    }
+		    if ($not_arch) {
+			if (! $self->is_arch_in_db($not_arch, \%present)) {
+			    push @narches, $not_arch;
+			} else {
+			    $arch_added++;
+			}
+		    } else {
+			if (! $self->is_arch_in_db($arch, \%absent)) {
 			    push @narches, $arch;
 			}
 		    }
-		    unshift @narches, sort(keys %add);
-		    unshift @narches, sort(keys %deprecate);
-		    $result->add_tag("arch", join(" ", sort @narches));
+		}
 
-		    # After sorting, the 'arch' expression may be invalid due
-		    # to aliases used in the original. Check.
-		    my $fail = 0;
-		    foreach my $arch (keys %add) {
-			unless ($result->arch_is_concerned($arch)) {
-			    $fail = 1;
-			    last;
-			}
+		return $result if $fail;
+	    }
+
+	    if (@narches) {
+		# Now add new arches of the specified type
+		foreach my $arch (($arch_neg) ? (keys %absent) : (keys %present)) {
+		    if (! $self->is_arch_in_db($arch, \@narches)) {
+			push @narches, $arch;
+			$arch_added++ if ! $arch_neg;
 		    }
-		    if (! $fail) {
-			foreach my $arch (keys %deprecate) {
-			    if ($result->arch_is_concerned($arch)) {
-				$fail = 1;
-				last;
-			    }
-			}
-		    }
-		    if ($fail) {
-			# Set unsorted @narches
-			$result->add_tag("arch", join(" ", sort @narches));
-		    }
-		} else {
-		    # If deprecated on all but a single arch, add that one
-		    if ($total_arches > 2 && scalar(keys %deprecate) == $total_arches-1) {
-			foreach my $arch (@latest, @non_latest) {
-			    if (! exists $deprecate{$arch}) {
-				$result->add_tag("arch", "$arch");
-				last;
-			    }
-			}
+		}
+
+		# Finally set arch tag
+		$result->add_tag("arch", join(" ", map { "${arch_neg}$_" } sort(@narches)));
+	    } else { # Original symbol has no arch tags
+		if ($total_arches > 2 && keys(%present) == $total_arches - 1) {
+		    # Use !missing_arch if only a single arch is missing
+		    my $missarch;
+		    if (keys(%absent) == 1) {
+			$missarch = (keys %absent)[0];
 		    } else {
-			$result->add_tag("arch",
-			    join(" ", map({ "!".$_ } sort(keys %deprecate)), sort(keys %add)));
-		    }
-		}
-	    }
-	}
-    } else {
-	# Symbol template does not exist. This symbol is definitely NEW
-	foreach my $arch (@latest) {
-	    if ($self->has_symbol($arch)) {
-		# The symbol is NEW on the latest arch. Add to the list.
-		$add{$arch} = 1;
-	    } else {
-		# The symbol is NOT NEW on all latest non-concerned arches.
-		# We will need arch tag.
-		$dont_add_all++;
-	    }
-	}
-	if (keys %add) {
-	    $result = $self->init_result((keys %add)[0]);
-	    if (! $dont_add_all) {
-		$result->{deprecated} = 0;
-		$result->delete_tag("arch");
-	    } else {
-		# We will need to add appropriate arch tag. But in addition,
-		# collect info from NEW non-latest arches
-		foreach my $arch (@non_latest) {
-		    if ($self->has_symbol($arch)) {
-			$add{$arch} = 1;
-		    }
-		}
-		# Use !missing_arch if only a single arch is missing
-		if ($total_arches > 2 && scalar(keys %add) == $total_arches - 1) {
-		    foreach my $arch (@latest, @non_latest) {
-			if (! exists $add{$arch}) {
-			    $result->add_tag("arch", "!$arch");
-			    last;
+			foreach my $arch (@latest, @non_latest) {
+			    if (!exists $present{$arch}) {
+				$missarch = $arch;
+				last;
+			    }
 			}
 		    }
+		    $result->add_tag("arch", "!$missarch");
+		} elsif ($total_arches > 2 && keys(%absent) == $total_arches - 1) {
+		    # Use arch if only present on a single arch
+		    my $okarch;
+		    if (keys(%present) == 1) {
+			$okarch = (keys %present)[0];
+		    } else {
+			foreach my $arch (@latest, @non_latest) {
+			    if (!exists $absent{$arch}) {
+				$okarch = $arch;
+				last;
+			    }
+			}
+		    }
+		    $result->add_tag("arch", $okarch);
+		} elsif (scalar(keys %present) <= scalar(keys %absent)) {
+		    $result->add_tag("arch", join(" ", sort keys %present));
 		} else {
-		    $result->add_tag("arch", join(" ", sort(keys %add)));
+		    $result->add_tag("arch", join(" ", map { "!$_" } sort(keys %absent)));
 		}
 	    }
 	}
     }
 
     # Bump symbol minver if new arches added
-    if (defined $result && keys %add) {
+    if (defined $result && keys(%present) && (!@oarches || $arch_added) &&
+        ! $result->is_optional())
+    {
 	$result->{minver} = $collection->get_latest_version();
     }
 
