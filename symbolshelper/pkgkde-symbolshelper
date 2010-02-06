@@ -638,3 +638,5 @@ if (defined $curcmd && exists $SUBCOMMANDS{$curcmd}) {
     }
     exit(2);
 }
+
+# vi: noexpandtab shiftwidth=4 tabstop=8
