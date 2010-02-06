@@ -124,8 +124,8 @@ sub add_confirmed_arches {
 }
 
 sub get_confirmed_arches {
-    my ($self, @arches) = @_;
-    return $self->{confirmed_arches};
+    my ($self) = @_;
+    return @{$self->{confirmed_arches}};
 }
 
 sub add_new_symfiles {
@@ -185,12 +185,6 @@ sub select_group {
 	my $substs = ($sym->has_tag("c++")) ? \@CPP_TYPE_SUBSTS : \@TYPE_SUBSTS;
 	my $groupname = $self->calc_group_name($sym->get_symbolname(), $arch, @$substs);
 
-	# Prep for substs
-	my $h_name = $sym->get_h_name();
-	foreach my $subst (@$substs) {
-	    $subst->prep($h_name, $arch);
-	}
-
 	unless (exists $gsubsts->{$soname}{$groupname}) {
 	    $gsubsts->{$soname}{$groupname} =
 		Debian::PkgKde::SymbolsHelper::SymbolFileCollection::Group->new($substs);
@@ -245,6 +239,7 @@ sub create_template {
 
 	    # Add symbol to the group
 	    $group->add_symbol($nsym, $arch);
+	    $group->prep_substs($arch);
 
 	    if (defined $osym) {
 		my $origin = $osym->{h_origin_symbol};
@@ -269,11 +264,16 @@ sub create_template {
 
     # Fork confirmed symbols where it matters
     if (my @carches = $self->get_confirmed_arches()) {
+	# Important for substs detection
 	foreach my $soname (values %gsubsts) {
 	    foreach my $group (values %$soname) {
 		if ($group->get_arches() && (my $osym = $group->get_symbol())) {
 		    foreach my $arch (@carches) {
-			$group->add_symbol($orig->fork_symbol($osym, $arch), $arch);
+			if ($osym->arch_is_concerned($arch)) {
+			    my $nsym = $orig->fork_symbol($osym, $arch);
+			    $group->add_symbol($nsym, $arch);
+			    $group->prep_substs($arch);
+			}
 		    }
 		}
 	    }
@@ -676,6 +676,15 @@ sub calc_properties {
     }
 
     return $result;
+}
+
+sub prep_substs {
+    my ($self, $arch) = @_;
+    my $sym = $self->get_symbol($arch);
+    my $h_name = $sym->get_h_name();
+    foreach my $subst (@{$self->{substs}}) {
+	$subst->prep($h_name, $arch);
+    }
 }
 
 sub detect_substs {
