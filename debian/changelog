@@ -2,6 +2,9 @@ pkg-kde-tools (0.6.1) UNRELEASED; urgency=low
 
   * Rework detection of arch specific symbols. This should fix some bugs
     with arch symbol tag processing and generation.
+  * Now `pkgkde-symbolshelper create` bases its template on the arch specific
+    symbol file (as specified with -a option). This alters arch tag generation
+    a bit (negative arches are used more frequently than before).
 
  -- Modestas Vainius <modax@debian.org>  Sat, 06 Feb 2010 15:05:44 +0200
 

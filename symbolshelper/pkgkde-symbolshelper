@@ -229,13 +229,15 @@ sub subcommand_create {
 	    }
 
 	    # Create collection and generate template
-	    my $orig_symfile = $symfiles{$opt_arch}->fork_empty();
+	    my $orig_symfile = $symfiles{$opt_arch}->fork();
+	    delete $symfiles{$opt_arch};
 	    my $symfiles = Debian::PkgKde::SymbolsHelper::SymbolFileCollection->new($orig_symfile);
 	    $symfiles->add_new_symfiles(values %symfiles);
+	    $symfiles->add_confirmed_arches($opt_arch);
 
 	    # Detect templinst symbols before substitutions and create template
 	    regular_print("Generating symbol file template .... (this might take a while)");
-	    foreach my $symfile ($symfiles->get_symfiles()) {
+	    foreach my $symfile ($orig_symfile, $symfiles->get_symfiles()) {
 		foreach my $sym ($symfile->get_symbols()) {
 		    $sym->mark_cpp_templinst_as_optional();
 		}
