@@ -5,6 +5,8 @@ pkg-kde-tools (0.6.2~pre4) UNRELEASED; urgency=low
     set properly.
   * Add dh_movelibkdeinit helper to debhelper kde addon sequence, CDBS kde.mk
     and debian-qt-kde.mk.
+  * Pass new LIBKDEINIT_INSTALL_DIR and ENABLE_LIBKDEINIT_RUNPATH options to
+    cmake by default (CDBS kde.mk and debhelper kde buildsystem).
 
  -- Modestas Vainius <modax@debian.org>  Sat, 13 Feb 2010 02:29:05 +0200
 
