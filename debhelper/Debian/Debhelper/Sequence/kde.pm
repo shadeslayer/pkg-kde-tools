@@ -32,4 +32,7 @@ add_command_options("dh_auto_test", "--buildsystem=kde");
 add_command_options("dh_auto_install", "--buildsystem=kde");
 add_command_options("dh_auto_clean", "--buildsystem=kde");
 
+# Omit usr/lib/kde4 from dh_makeshlibs by default
+add_command_options("dh_makeshlibs", "-Xusr/lib/kde4/");
+
 insert_after("dh_install", "dh_movelibkdeinit");

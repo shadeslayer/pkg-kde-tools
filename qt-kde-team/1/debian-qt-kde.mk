@@ -38,6 +38,8 @@ DEB_COMPRESS_EXCLUDE = .dcl .docbook -license .tag .sty .el
 #DEB_MAKE_ENVVARS += XDG_CONFIG_DIRS=/etc/xdg XDG_DATA_DIRS=/usr/share
 #DEB_STRIP_EXCLUDE = so
 
+DEB_DH_MAKESHLIBS_ARGS += -Xusr/lib/kde4/
+
 common-build-arch:: debian/stamp-man-pages
 debian/stamp-man-pages:
 	if ! test -d debian/man/out; then mkdir -p debian/man/out; fi
