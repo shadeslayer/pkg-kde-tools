@@ -1,4 +1,4 @@
-pkg-kde-tools (0.6.2~pre4) UNRELEASED; urgency=low
+pkg-kde-tools (0.6.2) unstable; urgency=low
 
   * Implement dh_movelibkdeinit debhelper program which moves libkdeinit4_*.so
     from public /usr/lib to private /usr/lib/kde4/libkdeinit if RUNPATHs are
@@ -19,7 +19,7 @@ pkg-kde-tools (0.6.2~pre4) UNRELEASED; urgency=low
   * Make dh kde addon return truth value.
   * Compress pkg-kde-tools tarball with bzip2 by default.
 
- -- Modestas Vainius <modax@debian.org>  Sat, 13 Feb 2010 02:29:05 +0200
+ -- Modestas Vainius <modax@debian.org>  Sat, 13 Feb 2010 19:36:56 +0200
 
 pkg-kde-tools (0.6.1) unstable; urgency=low
 
