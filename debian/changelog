@@ -12,6 +12,9 @@ pkg-kde-tools (0.6.2~pre4) UNRELEASED; urgency=low
   * Omit usr/lib/kde4/ from dh_makeshlibs by default (debian-qt-kde.mk, kde.mk,
     dh kde addon).
   * dh kde addon: exclude kde documentation from dh_compress by default.
+  * Add qt-kde-team/1/library-packages.mk which is capable of:
+    - generating and handling ${allLibraries}, ${kde43Libraries} substs;
+    - generating strict local shlibs.
 
  -- Modestas Vainius <modax@debian.org>  Sat, 13 Feb 2010 02:29:05 +0200
 
