@@ -40,3 +40,5 @@ add_command_options("dh_compress",
     qw(-X.dcl -X.docbook -X-license -X.tag -X.sty -X.el));
 
 insert_after("dh_install", "dh_movelibkdeinit");
+
+1;
