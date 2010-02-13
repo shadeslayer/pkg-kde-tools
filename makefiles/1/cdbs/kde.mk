@@ -6,3 +6,6 @@ include /usr/share/pkg-kde-tools/makefiles/1/variables.mk
 DEB_CMAKE_EXTRA_FLAGS += $(DEB_CMAKE_KDE4_FLAGS) $(DEB_CMAKE_CUSTOM_FLAGS)
 
 DEB_COMPRESS_EXCLUDE = .dcl .docbook -license .tag .sty .el
+
+$(patsubst %,binary-post-install/%,$(DEB_ARCH_PACKAGES)) :: binary-post-install/%:
+	dh_movelibkdeinit -p$(cdbs_curpkg) $(DEB_DH_MOVELIBKDEINIT_ARGS)

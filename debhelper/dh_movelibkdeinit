@@ -1,0 +1,128 @@
+#!/usr/bin/perl -w
+
+=head1 NAME
+
+dh_movelibkdeinit - move libkdeinit4_*.so from public to the private directory
+
+=head1 SYNOPSIS
+
+B<dh_movelibkdeinit> [S<I<debhelper options>>]
+
+=head1 DESCRIPTION
+
+B<dh_movelibkdeinit> is a helper program which moves all installed
+F<usr/lib/libkdeinit4_*.so> kdeinit "shared" executables from the public
+location to the private subdirectory F</usr/lib/kde4/libkdeinit>.
+libkdeinit*.so shared executables are not proper public shared libraries by
+definition and they are built as shared library only for performance purposes.
+
+Please note, however, that in order for the moved executables to work properly,
+the following conditions must be met:
+
+=over 4
+
+=item *
+
+the package should depend on the kde4libs binary packages built with the
+C<-DLIBKDEINIT_INSTALL_DIR=/usr/lib/kde4/libkdeinit> cmake flag (enabled since
+kde4libs 4:4.4.0). B<dh_movelibkdeinit> will try to confirm this condition and
+it will do nothing if it is not met.
+
+=item *
+
+the source package was built with the C<-DENABLE_LIBKDEINIT_RUNPATH=ON> cmake
+flag. This flag is enabled by default when building using either CDBS kde.mk
+class or the debhelper kde build system which both as shipped in the 0.6.2 or
+later version of the I<pkg-kde-tools> package.
+
+=back
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-X>I<item>, B<--exclude> I<item>
+
+Do not move libkdeinit4_*.so files that contain "item" anywhere in their
+filename. You may use this option multiple times to build up a list of things
+to exclude.
+
+=back
+
+=cut
+
+use strict;
+use warnings;
+
+use Debian::Debhelper::Dh_Lib;
+
+use constant LIBKDEINIT_INSTALL_DIR => '/usr/lib/kde4/libkdeinit';
+
+init();
+
+if (@{$dh{DOPACKAGES}} && -f '/usr/bin/kdeinit4' &&
+    system(sprintf("objdump -p /usr/bin/kdeinit4 2>/dev/null | grep -q 'RUNPATH.*%s'",
+        LIBKDEINIT_INSTALL_DIR)) != 0)
+{
+    warning("kdeinit4 does not have a proper RUNPATH set, not moving public libkdeinit4_*.so");
+    exit 0;
+}
+
+foreach my $package (@{$dh{DOPACKAGES}}) {
+    my $tmpdir = tmpdir($package);
+    if (-d "$tmpdir/usr/lib") {
+        my $libkdeinit_dir = $tmpdir . LIBKDEINIT_INSTALL_DIR;
+        my @libkdeinit;
+        my $exclude = '';
+        if (defined($dh{EXCLUDE_FIND}) && $dh{EXCLUDE_FIND} ne '') {
+            $exclude = "! \\( $dh{EXCLUDE_FIND} \\)";
+        }
+        open (FIND, "find $tmpdir/usr/lib -maxdepth 1 -type f \\( -name 'libkdeinit4_*.so' \\) $exclude |");
+        while (<FIND>) {
+            chop;
+            push @libkdeinit, $_;
+        }
+        close FIND;
+
+        for my $libkdeinit (@libkdeinit) {
+            my $exename;
+            my $exepath;
+            if ($libkdeinit =~ m%/libkdeinit4_([^/]*)\.so$%) {
+                $exename = $1;
+                if (-x "$tmpdir/usr/bin/$exename") {
+                    $exepath = "$tmpdir/usr/bin/$exename";
+                } else {
+                    open (FIND, "find $tmpdir -type f -executable -name $exename |");
+                    $exepath = <FIND>;
+                    chop $exepath if $exepath;
+                    close FIND;
+                }
+            }
+            if ($exepath) {
+                if (system(sprintf("objdump -p '%s' 2>/dev/null | grep -q 'RUNPATH.*%s'",
+                               $exepath, LIBKDEINIT_INSTALL_DIR)) == 0) {
+                    unless (-d $libkdeinit_dir) {
+                        doit("mkdir", "-p", $libkdeinit_dir);
+                    }
+                    doit("mv", $libkdeinit, $libkdeinit_dir);
+                } else {
+                    warning("unable to validate RUNPATH on the dummy kdeinit executable for $libkdeinit, not moving");
+                }
+            } else {
+                warning("unable to find a dummy kdeinit executable for $libkdeinit, not moving");
+            }
+        }
+    }
+}
+
+exit 0;
+
+=head1 SEE ALSO
+
+L<debhelper(7)>
+
+=head1 AUTHOR
+
+Modestas Vainius <modax@debian.org>
+
+=cut

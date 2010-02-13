@@ -1,5 +1,10 @@
 pkg-kde-tools (0.6.2~pre4) UNRELEASED; urgency=low
 
+  * Implement dh_movelibkdeinit debhelper program which moves libkdeinit4_*.so
+    from public /usr/lib to private /usr/lib/kde4/libkdeinit if RUNPATHs are
+    set properly.
+  * Add dh_movelibkdeinit helper to debhelper kde addon sequence, CDBS kde.mk
+    and debian-qt-kde.mk.
 
  -- Modestas Vainius <modax@debian.org>  Sat, 13 Feb 2010 02:29:05 +0200
 

@@ -31,3 +31,5 @@ add_command_options("dh_auto_build", "--buildsystem=kde");
 add_command_options("dh_auto_test", "--buildsystem=kde");
 add_command_options("dh_auto_install", "--buildsystem=kde");
 add_command_options("dh_auto_clean", "--buildsystem=kde");
+
+insert_after("dh_install", "dh_movelibkdeinit");

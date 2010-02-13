@@ -60,6 +60,9 @@ clean::
 $(patsubst %,binary-install/%,$(DEB_PACKAGES)) :: binary-install/%:
 	$(if $(wildcard /usr/bin/dh_bugfiles),dh_bugfiles -p$(cdbs_curpkg) $(DEB_DH_BUGFILES_ARGS))
 
+$(patsubst %,binary-post-install/%,$(DEB_ARCH_PACKAGES)) :: binary-post-install/%:
+	dh_movelibkdeinit -p$(cdbs_curpkg) $(DEB_DH_MOVELIBKDEINIT_ARGS)
+
 binary-install/$(DEB_SOURCE_PACKAGE)-doc-html::
 	set -e; \
 	for doc in `cd $(DEB_DESTDIR)/usr/share/doc/kde4/HTML/en; find . -name index.docbook`; do \
