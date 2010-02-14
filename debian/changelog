@@ -1,5 +1,7 @@
 pkg-kde-tools (0.6.3~pre1) UNRELEASED; urgency=low
 
+  * pkgkde-debs2symbols: allow to specify deb directory (-d option) and
+    symbol file directory (-s option).
 
  -- Modestas Vainius <modax@debian.org>  Sun, 14 Feb 2010 14:56:28 +0200
 

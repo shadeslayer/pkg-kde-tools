@@ -20,7 +20,7 @@ warning() {
 }
 
 usage() {
-    echo "$PROGNAME: usage:" "$0" "[ -i symbol_file ]" package version "[ download_url ]" >&2
+    echo "$PROGNAME: usage:" "$0" "[ -i symbol_file ]" "[ -d debdir ]" "[ -s symboldir ]" package version "[ download_url ]" >&2
 }
 
 
@@ -76,9 +76,13 @@ dump_symbols() {
 
 # Process options
 REFFILE=""
-while getopts "i:" name; do
+DEBDIR=""
+SYMBOLDIR=""
+while getopts "i:d:s:" name; do
     case "$name" in
 	i)  REFFILE="$OPTARG" ;;
+	d)  DEBDIR="$OPTARG" ;;
+	s)  SYMBOLDIR="$OPTARG" ;;
 	\?)  usage; exit 2 ;;
     esac
 done
@@ -98,8 +102,8 @@ if [ -z "$PACKAGE" ] || [ -z "$VERSION" ]; then
 fi
 
 # Create directories to store downloaded debs and symbol files
-debdir="${PACKAGE}_${VERSION}_debs"
-symboldir="${PACKAGE}_${VERSION}_symbols"
+debdir="${DEBDIR:-${PACKAGE}_${VERSION}_debs}"
+symboldir="${SYMBOLDIR:-${PACKAGE}_${VERSION}_symbols}"
 if [ ! -d "$symboldir" ]; then
     mkdir "$symboldir"
 fi
