@@ -32,6 +32,7 @@ BEGIN {
 
 use File::Spec;
 use File::Basename qw();
+use File::Copy qw();
 use Getopt::Long qw(:config noignore_case);
 use Dpkg::ErrorHandling;
 use Dpkg::Arch qw(get_host_arch get_valid_arches);
@@ -43,6 +44,7 @@ use Debian::PkgKde::SymbolsHelper::Patching;
 
 ######## Option processing ##################
 my $opt_out;
+my $opt_backup;
 my $opt_in;
 my $opt_package;
 my $opt_arch = get_host_arch();
@@ -69,6 +71,7 @@ sub get_common_options {
 
     map { $args{$_} = 1 } split(//, $args);
     $res{"output|o:s"} = \$opt_out if ($args{o});
+    $res{"backup|b!"} = \$opt_backup if ($args{b});
     $res{"input|i=s"} = \&verify_opt_in if ($args{i});
     $res{"package|p=s"} = \$opt_package if ($args{p});
     $res{"architecture|a=s"} = \&verify_opt_arch if ($args{a});
@@ -86,6 +89,7 @@ sub check_mandatory_options {
     map { $args{$_} = 1 } split(//, $args);
     error("input file option (-i) is mandatory $msg") if (!$opt_in && $args{i});
     error("output file option (-o) is mandatory $msg") if (!$opt_out && $args{o});
+    error("backup option (-b) is mandatory $msg") if (!defined $opt_backup && $args{b});
     error("package name option (-p) is mandatory $msg") if (!$opt_package && $args{p});
     error("architecture option (-a) is mandatory $msg") if (!$opt_arch && $args{a});
     error("version option (-v) is mandatory $msg") if (!$opt_version && $args{v});
@@ -154,17 +158,22 @@ sub out_symfile {
     return 1 unless $symfile;
 
     my $out_fh;
-    if (defined $opt_out) {
+    my $out_file = $opt_out;
+    my $backup = $opt_backup;
+
+    if (defined $out_file) {
 	# If -o is specified, dump to STDOUT if it does not have an argument or
 	# save to specified file otherwise.
-	$out_fh = *STDOUT unless $opt_out;
+	$out_fh = *STDOUT unless $out_file;
     } else {
 	# If -o is not specified, save to the input file.
-	$opt_out = $opt_in;
+	$out_file = $opt_in;
+	$backup = 1 unless defined $backup;
     }
 
-    if ($opt_out) {
-	$symfile->save($opt_out, template_mode => 1, with_deprecated => 1, %opts);
+    if ($out_file) {
+	File::Copy::copy($out_file, $out_file.'~') if ($backup && -r $out_file);
+	$symfile->save($out_file, template_mode => 1, with_deprecated => 1, %opts);
     } elsif ($out_fh) {
 	$symfile->dump($out_fh, template_mode => 1, with_deprecated => 1, %opts);
     } else {
@@ -541,7 +550,7 @@ sub subcommand_patch {
     my $opt_file2patch;
     my @input_patches;
     my %opts = (
-	get_common_options("oipavV"),
+	get_common_options("obipavV"),
 	"file-to-patch|f=s" => \$opt_file2patch,
     );
     if (GetOptions(%opts)) {
@@ -571,7 +580,7 @@ sub subcommand_batchpatch {
     my $failed_packages = 0;
 
     my %opts = (
-	get_common_options("avV"),
+	get_common_options("bavV"),
 	"package|p=s" => \@opt_packages,
 	"continue-on-error|c!" => \$opt_continue_on_err
     );
@@ -631,7 +640,7 @@ sub subcommand_rewrite {
     my $opt_template = 1;
     my $opt_convert;
     my %opts = (
-	get_common_options("oia"),
+	get_common_options("boia"),
 	"template!" => \$opt_template,
 	"convert" => \$opt_convert,
     );
@@ -698,7 +707,7 @@ sub subcommand_postgensymbols {
 # Boilerplate for the common subcommand handler
 sub subcommand_boilerplate {
     my %opts = (
-	get_common_options("oipav"),
+	get_common_options("obipav"),
     );
     if (GetOptions(%opts)) {
 #	 check_mandatory_options("o");
