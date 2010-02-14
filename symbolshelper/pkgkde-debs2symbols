@@ -104,9 +104,6 @@ fi
 # Create directories to store downloaded debs and symbol files
 debdir="${DEBDIR:-${PACKAGE}_${VERSION}_debs}"
 symboldir="${SYMBOLDIR:-${PACKAGE}_${VERSION}_symbols}"
-if [ ! -d "$symboldir" ]; then
-    mkdir "$symboldir"
-fi
 
 info "Selected directory for packages (*.deb):" "$debdir/"
 if [ -n "$URL" ]; then
@@ -125,6 +122,10 @@ c=0
 if [ -d "$debdir" ]; then
     tmpdir=`mktemp -d --tmpdir=. tmpdeb.XXXXXX`
     rmdir "$tmpdir"
+    if [ ! -d "$symboldir" ]; then
+	mkdir "$symboldir"
+    fi
+
     info "Selected temporary directory:" "$tmpdir/"
     info "Selected directory for symbol files:" "$symboldir/"
     for deb in `ls -1 "$debdir"/$DEB_WILDCARD 2>/dev/null | sort`; do
