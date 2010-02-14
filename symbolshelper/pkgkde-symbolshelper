@@ -114,7 +114,7 @@ sub sanitize_version {
 
     if ($prompt && -t STDIN) {
 	regular_print("Do you want to assign one version to all new symbols %s?",
-	    ($default) ? "(default is '$default')" : "(ENTER if no)");
+	    ($default) ? "(default is '".uc($default)."')" : "(ENTER if no)");
 	print STDERR sprintf("What version? [ %s / enter other ]: ", join(" / ",
 	    (map { sprintf("%s = %s", ($_ eq ($default || '')) ? uc($_) : $_, $choices{$_}) }
 		grep { exists $choices{$_} } qw(u d v))));
