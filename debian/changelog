@@ -2,6 +2,10 @@ pkg-kde-tools (0.6.3~pre1) UNRELEASED; urgency=low
 
   * pkgkde-debs2symbols: allow to specify deb directory (-d option) and
     symbol file directory (-s option).
+  * pkgkde-symbolshelper: implement `batchpatch` subcommand which is capable of
+    patching multiple packages at once (provided current working directory is
+    the top of the debian source package tree with symbol files in standard
+    locations).
 
  -- Modestas Vainius <modax@debian.org>  Sun, 14 Feb 2010 14:56:28 +0200
 
