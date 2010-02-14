@@ -6,6 +6,7 @@ pkg-kde-tools (0.6.3~pre1) UNRELEASED; urgency=low
     patching multiple packages at once (provided current working directory is
     the top of the debian source package tree with symbol files in standard
     locations).
+  * `pkgkde-symbolshelper patch`: rename --base|b option to --file-to-patch|f.
 
  -- Modestas Vainius <modax@debian.org>  Sun, 14 Feb 2010 14:56:28 +0200
 

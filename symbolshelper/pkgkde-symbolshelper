@@ -538,11 +538,11 @@ sub subcommand_create {
 }
 
 sub subcommand_patch {
-    my $opt_base;
+    my $opt_file2patch;
     my @input_patches;
     my %opts = (
 	get_common_options("oipavV"),
-	"base|b=s" => \$opt_base,
+	"file-to-patch|f=s" => \$opt_file2patch,
     );
     if (GetOptions(%opts)) {
 	check_mandatory_options("p", "");
@@ -557,7 +557,8 @@ sub subcommand_patch {
 	my @patches = load_patches(@input_patches);
 	error("no valid patches found.") unless @patches;
 	return out_symfile(
-	    patch_symfile($opt_package, $opt_version, $opt_in, $opt_base, @patches)
+	    patch_symfile($opt_package, $opt_version, $opt_in, $opt_file2patch,
+		@patches)
 	);
     }
     return 1;
