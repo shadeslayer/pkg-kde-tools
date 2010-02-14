@@ -1,3 +1,8 @@
+pkg-kde-tools (0.6.3~pre1) UNRELEASED; urgency=low
+
+
+ -- Modestas Vainius <modax@debian.org>  Sun, 14 Feb 2010 14:56:28 +0200
+
 pkg-kde-tools (0.6.2) unstable; urgency=low
 
   * Implement dh_movelibkdeinit debhelper program which moves libkdeinit4_*.so
