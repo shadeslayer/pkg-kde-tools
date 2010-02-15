@@ -1,3 +1,8 @@
+pkg-kde-tools (0.6.4~pre1) UNRELEASED; urgency=low
+
+
+ -- Modestas Vainius <modax@debian.org>  Tue, 16 Feb 2010 01:33:48 +0200
+
 pkg-kde-tools (0.6.3) unstable; urgency=low
 
   * pkgkde-debs2symbols: allow to specify deb directory (-d option) and
