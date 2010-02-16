@@ -121,6 +121,8 @@ sub add_confirmed_arches {
     push @{$self->{versions}{$self->get_symfile()->get_confirmed_version()}},
 	@arches;
     push @{$self->{confirmed_arches}}, @arches;
+    $self->{latest} = $self->get_symfile()->get_confirmed_version()
+	unless defined $self->{latest};
 }
 
 sub get_confirmed_arches {
@@ -205,12 +207,9 @@ sub select_group {
 sub create_template {
     my ($self, %opts) = @_;
 
-    return undef unless $self->get_symfiles();
-
     my $orig = $self->get_symfile();
     my $orig_arch = $orig->get_arch();
     my $template = $orig->fork_empty();
-    my $symfiles = $self->{symfiles};
 
     # Prepare original template and other arch specific symbol files (virtual
     # table stuff etc.).
