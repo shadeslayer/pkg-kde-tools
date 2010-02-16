@@ -1,4 +1,4 @@
-pkg-kde-tools (0.6.4~pre1) UNRELEASED; urgency=low
+pkg-kde-tools (0.6.4) unstable; urgency=low
 
   * Add -q option to pkgkde-gensymbols. -c0 will never fail but still generate
     a diff. Use -c0 -q to keep pkgkde-gensymbols completely quiet as before.
@@ -7,7 +7,7 @@ pkg-kde-tools (0.6.4~pre1) UNRELEASED; urgency=low
   * `pkgkde-symbolshelper rewrite`: avoid dupe c++ aliases after convert in
     some cases.
 
- -- Modestas Vainius <modax@debian.org>  Tue, 16 Feb 2010 01:33:48 +0200
+ -- Modestas Vainius <modax@debian.org>  Tue, 16 Feb 2010 02:53:40 +0200
 
 pkg-kde-tools (0.6.3) unstable; urgency=low
 
