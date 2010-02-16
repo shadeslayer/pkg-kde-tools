@@ -608,7 +608,9 @@ sub subcommand_batchpatch {
 	    regular_print("-" x length($msg));
 	    regular_print($msg);
 	    regular_print("-" x length($msg));
-	    if (my $infile = find_package_symbolfile_path($package, $opt_arch)) {
+	    if (! grep { defined $_->{package} && $_->{package} eq $package } @patches) {
+		regular_print("* UNABLE to find patches for %s", $package);
+	    } elsif (my $infile = find_package_symbolfile_path($package, $opt_arch)) {
 		my $template;
 		eval {
 		    $template = patch_symfile($package, $opt_version, $infile, undef, @patches);
