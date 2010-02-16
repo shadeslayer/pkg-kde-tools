@@ -63,9 +63,11 @@ dump_symbols() {
 
     if [ -n "$reffile" ]; then
 	outfile="${package}_${arch}"
+	patchfile="$outdir/$outfile.patch"
 	info2 "[$arch] Dumping patch & symbol file as $outfile/$outfile.{patch,symbols} ..."
 	pkgkde-gensymbols "-p$package" "-P$tmpdir" "-v$version" "-a$arch" \
-	    -c1 "-I$reffile" -O"$outdir/$outfile.symbols" > "$outdir/$outfile.patch" || true
+	    -c1 "-I$reffile" -O"$outdir/$outfile.symbols" > "$patchfile" || true
+	test -s "$patchfile" || rm -f "$patchfile"
     else
 	outfile="${package}_${arch}"
 	info2 "[$arch] Dumping symbol file as $outfile ..."
