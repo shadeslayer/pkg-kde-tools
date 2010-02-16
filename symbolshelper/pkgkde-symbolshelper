@@ -660,7 +660,7 @@ sub subcommand_rewrite {
 		}
 	    }
 
-	    return out_symfile($symfile, %o);
+	    return out_symfile($symfile->fork(), %o);
 	} else {
 	    error("input symbol file ($opt_in) not found");
 	    return 1;
