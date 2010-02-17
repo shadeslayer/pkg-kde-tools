@@ -1,4 +1,4 @@
-pkg-kde-tools (0.6.5~pre1) UNRELEASED; urgency=low
+pkg-kde-tools (0.6.5~pre2) UNRELEASED; urgency=low
 
   * pkgkde-debs2symbols: remove 0 size patch files.
   * `pkgkde-symbolshelper batchpatch`: if no packages explicitly specified,
