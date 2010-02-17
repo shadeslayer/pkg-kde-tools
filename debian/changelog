@@ -3,6 +3,8 @@ pkg-kde-tools (0.6.5~pre2) UNRELEASED; urgency=low
   * pkgkde-debs2symbols: remove 0 size patch files.
   * `pkgkde-symbolshelper batchpatch`: if no packages explicitly specified,
     select only those for which patches exist.
+  * Move RPATH "workaround" code for <= KDE 4.3.x from makefiles/1/cdbs/kde.mk
+    to makefiles/1/variables.mk hence debian-qt-kde.mk will also use it.
 
  -- Modestas Vainius <modax@debian.org>  Tue, 16 Feb 2010 11:51:57 +0200
 

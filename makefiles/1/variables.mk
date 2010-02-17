@@ -8,6 +8,13 @@ ifdef DEB_CONFIG_INSTALL_DIR
                             -DCONFIG_INSTALL_DIR=$(DEB_CONFIG_INSTALL_DIR)
 endif
 
+# Skip RPATH if kdelibs5-dev is older than 4:4.4.0
+DEB_KDELIBS5_DEV_VER := $(shell dpkg-query -f='$${Version}\n' -W kdelibs5-dev 2>/dev/null)
+DEB_KDELIBS5_DEV_VER_OLD := $(shell dpkg --compare-versions $(DEB_KDELIBS5_DEV_VER) lt 4:4.4.0 2>/dev/null && echo yes)
+ifeq (yes,$(DEB_KDELIBS5_DEV_VER_OLD))
+    DEB_CMAKE_KDE4_FLAGS += -DCMAKE_SKIP_RPATH:BOOL=ON
+endif
+
 # Set the DEB_KDE_LINK_WITH_AS_NEEDED to yes to enable linking
 # with --as-needed (off by default)
 DEB_KDE_LINK_WITH_AS_NEEDED ?= no
