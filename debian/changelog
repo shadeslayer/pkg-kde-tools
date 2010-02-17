@@ -1,8 +1,8 @@
 pkg-kde-tools (0.6.5~pre1) UNRELEASED; urgency=low
 
   * pkgkde-debs2symbols: remove 0 size patch files.
-  * `pkgkde-symbolshelper batchpatch`: do not fail if no patches found for the
-    package.
+  * `pkgkde-symbolshelper batchpatch`: if no packages explicitly specified,
+    select only those for which patches exist.
 
  -- Modestas Vainius <modax@debian.org>  Tue, 16 Feb 2010 11:51:57 +0200
 

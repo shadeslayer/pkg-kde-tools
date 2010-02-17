@@ -588,6 +588,8 @@ sub subcommand_batchpatch {
 	@input_patches = @ARGV;
 	push @input_patches, "-" unless @input_patches;
 	my @patches = load_patches(@input_patches);
+	my %packages = map({ $_->{package} => 1 }
+	    grep { defined $_->{package} } @patches);
 
 	my @packages;
 	if (@opt_packages) {
@@ -596,7 +598,7 @@ sub subcommand_batchpatch {
 		push @packages, @pkgs;
 	    }
 	} else {
-	    @packages = get_all_packages() unless @opt_packages;
+	    @packages = grep { exists $packages{$_} } get_all_packages();
 	}
 
 	error("no packages specified and none found in debian/control")
@@ -608,9 +610,7 @@ sub subcommand_batchpatch {
 	    regular_print("-" x length($msg));
 	    regular_print($msg);
 	    regular_print("-" x length($msg));
-	    if (! grep { defined $_->{package} && $_->{package} eq $package } @patches) {
-		regular_print("* UNABLE to find patches for %s", $package);
-	    } elsif (my $infile = find_package_symbolfile_path($package, $opt_arch)) {
+	    if (my $infile = find_package_symbolfile_path($package, $opt_arch)) {
 		my $template;
 		eval {
 		    $template = patch_symfile($package, $opt_version, $infile, undef, @patches);
