@@ -230,8 +230,7 @@ sub apply {
 
     my $outfile = File::Temp->new(TEMPLATE => "${filename}_patch.out.XXXXXX");
     my $to_patch_process;
-    my $pid = fork_and_exec(exec => [ "patch", "--posix", "--force",
-                                      "-r-", "-p0" ],
+    my $pid = spawn(exec => [ "patch", "--posix", "--force", "-r-", "-p0" ],
                             from_pipe => \$to_patch_process,
                             to_handle => $outfile,
                             error_to_handle => $outfile,

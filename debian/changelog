@@ -1,5 +1,9 @@
 pkg-kde-tools (0.6.6~pre1) UNRELEASED; urgency=low
 
+  * pkgkde-{symbolshelper,gensymbols}: compatibility fix for dpkg-dev 1.15.6
+    retaining compatibility with 1.15.5 as well (Dpkg::IPC::spawn).
+  * Use new Dpkg::IPC::spawn() rather than Dpkg::IPC::fork_and_exec() in the
+    code.
 
  -- Modestas Vainius <modax@debian.org>  Fri, 19 Feb 2010 20:30:09 +0200
 
