@@ -1,3 +1,8 @@
+pkg-kde-tools (0.6.6~pre1) UNRELEASED; urgency=low
+
+
+ -- Modestas Vainius <modax@debian.org>  Fri, 19 Feb 2010 20:30:09 +0200
+
 pkg-kde-tools (0.6.5) unstable; urgency=low
 
   * pkgkde-debs2symbols: remove 0 size patch files.
