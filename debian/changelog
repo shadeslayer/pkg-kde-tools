@@ -5,6 +5,7 @@ pkg-kde-tools (0.6.6~pre1) UNRELEASED; urgency=low
   * Use new Dpkg::IPC::spawn() rather than Dpkg::IPC::fork_and_exec() in the
     code.
   * Update code stolen from dpkg-dev to current git master.
+  * pkgkde-deb2symbols: be quiet when dumping symbol file.
 
  -- Modestas Vainius <modax@debian.org>  Fri, 19 Feb 2010 20:30:09 +0200
 

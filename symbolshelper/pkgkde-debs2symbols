@@ -72,7 +72,7 @@ dump_symbols() {
 	outfile="${package}_${arch}"
 	info2 "[$arch] Dumping symbol file as $outfile ..."
 	pkgkde-gensymbols "-p$package" "-P$tmpdir" "-v$version" "-a$arch" \
-	    -c0 -I/dev/null "-O$outdir/$outfile"
+	    -c0 -q -I/dev/null "-O$outdir/$outfile"
     fi
 }
 
