@@ -18,6 +18,9 @@ package Dpkg::Shlibs::Symbol;
 
 use strict;
 use warnings;
+
+our $VERSION = "0.01";
+
 use Dpkg::Gettext;
 use Dpkg::Deps;
 use Dpkg::ErrorHandling;
@@ -81,7 +84,7 @@ sub parse_tagspec {
     return undef;
 }
 
-sub parse {
+sub parse_symbolspec {
     my ($self, $symbolspec, %opts) = @_;
     my $symbol;
     my $symbol_templ;
