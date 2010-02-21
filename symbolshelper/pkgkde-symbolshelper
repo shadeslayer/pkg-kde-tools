@@ -165,7 +165,7 @@ sub find_package_symbolfile_path {
 
 sub out_symfile {
     my ($symfile, %opts) = @_;
-    return 1 unless $symfile;
+    return 1 unless defined $symfile;
 
     my $out_fh;
     my $out_file = $opt_out;
@@ -185,7 +185,7 @@ sub out_symfile {
 	File::Copy::copy($out_file, $out_file.'~') if ($backup && -r $out_file);
 	$symfile->save($out_file, template_mode => 1, with_deprecated => 1, %opts);
     } elsif ($out_fh) {
-	$symfile->dump($out_fh, template_mode => 1, with_deprecated => 1, %opts);
+	$symfile->output($out_fh, template_mode => 1, with_deprecated => 1, %opts);
     } else {
 	error("output file could not be determined");
     }
@@ -431,7 +431,7 @@ sub patch_symfile {
     # Generate diff
     if ($opt_verbose) {
 	my $tmpfile = File::Temp->new(TEMPLATE => "${opt_in}.newXXXXXX");
-	$template->dump($tmpfile,
+	$template->output($tmpfile,
 	    package => $opt_package,
 	    template_mode => 1,
 	    with_deprecated => 1,

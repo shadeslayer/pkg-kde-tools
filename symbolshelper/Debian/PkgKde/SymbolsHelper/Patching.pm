@@ -211,7 +211,7 @@ sub complete {
     return $self->is_valid();
 }
 
-sub dump {
+sub output {
     my ($self, $outfh, $filename) = @_;
     $filename = $self->{target} unless $filename;
 
@@ -236,7 +236,7 @@ sub apply {
                             error_to_handle => $outfile,
                             wait_child => 0
     );
-    my $ret = $self->dump($to_patch_process, $filename);
+    my $ret = $self->output($to_patch_process, $filename);
     close $to_patch_process;
     wait_child($pid, nocheck => 1);
     $ret &&= !$?;

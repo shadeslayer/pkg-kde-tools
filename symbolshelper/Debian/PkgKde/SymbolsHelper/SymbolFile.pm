@@ -29,8 +29,8 @@ use Debian::PkgKde::SymbolsHelper::Symbol;
 use Debian::PkgKde::SymbolsHelper::Substs;
 
 # Use Debian::PkgKde::SymbolsHelper::Symbol as base symbol
-sub load {
-    my ($self, $file, $seen, $obj_ref, $base_symbol) = @_;
+sub parse {
+    my ($self, $fh, $file, $seen, $obj_ref, $base_symbol) = @_;
     unless (defined $base_symbol) {
 	$base_symbol = 'Debian::PkgKde::SymbolsHelper::Symbol';
     }
@@ -46,7 +46,7 @@ sub load {
 	    $self->set_confirmed(split(/\s+/, $1));
 	}
     }
-    return $self->SUPER::load($file, $seen, $obj_ref, $base_symbol);
+    return $self->SUPER::parse($fh, $file, $seen, $obj_ref, $base_symbol);
 }
 
 sub set_confirmed {
@@ -81,7 +81,7 @@ sub fork_symbol {
     return $nsym;
 }
 
-sub dump {
+sub output {
     my ($self, $fh, %opts) = @_;
     $opts{with_confirmed} = 1 unless exists $opts{with_confirmed};
     # Write SymbolsHelper-Confirmed header
@@ -89,10 +89,10 @@ sub dump {
 	my @carches = $self->get_confirmed_arches();
 	if (@carches) {
 	    print $fh '# SymbolsHelper-Confirmed: ', $self->get_confirmed_version(),
-		" ", join(" ", sort @carches), "\n";
+		" ", join(" ", sort @carches), "\n" if defined $fh;
 	}
     }
-    return $self->SUPER::dump($fh, %opts);
+    return $self->SUPER::output($fh, %opts);
 }
 
 sub _resync_symbol_cache {
@@ -201,7 +201,7 @@ sub patch_template {
 		TEMPLATE => "${package}_orig.symbolsXXXXXX",
 		UNLINK => 0,
 	    );
-	    $self->dump($tmpfile,
+	    $self->output($tmpfile,
 		package => $package,
 		template_mode => 1,
 		with_confirmed => 0,

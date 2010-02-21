@@ -38,15 +38,16 @@ sub find_dpkg_gensymbols {
     return (undef, undef);
 }
 
-my $old_symbolfile_load;
+my $old_symbolfile_parse;
 
-sub new_symbolfile_load {
+sub new_symbolfile_parse {
     # Use Debian::PkgKde::SymbolsHelper::Symbol as base symbol
-    my ($self, $file, $seen, $obj_ref, $base_symbol) = @_;
+    my ($self, $fh, $file, $seen, $obj_ref, $base_symbol) = @_;
     unless (defined $base_symbol) {
 	$base_symbol = 'Debian::PkgKde::SymbolsHelper::Symbol';
     }
-    return &$old_symbolfile_load($self, $file, $seen, $obj_ref, $base_symbol);
+    return &$old_symbolfile_parse($self, $fh, $file, $seen, $obj_ref,
+	$base_symbol);
 }
 
 sub check_dpkg_version {
@@ -93,8 +94,8 @@ if (check_dpkg_version(1, 15, 5)) {
 	# Replace Dpkg::Shlibs::SymbolFile::load with a custom version
 	# which uses Debian::PkgKde::SymbolsHelper::Symbol rather than
 	# Dpkg::Shlibs::Symbol
-	$old_symbolfile_load = *Dpkg::Shlibs::SymbolFile::load;
-	*Dpkg::Shlibs::SymbolFile::load = *new_symbolfile_load;
+	$old_symbolfile_parse = *Dpkg::Shlibs::SymbolFile::parse;
+	*Dpkg::Shlibs::SymbolFile::parse = *new_symbolfile_parse;
 
 	do "$exe";
     } else {
