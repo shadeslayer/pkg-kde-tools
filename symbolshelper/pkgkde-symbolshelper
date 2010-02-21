@@ -611,9 +611,9 @@ sub subcommand_batchpatch {
 	    @packages = grep { exists $packages{$_} } get_all_packages();
 	}
 
-	error("no packages specified and none found in debian/control")
-	    unless @packages;
 	error("no valid patches found") unless @patches;
+	error("no packages specified or none to patch for this source")
+	    unless @packages;
 
 	foreach my $package (@packages) {
 	    my $msg = sprintf("| Processing %s package |", $package);
