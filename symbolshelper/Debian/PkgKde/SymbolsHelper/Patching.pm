@@ -33,7 +33,12 @@ sub parse_patches_from_handle {
 	$reparse_line = 0;
 	if (defined $patch) {
 	    if ($patch->has_header()) {
-		if (m/^(?:[+ -]|@@ )/) {
+		if (m/^@@ /) {
+		    unless ($patch->is_valid()) {
+			warning("patch '".$patch->get_name()."' hunk is invalid at line $.");
+		    }
+		    $patch->append_line($_);
+		} elsif (!$patch->is_valid() && m/^[+ -]/) {
 		    # Patch continues
 		    $patch->append_line($_);
 		} else {
@@ -41,7 +46,7 @@ sub parse_patches_from_handle {
 		    if ($patch->complete()) {
 			push @patches, $patch;
 		    } else {
-			warning("patch: '".$patch->get_name()."' is invalid");
+			warning("patch '".$patch->get_name()."' is invalid");
 		    }
 		    $patch = undef;
 		    $reparse_line = 1;
@@ -66,7 +71,7 @@ sub parse_patches_from_handle {
 	if ($patch->complete()) {
 	    push @patches, $patch;
 	} else {
-	    warning("patch: '".$patch->get_name()."' is invalid");
+	    warning("patch '".$patch->get_name()."' is invalid");
 	}
     }
     return @patches;
