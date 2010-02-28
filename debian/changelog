@@ -1,4 +1,4 @@
-pkg-kde-tools (0.6.6~pre2) UNRELEASED; urgency=low
+pkg-kde-tools (0.6.6) unstable; urgency=low
 
   * pkgkde-{symbolshelper,gensymbols}: compatibility fix for dpkg-dev 1.15.6
     retaining compatibility with 1.15.5 as well (Dpkg::IPC::spawn).
@@ -11,7 +11,7 @@ pkg-kde-tools (0.6.6~pre2) UNRELEASED; urgency=low
   * `pkgkde-symbolshelper rewrite`: understand -v again.
   * Add pkgkde-override-sc-dev-latest command.
 
- -- Modestas Vainius <modax@debian.org>  Fri, 19 Feb 2010 20:30:09 +0200
+ -- Modestas Vainius <modax@debian.org>  Sun, 28 Feb 2010 20:56:33 +0200
 
 pkg-kde-tools (0.6.5) unstable; urgency=low
 
