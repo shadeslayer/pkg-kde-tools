@@ -13,6 +13,9 @@ build:
 install:
 	install -d $(DATADIR) $(BINDIR) $(MANDIR) $(MANDIR)/man1
 	
+	pod2man pkgkde-override-sc-dev-latest > $(MANDIR)/man1/pkgkde-override-sc-dev-latest.1
+	install -m 0755 pkgkde-override-sc-dev-latest $(BINDIR)
+	
 	# symbolshelper
 	cd $(SYMBOLSHELPER_DIR) && find Debian -type f -name "*.pm" -exec \
 	    install -D -m 0644 {} $(DESTDIR)/$(PERLLIBDIR)/{} \;

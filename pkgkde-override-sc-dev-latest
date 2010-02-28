@@ -1,0 +1,319 @@
+#!/usr/bin/perl
+
+=head1 NAME
+
+pkgkde-override-sc-dev-latest - loosen kde-sc-dev-latest Break restrictions
+
+=head1 SYNOPSIS
+
+B<pkgkde-override-sc-dev> [B<-b>I<base_version>] [B<-v>I<version>]
+
+=head1 DESCRIPTION
+
+B<pkgkde-override-sc-dev-lastest> is a helper utility which can be used to
+generate a dummy I<kde-sc-dev-latest> package without I<Breaks> field that is
+present in the original version. Original I<kde-sc-dev-latest> package is used
+to force KDE Software Compilation modules to be built against the latest
+version of the KDE Development Platform modules without bumping versions of
+a bunch build dependencies for each KDE SC module. However, while
+original I<kde-sc-dev-latest> does not cause problems when building in clean
+chroots, the restrictions imposed by its I<Breaks> field might be undesirable
+on the maintainer system when:
+
+=over 4
+
+=item *
+
+the maintainer wants to (test)build KDE module version X.Y.A against KDE
+Development Platform X.Y.B where (A > B);
+
+=item *
+
+the maintainer builds a new upstream version of the some KDE Development
+Platform module on the system that has an old version of some KDE Development
+Platform packages installed. For example, even if kdepimlibs does not build
+depend on kdebase-workspace-dev, original I<kde-sc-dev-latest> may prevent
+kdepimlibs X.Y.A to be built on the system which has kdebase-workspace X.Y.B
+(where A > B) installed.
+
+=back
+
+By default, B<pkgkde-override-sc-dev-latest> generates a dummy
+I<kde-sc-dev-latest> package in the current working directory that is based on the
+current C<candidate> version of the original I<kde-sc-dev-latest> (as per
+apt-cache policy). You may specify a base version with the I<-b> option. The
+resulting dummy I<kde-sc-dev-latest> override package will have
+C<I<base_version>+override> as its version unless another one is specified with
+I<-v> option. Once the package is generated, you can install it like:
+
+  # dpkg --install kde-sc-dev_<version>+override_all.deb
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-b>I<base_version>, B<--basever>=I<base_version>
+
+The version of the original I<kde-sc-dev-latest> package to base an override
+package on. It must be available in the APT database on the system. You may
+also pass special value C<latest> to select the latest available version in the
+APT database. If you specify C<priority>, the latest version with the highest
+priority will be selection. By default (if this option is not specified),
+candidate version is selected
+
+=item B<-v>I<version>, B<--version>=I<version>
+
+Generate an override package with the specified C<I<version>+override> rather
+than default C<I<base_version>+override> version.
+
+=back
+
+=head1 AUTHOR
+
+Modestas Vainius <modax@debian.org>
+
+=cut
+
+use warnings;
+use strict;
+use File::Temp;
+use File::Basename qw(basename);
+use Getopt::Long;
+use Cwd qw(cwd);
+
+my $APT_CACHE = `which apt-cache`; chomp $APT_CACHE;
+my $DPKG_GENCONTROL = `which dpkg-gencontrol`; chomp $DPKG_GENCONTROL;
+my $DPKG_DEB = `which dpkg-deb`; chomp $DPKG_DEB;
+my $DPKG_NAME = `which dpkg-name`; chomp $DPKG_NAME;
+
+sub error {
+    my $format = shift;
+    print STDERR sprintf(basename($0) . ": error ". $format, @_), "\n";
+    exit 1;
+}
+
+sub info {
+    my $format = shift;
+    print STDERR sprintf(basename($0) . ": info ". $format, @_), "\n";
+}
+
+sub syserr {
+    my $format = shift;
+    error("$format: $!", @_);
+}
+
+sub check_environment {
+    unless (-x $APT_CACHE) {
+        error('`apt-cache` from the apt package is needed');
+    }
+    unless (-x $DPKG_GENCONTROL) {
+        error('`dpkg-gencontrol` from the dpkg-dev package is needed');
+    }
+    unless (-x $DPKG_DEB) {
+        error('`dpkg-deb` from the dpkg-dev package is needed');
+    }
+    unless (-x $DPKG_NAME) {
+        error('`dpkg-name` from the dpkg-dev package is needed');
+    }
+}
+
+sub get_apt_policy {
+    my $package = shift;
+    my %result;
+    my $versions;
+    my $ver;
+    open (APT_CACHE, "LC_ALL=C $APT_CACHE policy $package |") or
+        syserr("unable to run apt-cache");
+    while (<APT_CACHE>) {
+        chop;
+        if (m/^  Candidate: (\S+)$/) {
+            $result{candidate} = $1 unless $1 =~ /\(none\)/;
+        } elsif (m/^  Version table/) {
+            $versions = {};
+        } elsif (defined $versions) {
+            if (/^ [ *]{3} (\S+)/) {
+                $ver = $1;
+                push @{$result{byversion}}, $ver;
+            } elsif (defined $ver && /^     \s\s*(\d+)/) {
+                if (!exists $versions->{$ver} || $1 > $versions->{$ver}) {
+                    $versions->{$ver} = $1;
+                }
+            } else {
+                $ver = undef;
+            }
+        }
+    }
+    close APT_CACHE;
+
+    # By priority
+    use sort 'stable';
+    $result{bypriority} =
+        [ sort { -($versions->{$a} <=> $versions->{$b}) } keys %$versions ];
+    no sort 'stable';
+
+    $result{versions} = $versions;
+
+    return \%result;
+}
+
+sub get_apt_show {
+    my ($package, $version) = @_;
+    open (APT_CACHE, "LC_ALL=C $APT_CACHE show $package |") or
+        syserr("unable to run apt-cache");
+    my %fields;
+    my $field;
+    while (<APT_CACHE>) {
+        chop;
+        if (m/^(\S+):\s*(.*)$/) {
+            $field = $1;
+            if ($field eq "Package") {
+                if (exists $fields{Version} && $fields{Version} eq $version) {
+                    return \%fields;
+                } else {
+                    %fields = ();
+                }
+            }
+            $fields{$field} = $2;
+        } elsif (defined $field && m/^(\s.*)$/) {
+            $fields{$field} .= "\n" . $_;
+        } elsif (! m/^\s*$/) {
+            error("problem while parsing apt-cache show output, line $.");
+        }
+    }
+    close APT_CACHE;
+
+    if (exists $fields{Version} && $fields{Version} eq $version) {
+        return \%fields;
+    } else {
+        return ();
+    }
+}
+
+sub get_maintainer {
+    my $maintlogin;
+    my $maintname = $ENV{DEBFULLNAME} || $ENV{NAME};
+    my $maintemail = $ENV{DEBEMAIL};
+
+    my ($login, $passwd, $uid, $gid,
+        $quota, $comment, $gcos, $dir, $shell, $expire) = getpwuid($<);
+    $maintlogin = $login || $uid || "unknown";
+    unless ($maintname) {
+        my @maintname = split(/,/, $comment);
+        $maintname = $maintname[0] || "Unknown name";
+    }
+    unless ($maintemail) {
+        $maintemail = "$maintlogin\@localhost";
+    }
+    return "$maintname <$maintemail>";
+}
+
+
+check_environment();
+
+my $opt_basever;
+my $opt_version;
+if (!GetOptions("b|basever=s" => \$opt_basever,
+                "v|version=s" => \$opt_version)) {
+    exit 2;
+}
+
+my $policy = get_apt_policy("kde-sc-dev-latest");
+error("there no versions of kde-sc-dev-latest available in the APT database")
+    unless %{$policy->{versions}};
+
+if (! $opt_basever) {
+    $opt_basever = $policy->{candidate};
+    $opt_basever = $policy->{bypriority}->[0] unless $opt_basever;
+} elsif ($opt_basever eq "latest") {
+    $opt_basever = $policy->{byversion}->[0];
+} elsif ($opt_basever eq "priority") {
+    $opt_basever = $policy->{bypriority}->[0];
+}
+
+if ($opt_basever && ! exists $policy->{versions}{$opt_basever}) {
+    error("kde-sc-dev-latest version $opt_basever is not available in the APT database");
+}
+
+unless ($opt_version) {
+    $opt_version = $opt_basever;
+}
+$opt_version .= "+override";
+
+my $fields = get_apt_show("kde-sc-dev-latest", $opt_basever);
+unless (%$fields) {
+    error("no kde-sc-dev-latest version $opt_basever in the APT database");
+}
+
+info "Basing custom kde-sc-dev-latest package on the version %s ...", $opt_basever;
+
+my $maintainer = get_maintainer();
+my $date = `date -R`;
+chop $date;
+my $curdir = cwd();
+my $dir = File::Temp->newdir("kde-sc-dev-latest-override.XXXXXX", CLEANUP => 1);
+chdir $dir or syserr("unable to change directory to ". $dir->filename);
+mkdir "debian" or syserr("unable to create debian subdirectory");
+
+# Write control
+open(CONTROL, ">", "debian/control") or
+    syserr("unable to create control file");
+print CONTROL <<EOF;
+Source: kde-sc-dev-latest-override
+Section: kde
+Priority: optional
+Maintainer: $maintainer
+Standards-Version: 3.8.4
+
+EOF
+
+for my $field (qw{Package Architecture Pre-Depends
+                  Depends Suggests Recommends})
+{
+    if (exists $fields->{$field}) {
+        print CONTROL $field, ": ", $fields->{$field}, "\n";
+    }
+}
+
+print CONTROL <<EOF;
+Description: override for the kde-sc-dev-latest $opt_basever
+ This package is based on the original kde-sc-dev-latest package
+ version $opt_basever.
+ .
+ The purpose of this package is to loosen restrictions imposed by the Breaks
+ field of the original package, i.e. permit building KDE SC packages when
+ non-latest versions of KDE Development Platform packages are installed on the
+ system. Therefore, this package has the same control fields as original except
+ that "Breaks" field is not present.
+ .
+ This package was generated with the pkgkde-override-sc-dev-latest utility on
+ $date.
+EOF
+
+close CONTROL;
+
+# Write changelog
+open(CHANGELOG, ">", "debian/changelog") or
+    syserr("unable to create changelog file");
+print CHANGELOG "kde-sc-dev-latest-override (", $opt_version, ") dummy; urgency=low", "\n";
+print CHANGELOG "\n";
+print CHANGELOG "  * kde-sc-dev-latest override (without Breaks) for version ",
+                $opt_basever, ".", "\n";
+print CHANGELOG "\n";
+print CHANGELOG " -- ", $maintainer, "  ", $date, "\n";
+close CHANGELOG;
+
+# Generate binary control and create deb
+mkdir "debian/tmp" or syserr("unable to create debian/tmp subdirectory");
+mkdir "debian/tmp/DEBIAN" or syserr("unable to create debian/tmp/DEBIAN subdirectory");
+system($DPKG_GENCONTROL, "-pkde-sc-dev-latest", "-Pdebian/tmp") and error("dpkg-gencontrol FAILED!");
+system($DPKG_DEB, "--build", "debian/tmp", "kde-sc-dev-latest.deb") and error("dpkg-deb --build FAILED!");
+system($DPKG_NAME, "kde-sc-dev-latest.deb") and error("dpkg-name FAILED!");
+
+# Move
+my @deb = glob('*.deb');
+system("mv", $deb[0], $curdir) and
+    error("unable to move debian package to the current directory");
+chdir $curdir;
+
+info "%s created sucessfully.", $deb[0];
+info 'You may install it with `dpkg -i %s`', $deb[0];

@@ -9,6 +9,7 @@ pkg-kde-tools (0.6.6~pre2) UNRELEASED; urgency=low
   * `pkgkde-symbolshelper batchpatch`: improve error messages.
   * Fix patch parsing when patches go one right after another.
   * `pkgkde-symbolshelper rewrite`: understand -v again.
+  * Add pkgkde-override-sc-dev-latest command.
 
  -- Modestas Vainius <modax@debian.org>  Fri, 19 Feb 2010 20:30:09 +0200
 
