@@ -652,7 +652,7 @@ sub subcommand_rewrite {
     my $opt_template = 1;
     my $opt_convert;
     my %opts = (
-	get_common_options("boia"),
+	get_common_options("boiav"),
 	"template!" => \$opt_template,
 	"convert" => \$opt_convert,
     );
@@ -665,11 +665,12 @@ sub subcommand_rewrite {
 		template_mode => $opt_template
 	    );
 
-	    if ($opt_convert) {
-		foreach my $sym ($symfile->get_symbols()) {
-		    $sym->upgrade_virtual_table_symbol($opt_arch);
-		    tweak_symbol($sym, $opt_version);
-		}
+	    foreach my $sym ($symfile->get_symbols()) {
+		$sym->upgrade_virtual_table_symbol($opt_arch) if ($opt_convert);
+		tweak_symbol($sym, $opt_version);
+	    }
+	    foreach my $pat ($symfile->get_patterns()) {
+		tweak_symbol($pat, $opt_version);
 	    }
 
 	    return out_symfile($symfile->fork(), %o);
