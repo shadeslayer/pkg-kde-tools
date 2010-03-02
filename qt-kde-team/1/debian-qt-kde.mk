@@ -18,6 +18,9 @@ include $(DEB_PKG_KDE_QT_KDE_TEAM)/policy.mk
 # Link with --as-needed by default
 DEB_KDE_LINK_WITH_AS_NEEDED ?= yes
 
+# Our packages are parallel safe
+DEB_BUILD_PARALLEL = yes
+
 # Include default KDE 4 cmake configuration variables
 include $(DEB_PKG_KDE_MAKEFILES)/variables.mk
 
