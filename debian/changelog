@@ -1,10 +1,10 @@
-pkg-kde-tools (0.6.7) UNRELEASED; urgency=low
+pkg-kde-tools (0.6.7) unstable; urgency=low
 
   * Instruct cdbs to handle DEB_BUILD_OPTIONS=parallel for team packages rather
     than rely on dpkg-buildpackage -jN to mess with MAKEFLAGS. Team packages
     are parallel safe.
 
- -- Modestas Vainius <modax@debian.org>  Tue, 02 Mar 2010 13:16:00 +0200
+ -- Modestas Vainius <modax@debian.org>  Tue, 02 Mar 2010 13:20:03 +0200
 
 pkg-kde-tools (0.6.6) unstable; urgency=low
 
