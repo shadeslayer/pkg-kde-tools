@@ -1,5 +1,8 @@
 pkg-kde-tools (0.6.8) UNRELEASED; urgency=low
 
+  * Add dh_sodeps helper program for autogenering dependencies for library
+    development packages based on the targets *.so symlinks point to.
+  * Add dh addon "sopdes" for dh_sopdeps.
 
  -- Modestas Vainius <modax@debian.org>  Wed, 03 Mar 2010 04:23:55 +0200
 

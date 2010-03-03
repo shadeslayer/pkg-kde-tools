@@ -38,6 +38,8 @@ install:
 	install -m 0755 $(DEBHELPER_DIR)/dh_sameversiondep $(BINDIR)
 	pod2man $(DEBHELPER_DIR)/dh_movelibkdeinit > $(MANDIR)/man1/dh_movelibkdeinit.1
 	install -m 0755 $(DEBHELPER_DIR)/dh_movelibkdeinit $(BINDIR)
+	pod2man $(DEBHELPER_DIR)/dh_sodeps > $(MANDIR)/man1/dh_sodeps.1
+	install -m 0755 $(DEBHELPER_DIR)/dh_sodeps $(BINDIR)
 	
 	# Debhelper addons
 	cd $(DEBHELPER_DIR) && find Debian -type f -name "*.pm" -exec \
