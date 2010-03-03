@@ -321,7 +321,22 @@ sub create_template {
 			my $substs_sym = $group->get_symbol($substs_arch);
 			$sym->add_tag("subst");
 			$sym->reset_h_name($substs_sym->get_h_name());
-			$substs_ok = $group->verify_substs();
+			# Properly handle the case when *some substs have been*
+			# detected but symbols in the group still differ. Since
+			# the symbols will be grouped, we need to add a subst
+			# tag to all of them and reset h_name of the orig
+			# symbol since it is not touched by substs detection.
+			unless ($substs_ok = $group->verify_substs()) {
+			    foreach my $sym ($group->get_symbols()) {
+				$sym->add_tag("subst");
+			    }
+			    if ($orig_arch eq $substs_arch) {
+				$group->get_symbol()->add_tag("subst");
+				$group->get_symbol()->reset_h_name(
+				    $substs_sym->get_h_name()
+				);
+			    }
+			}
 		    }
 		} else {
 		    $substs_ok = 1;
@@ -335,6 +350,7 @@ sub create_template {
 		    foreach my $sym ($group->get_symbols()) {
 			$sym->resync_name_with_h_name();
 		    }
+		    $group->get_symbol()->resync_name_with_h_name() if $group->get_symbol();
 		    if (my @byname = $self->get_symbols_regrouped_by_name($group)) {
 			$template->add_symbol($_, $soname) foreach @byname;
 			info("possible incomplete subst detection (%s). Processed by name:\n" .

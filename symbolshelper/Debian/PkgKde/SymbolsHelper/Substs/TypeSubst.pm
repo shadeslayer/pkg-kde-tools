@@ -64,7 +64,7 @@ sub hinted_neutralize {
 
     for (my $i = 0; $i < @$hintstr; $i++) {
 	if (defined $hintstr->[$i] && $hintstr->[$i] eq $self->{substvar}) {
-	    $rawname->substr($i, $l, $self->{types}->[0]);
+	    $rawname->substr($i, $l, $self->{types}->[0], $self->{substvar});
 	    $ret = 1;
 	}
     }

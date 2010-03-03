@@ -1,5 +1,9 @@
 pkg-kde-tools (0.6.9~pre1) UNRELEASED; urgency=low
 
+  * `pkgkde-symbolshelper *`: properly handle the case when some substs have
+    been detected but symbols differences still remain (rare variant of
+    "possible incomplete subst detection"). libakonadi-kde4 in kdepimlibs was
+    hit by this bug.
 
  -- Modestas Vainius <modax@debian.org>  Wed, 03 Mar 2010 23:43:10 +0200
 
