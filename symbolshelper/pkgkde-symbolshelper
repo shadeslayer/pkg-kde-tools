@@ -391,7 +391,7 @@ sub patch_symfile {
 		    push @changes_lost, " ".$sym->get_symbolspec(1);
 		} elsif (! $sym->{deprecated} && $osym->{deprecated}) {
 		    # Tweak symbol
-		    tweak_symbol($sym, $opt_version);
+		    tweak_symbol($sym, $version);
 		    push @changes_new, " ".$sym->get_symbolspec(1);
 		} else {
 		    my $arches = $sym->get_tag_value("arch") || '';
@@ -404,7 +404,7 @@ sub patch_symfile {
 		}
 	    } else {
 		# Tweak symbol
-		tweak_symbol($sym, $opt_version);
+		tweak_symbol($sym, $version);
 		push @changes_new, " ".$sym->get_symbolspec(1);
 	    }
 	}
