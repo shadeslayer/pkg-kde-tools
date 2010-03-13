@@ -1,5 +1,5 @@
 # Standard Debian KDE 4 cmake flags
-_kde4_flags := $(shell cat $(dir $(lastword $(MAKEFILE_LIST)))../../kde4_flags)
+_kde4_flags := $(shell cat $(dir $(lastword $(MAKEFILE_LIST)))../../lib/kde4_flags)
 DEB_CMAKE_KDE4_FLAGS += $(_kde4_flags)
 
 # Custom KDE 4 global configuration file installation directory

@@ -18,7 +18,7 @@ sub DESCRIPTION {
 sub KDE4_FLAGS_FILE {
     my $file = "kde4_flags";
     if (! -r $file) {
-        $file = "/usr/share/pkg-kde-tools/kde4_flags";
+        $file = "/usr/share/pkg-kde-tools/lib/kde4_flags";
     }
     if (! -r $file) {
         error "kde4_flags file could not be found";
