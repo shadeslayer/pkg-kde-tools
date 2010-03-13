@@ -18,6 +18,8 @@ usage() {
 
 
 download() {
+    local debdir
+    debdir="$1"
     # Download debs
     info "Downloading packages from $URL ..."
     wget -e robots=off --timestamping --no-directories --directory-prefix="$debdir" \
@@ -107,7 +109,7 @@ if [ -n "$URL" ]; then
         if [ ! -d "$debdir" ]; then
             mkdir "$debdir"
         fi
-        download
+        download "$debdir"
     else
         error "only http:// and ftp:// download URLs are supported"
     fi
