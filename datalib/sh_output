@@ -1,0 +1,18 @@
+PROGNAME=`basename "$0"`
+
+info() {
+    echo "* $@" >&2
+}
+
+info2() {
+    echo "  -" "$@" >&2
+}
+
+error() {
+    echo "$PROGNAME: error:" "$@" >&2
+    exit 1
+}
+
+warning() {
+    echo "$PROGNAME: warning:" "$@" >&2
+}

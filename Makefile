@@ -6,15 +6,19 @@ VCS_DIR := vcs
 BINDIR := $(DESTDIR)/usr/bin
 MANDIR := $(DESTDIR)/usr/share/man
 DATADIR := $(DESTDIR)/usr/share/pkg-kde-tools
+DATALIBDIR := $(DATADIR)/lib
 
 build:
 	# Nothing do build
 
 install:
-	install -d $(DATADIR) $(BINDIR) $(MANDIR) $(MANDIR)/man1
+	install -d $(DATADIR) $(DATALIBDIR) $(BINDIR) $(MANDIR) $(MANDIR)/man1
 	
 	pod2man pkgkde-override-sc-dev-latest > $(MANDIR)/man1/pkgkde-override-sc-dev-latest.1
 	install -m 0755 pkgkde-override-sc-dev-latest $(BINDIR)
+	
+	# Install datalib
+	cd datalib && find . -type f -exec install -D -m 0644 {} $(DATALIBDIR)/{} \;
 	
 	# symbolshelper
 	cd $(SYMBOLSHELPER_DIR) && find Debian -type f -name "*.pm" -exec \
