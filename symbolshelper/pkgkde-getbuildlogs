@@ -1,0 +1,134 @@
+#!/bin/sh
+
+set -e
+
+info() {
+    echo "* $@" >&2
+}
+
+info2() {
+    echo "  -" "$@" >&2
+}
+
+error() {
+    echo "$PROGNAME: error:" "$@" >&2
+    exit 1
+}
+
+warning() {
+    echo "$PROGNAME: warning:" "$@" >&2
+}
+
+usage() {
+    echo "$PROGNAME: usage:" "$0" "[ -d destdir ]" "[ -v version ]" "[ package ]" "[ distribution ]" >&2
+}
+
+
+download_logs() {
+    local destdir pkg distro ver url
+    destdir="$1"
+    pkg="$2"
+    distro="$3"
+    ver="$4"
+    # Download debs
+    url="https://buildd.debian.org/pkg.cgi?pkg=$pkg"
+    if [ -n "$ver" ]; then
+        url="${url}&ver=$ver"
+    elif [ -n "$distro" ]; then
+        url="${url}&dist=$distro"
+    fi
+
+    info "Downloading referenced build logs from $url ..."
+    wget -e robots=off --timestamping --no-directories --directory-prefix="$destdir" \
+         --recursive --level=1 --no-parent --accept 'fetch.cgi*' "$url"
+}
+
+rename_logs() {
+    local destdir pkg
+    local IFS f files old
+    destdir="$1"
+    pkg="$2"
+    files="`ls -1 "$destdir" 2>/dev/null |
+        sed -n "/^fetch\.cgi?.*pkg=${pkg}/ {"'
+            p;
+            s/fetch\.cgi//;
+            s/[?;&][^=]\+=\([^?;&]\+\)/_\1/g;
+            s/^_//;
+            s/$/.build/;
+            p;
+        }'`";
+    IFS='
+'
+
+    if [ -n "$files" ]; then
+        for f in $files; do
+            if [ -n "$old" ]; then
+                info2 "$f"
+                mv "$destdir/$old" "$destdir/$f"
+                old=""
+            else
+                old="$f"
+            fi
+        done
+
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Process options
+VERSION=""
+DESTDIR=""
+while getopts "d:v:" name; do
+    case "$name" in
+	d)  DESTDIR="$OPTARG" ;;
+	v)  VERSION="$OPTARG" ;;
+	\?)  usage; exit 2 ;;
+    esac
+done
+
+shift `expr $OPTIND - 1`
+
+PACKAGE="$1"
+DISTRO="$2"
+
+PROGNAME=`basename "$0"`
+
+if [ -f debian/changelog ]; then
+    _parsechangelog=`dpkg-parsechangelog`
+    if [ -z "$PACKAGE" ]; then
+        PACKAGE=$(echo "$_parsechangelog" | sed -n '/^Source:/ {s/[^:]\+:[[:space:]]*\(.\+\)/\1/; p; q}')
+    fi
+    if [ -n "$PACKAGE" ] && [ -z "$VERSION" ] && [ -z "$DISTRO" ]; then
+        DISTRO=$(echo "$_parsechangelog" | sed -n '/^Distribution:/ {s/[^:]\+:[[:space:]]*\(.\+\)/\1/; p; q}')
+        if [ "$DISTRO" = "UNRELEASED" ]; then
+            # Get distro from the next to current entry
+            _parsechangelog=`dpkg-parsechangelog -c1 -o1`
+            DISTRO=$(echo "$_parsechangelog" | sed -n '/^Distribution:/ {s/[^:]\+:[[:space:]]*\(.\+\)/\1/; p; q}')
+        fi
+    fi
+fi
+
+if [ -z "$PACKAGE" ] || ( [ -z "$VERSION" ] && [ -z "$DISTRO" ] ); then
+    usage
+    exit 2
+fi
+
+# Determine destination directory to store logs
+destdir="${DESTDIR:-${PACKAGE}_${VERSION:-${DISTRO}}_logs}"
+
+info "Selected output directory for logs:" "$destdir/"
+if [ ! -d "$destdir" ]; then
+    mkdir "$destdir"
+fi
+
+download_logs "$destdir" "$PACKAGE" "$DISTRO" "$VERSION"
+rmdir "$destdir" 2>/dev/null || true
+
+info "Downloaded build logs (stored to $destdir):"
+if ! rename_logs "$destdir" "$PACKAGE"; then
+    error "no build logs has been downloaded"
+fi
+
+exit 0

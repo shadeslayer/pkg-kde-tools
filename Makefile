@@ -21,6 +21,7 @@ install:
 	    install -D -m 0644 {} $(DESTDIR)/$(PERLLIBDIR)/{} \;
 	install -m 0755 $(SYMBOLSHELPER_DIR)/pkgkde-symbolshelper $(BINDIR)/pkgkde-symbolshelper
 	install -m 0755 $(SYMBOLSHELPER_DIR)/pkgkde-debs2symbols $(BINDIR)/pkgkde-debs2symbols
+	install -m 0755 $(SYMBOLSHELPER_DIR)/pkgkde-getbuildlogs $(BINDIR)/pkgkde-getbuildlogs
 	
 	# Improved Dpkg::Shlibs and dpkg-gensymbols
 	cd $(SYMBOLSHELPER_DIR) && find Dpkg -type f -name "*.pm" -exec \
