@@ -9,8 +9,8 @@ pkg-kde-tools for Debian
     $(DEB_CMAKE_KDE4_FLAGS) to get the kde4 default variables.
   - If you want to use Debhelper dh(1) command sequencer, you will find section
     "Using with Debhelper Command Sequencer `dh`" below interesting. Please
-    note that /usr/share/pkg-kde-tools/makefiles/1/debhelper/kde.mk snippet
-    has been deprecated since pkg-kde-tools 0.5.0.
+    note that /usr/share/pkg-kde-tools/makefiles/1/debhelper/kde.mk has been
+    dropped in pkg-kde-tools 0.7.0.
 
  Note: to enable linking with --as-needed (disabled by default), you should set
        DEB_KDE_LINK_WITH_AS_NEEDED to 'yes' before the include.
