@@ -13,9 +13,9 @@ B<dh_sameversiondep> [S<I<debhelper options>>]
 
 B<dh_sameversiondep> is a helper tool which is able to generate a dependency
 that is versioned the same way as a dependency (coming from the same source) of
-another reference package is versionized.  B<dh_sameversiondep> scans
-debian/control for the specially formatted substvar (see L</sameVersionDep
-substvar SPECIFICATION> section below), determines its value and writes it to
+another reference package.  B<dh_sameversiondep> scans debian/control for the
+specially formatted substvar (see L</sameVersionDep substvar SPECIFICATION>
+section below), determines its value and writes it to
 F<debian/package.substvars> file.
 
 The most common use case for B<dh_sameversiondep> tool is to keep your
