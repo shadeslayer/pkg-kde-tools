@@ -14,12 +14,34 @@ Depends: ${perl:Depends}, ${misc:Depends}
 Recommends: dpkg-dev (>= 1.15.5~)
 Suggests: debhelper (>= 7.3.16), cdbs
 Breaks: kdelibs5-dev (<< 4:4.2.2)
-Description: common makesnippets and build scripts for KDE4 related packages
- This package contains makefiles setting the default build arguments for KDE4
- packages.
+Description: various packaging tools and scripts for KDE Applications
+ This package contains a variety of packaging tools and build scripts that may
+ be very useful when packaging KDE applications. Even if you are a maintainer
+ of a very small KDE application, this package should be worthwhile checking
+ out.
  .
- Currently, it contains a few makesnippets, and pkgkde-symbolshelper tool,
- but it will grow larger in the future.
+ Main highlights:
+  - recommended build flags for building packages based on the KDE Platform;
+  - cdbs class for building packages based on the KDE Platform (kde.mk);
+  - debhelper build system (--buildsystem=kde) and dh addon (--with kde) for
+    building packages based on the KDE Platform;
+  - dh_sameversiondep for generating a dependency that is versioned the same
+    way as a dependency (coming from the same source) of another reference
+    package.
+  - dh_movelibkdeinit for moving libkdeinit4_*.so libraries to private
+    location;
+  - dh_sodeps (and sodeps dh addon) for generating so:Depends substvar for -dev
+    packages based to which local packages lib*.so symlinks point to;
+  - pkgkde-symbolshelper tool for efficient management of C and C++ symbol
+    files;
+  - pkgkde-debs2symbols tool for generating symbol files and symbol file
+    patches from pre-built binaries in the deb packages;
+  - pkgkde-getbuildlogs tool for downloading build logs for the specified
+    package (from buildd.debian.org);
+  - pkgkde-override-sc-dev-latest tool for overriding Breaks of the
+    kde-sc-dev-latest package;
+  - pkgkde-vcs tool for performing common tasks when packaging under VCS.
  .
- NOTE: if you use cdbs or debhelper, you need to build-depend on those as well,
- as this package is expected to be useful in cases without debhelper or cdbs.
+ NOTE: since this package is cumulative, it does not depend on the packages it
+ provides helpers for. I.e. you still need to explicitly build depend on
+ debhelper or cdbs in your packages.

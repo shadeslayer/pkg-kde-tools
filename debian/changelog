@@ -10,6 +10,8 @@ pkg-kde-tools (0.7.0~pre1) UNRELEASED; urgency=low
   * `pkgkde-symbolshelper *patch`: properly assign version that was chosen in
     the prompt.
   * Completely drop makefiles/1/debhelper/kde.mk. It was deprecated in 0.5.
+  * Improve pkg-kde-tools package description. Now it contains short
+    descriptions of all tools the package provides.
 
  -- Modestas Vainius <modax@debian.org>  Wed, 03 Mar 2010 23:43:10 +0200
 
