@@ -188,3 +188,5 @@ END {
 }
 
 exit 0
+
+# vim: noexpandtab tabstop=8 shiftwidth=4
