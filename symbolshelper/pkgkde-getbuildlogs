@@ -6,14 +6,27 @@ use warnings;
 use Debian::PkgKde;
 use Getopt::Long;
 use File::Copy qw();
+use File::Temp qw();
+use File::Spec;
+use IO::Uncompress::Inflate qw(inflate);
 
-eval "use URI; use URI::QueryParam";
-if ($@) {
-    error "in order to use this utility, you have to install liburi-perl package";
+# Load extra modules (from libwww-perl and its dependencies)
+BEGIN {
+    eval "use HTTP::Request";
+    if ($@) {
+	error "in order to use this utility, you have to install libwww-perl package";
+    }
 }
 
+use URI;
+use URI::QueryParam;
+use URI::Escape;
+use HTTP::Response;
+use LWP::UserAgent;
+use HTML::LinkExtor;
+
 sub usage {
-    usageerr "[ -d destdir ] [ -v version ] [ -a arch ] [ package ] [ distribution ]";
+    usageerr "[ -d destdir ] [ -v version ] [ -a arch ] [ -o ] [ package ] [ distribution ]";
 }
 
 sub construct_url {
@@ -66,7 +79,7 @@ sub download_logs {
     my $distro = $opts{distro};
     my $url;
 
-    # Construct URL
+    # Construct index URL
     if (defined $distro) {
         $url = construct_url('https://buildd.debian.org/pkg.cgi',
 	    pkg => $pkg, dist => $distro, arch => [ as_array($opts{arch}) ]);
@@ -78,52 +91,106 @@ sub download_logs {
 	error "neither version(s) nor distribution was specified";
     }
 
-    # Download
-    info "Downloading referenced build logs from $url ...";
-    if (system("wget", "-e", "robots=off", "--timestamping", "--no-directories",
-        "--directory-prefix=$destdir", "--recursive", "--level=1", "--no-parent",
-        "--accept", "fetch.cgi*", $url) != 0)
-    {
-	error "problems downloading (wget'ing) build logs";
+    # Download index document and extract links
+    info "Downloading build log index from $url ...";
+    my $browser = LWP::UserAgent->new(
+	agent => get_program_name(),
+	timeout => 10,
+	keep_alive => 1,
+	env_proxy => 1,
+    );
+    my $request = HTTP::Request->new(GET => $url);
+    if (my $response = $browser->request($request)) {
+	error "unable to access log index at URL $url: ".$response->status_line
+	    unless $response->is_success();
+	my $linkextor = HTML::LinkExtor->new(undef, "https://buildd.debian.org/");
+	$linkextor->parse($response->content());
+	if (my @links = grep { $_->[0] eq "a" } $linkextor->links()) {
+	    @links = map { shift @{$_}; +{ @{$_} }->{href} } @links;
+	    my @ok;
+	    my @failed;
+	    foreach my $link (@links) {
+		# Check if it is the link we need
+		if ($link =~ m,/fetch\.cgi(\?[^/]+)$,) {
+		    my $filename = $1 . ".build";
+		    $filename =~ s/[?;&][^=]+=([^?;&]+)/_$1/g;
+		    $filename =~ s/^_\.*//;
+		    $filename = uri_unescape($filename);
+		    my $file = File::Spec->catfile($destdir, $filename);
+
+		    if ($opts{overwrite} || ! -e $file) {
+			info "Fetching build log to $filename ...";
+			$request = HTTP::Request->new(GET => $link);
+			$request->header("Accept-Encoding" => "deflate, identity");
+			$browser->show_progress(1);
+			$response = $browser->request($request, $file);
+			if ($response->is_success()) {
+			    my $is_deflated = $response->header("Content-Encoding");
+			    $is_deflated = defined $is_deflated && $is_deflated eq "deflate";
+			    # Inflate contents if needed
+			    if ($is_deflated) {
+				my $inflatedfile = File::Temp->new(
+				    TEMPLATE => $filename . ".XXXXXX"
+				);
+				if (inflate($file => $inflatedfile, BinModeOut => 1)) {
+				    $inflatedfile->close();
+				    File::Copy::move($inflatedfile->filename, $file) or
+					error "unable to rename '%s' to '%s'",
+					    $inflatedfile->filename, $file;
+				    push @ok, [ $filename, "deflate" ];
+				} else {
+				    push @failed, [ $filename, "deflate" ];
+				    unlink $filename;
+				}
+			    } else {
+				push @ok, [ $filename ];
+			    }
+			} else {
+			    push @failed, [ $filename ];
+			}
+		    } else {
+			info "Not overwriting existing build log $filename ...";
+			push @failed, [ $filename, "exists, ignored" ];
+		    }
+		}
+	    }
+	    return (@ok || @failed) ?  (\@ok, \@failed) : ();
+	}
+	return ();
+    } else {
+	error "unable to access log index URL $url";
     }
 }
 
-sub rename_logs {
-    my ($destdir, $pkg) = @_;
-    my %rename;
-    if (opendir(my $dir, $destdir)) {
-	while (my $file = readdir($dir)) {
-	    my $newname;
-	    if ($file =~ /^fetch\.cgi\?.*pkg=$pkg/) {
-		$newname = $file;
-		$newname =~ s/fetch\.cgi//;
-		$newname =~ s/[?;&][^=]+=([^?;&]+)/_$1/g;
-		$newname =~ s/^_//;
-		$newname =~ s/$/.build/;
-		$rename{$file} = $newname;
+sub print_summary {
+    my $logs = shift;
+    my $is_warning = shift;
+    my $msg = shift;
+    if (@$logs) {
+	info $msg, @_ unless $is_warning;
+	warning $msg, @_ if $is_warning;
+	foreach my $log_info (@$logs) {
+	    my ($filename, $info) = @$log_info;
+	    if (defined $info) {
+		printmsg "  - %s [%s]", $filename, $info;
+	    } else {
+		printmsg "  - %s", $filename;
 	    }
 	}
-	closedir($dir);
     }
-
-    foreach my $file (keys %rename) {
-	my $newname = $rename{$file};
-	File::Copy::move("$destdir/$file", "$destdir/$newname") or
-	    error "unable to rename '%s' to '%s'", $file, $newname;
-    }
-
-    return values %rename;
 }
 
 my $opt_destdir;
 my @opt_versions;
 my @opt_archs;
+my $opt_force;
 
 # Get and verify options
 unless (GetOptions(
 	"destdir|d=s" => \$opt_destdir,
 	"version|v=s" => \@opt_versions,
-	"arch|a=s" => \@opt_archs))
+	"arch|a=s" => \@opt_archs,
+	"force|f!" => \$opt_force))
 {
     usage();
 }
@@ -173,14 +240,15 @@ unless (-d $opt_destdir) {
     mkdir $opt_destdir;
 }
 
-download_logs($opt_destdir, $opt_package,
-    distro => $opt_distro, ver => \@opt_versions, arch => \@opt_archs);
+my ($ok_logs, $failed_logs) =
+    download_logs($opt_destdir, $opt_package, overwrite => $opt_force,
+	distro => $opt_distro, ver => \@opt_versions, arch => \@opt_archs);
 
-if (my @logs = rename_logs($opt_destdir, $opt_package)) {
-    info "Downloaded build logs (stored to %s):", $opt_destdir;
-    printmsg "  - %s", $_ foreach @logs;
+if (defined $ok_logs) {
+    print_summary $ok_logs, 0, "Successfully downloaded build logs (stored to %s):", $opt_destdir;
+    print_summary $failed_logs, 1, "Failed to fetch/ignored the following build logs:";
 } else {
-    error "no build logs have been downloaded";
+    error "no build logs referenced in the build log index";
 }
 
 END {
