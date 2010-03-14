@@ -5,10 +5,10 @@ set -e
 include_common() {
     local _dirname
     _dirname="`dirname "$0"`"
-    if [ -n "$_dirname" ] && [ -f "$_dirname/../datalib/sh_output" ]; then
-        . "$_dirname/../datalib/sh_output"
+    if [ -n "$_dirname" ] && [ -f "$_dirname/../datalib/shell_common" ]; then
+        . "$_dirname/../datalib/shell_common"
     else
-        . /usr/share/pkg-kde-tools/lib/sh_output
+        . /usr/share/pkg-kde-tools/lib/shell_common
     fi
 }
 
