@@ -1,126 +1,190 @@
-#!/bin/sh
+#!/usr/bin/perl
 
-set -e
+use strict;
+use warnings;
 
-include_common() {
-    local _dirname
-    _dirname="`dirname "$0"`"
-    if [ -n "$_dirname" ] && [ -f "$_dirname/../datalib/sh_output" ]; then
-        . "$_dirname/../datalib/sh_output"
-    else
-        . /usr/share/pkg-kde-tools/lib/sh_output
-    fi
+use Debian::PkgKde;
+use Getopt::Long;
+use File::Copy qw();
+
+eval "use URI; use URI::QueryParam";
+if ($@) {
+    error "in order to use this utility, you have to install liburi-perl package";
 }
 
-usage() {
-    echo "$PROGNAME: usage:" "$0" "[ -d destdir ]" "[ -v version ]" "[ package ]" "[ distribution ]" >&2
+sub usage {
+    usageerr "[ -d destdir ] [ -v version ] [ -a arch ] [ package ] [ distribution ]";
 }
 
-download_logs() {
-    local destdir pkg distro ver url
-    destdir="$1"
-    pkg="$2"
-    distro="$3"
-    ver="$4"
-    # Download debs
-    url="https://buildd.debian.org/pkg.cgi?pkg=$pkg"
-    if [ -n "$ver" ]; then
-        url="${url}&ver=$ver"
-    elif [ -n "$distro" ]; then
-        url="${url}&dist=$distro"
-    fi
+sub construct_url {
+    my ($path, %params) = @_;
 
-    info "Downloading referenced build logs from $url ..."
-    wget -e robots=off --timestamping --no-directories --directory-prefix="$destdir" \
-         --recursive --level=1 --no-parent --accept 'fetch.cgi*' "$url"
+    my $url = URI->new($path);
+    foreach my $param (keys %params) {
+	my @value = (ref $params{$param} eq "ARRAY") ?
+	    @{$params{$param}} : ( $params{$param} );
+	$url->query_param_append($param, @value);
+    }
+    return $url->as_string();
 }
 
-rename_logs() {
-    local destdir pkg
-    local IFS f files old
-    destdir="$1"
-    pkg="$2"
-    files="`ls -1 "$destdir" 2>/dev/null |
-        sed -n "/^fetch\.cgi?.*pkg=${pkg}/ {"'
-            p;
-            s/fetch\.cgi//;
-            s/[?;&][^=]\+=\([^?;&]\+\)/_\1/g;
-            s/^_//;
-            s/$/.build/;
-            p;
-        }'`";
-    IFS='
-'
-
-    if [ -n "$files" ]; then
-        for f in $files; do
-            if [ -n "$old" ]; then
-                info2 "$f"
-                mv "$destdir/$old" "$destdir/$f"
-                old=""
-            else
-                old="$f"
-            fi
-        done
-
-        return 0
-    else
-        return 1
-    fi
+sub as_array {
+    my $scalar = shift;
+    my @ret;
+    if (defined $scalar) {
+	if (ref($scalar) eq 'ARRAY') {
+	    @ret = @$scalar;
+	} else {
+	    push @ret, $scalar;
+	}
+    }
+    return @ret;
 }
 
-include_common
+sub get_command_output {
+    my @lines;
+    open(my $cmd, "-|", @_) or syserr("unable to execute command %s", $_[0]);
+    while (<$cmd>) {
+	chop;
+	push @lines, $_;
+    }
+    close $cmd;
+    return @lines;
+}
 
-# Process options
-VERSION=""
-DESTDIR=""
-while getopts "d:v:" name; do
-    case "$name" in
-	d)  DESTDIR="$OPTARG" ;;
-	v)  VERSION="$OPTARG" ;;
-	\?)  usage; exit 2 ;;
-    esac
-done
+sub get_rfc822_field_value {
+    my ($field, $input) = @_;
+    foreach my $line (@$input) {
+	if ($line =~ /^\Q$field\E:\s*(.*)$/) {
+	    return "$1"
+	}
+    }
+}
 
-shift `expr $OPTIND - 1`
+sub download_logs {
+    my ($destdir, $pkg, %opts) = @_;
+    my $distro = $opts{distro};
+    my $url;
 
-PACKAGE="$1"
-DISTRO="$2"
+    # Construct URL
+    if (defined $distro) {
+        $url = construct_url('https://buildd.debian.org/pkg.cgi',
+	    pkg => $pkg, dist => $distro, arch => [ as_array($opts{arch}) ]);
+    } elsif (defined $opts{ver}) {
+        $url = construct_url('https://buildd.debian.org/build.cgi',
+	    pkg => $pkg, ver => [ as_array($opts{ver}) ],
+	    arch => [ as_array($opts{arch}) ])
+    } else {
+	error "neither version(s) nor distribution was specified";
+    }
 
-if [ -f debian/changelog ]; then
-    _parsechangelog=`dpkg-parsechangelog`
-    if [ -z "$PACKAGE" ]; then
-        PACKAGE=$(echo "$_parsechangelog" | sed -n '/^Source:/ {s/[^:]\+:[[:space:]]*\(.\+\)/\1/; p; q}')
-    fi
-    if [ -n "$PACKAGE" ] && [ -z "$VERSION" ] && [ -z "$DISTRO" ]; then
-        DISTRO=$(echo "$_parsechangelog" | sed -n '/^Distribution:/ {s/[^:]\+:[[:space:]]*\(.\+\)/\1/; p; q}')
-        if [ "$DISTRO" = "UNRELEASED" ]; then
-            # Get distro from the next to current entry
-            _parsechangelog=`dpkg-parsechangelog -c1 -o1`
-            DISTRO=$(echo "$_parsechangelog" | sed -n '/^Distribution:/ {s/[^:]\+:[[:space:]]*\(.\+\)/\1/; p; q}')
-        fi
-    fi
-fi
+    # Download
+    info "Downloading referenced build logs from $url ...";
+    if (system("wget", "-e", "robots=off", "--timestamping", "--no-directories",
+        "--directory-prefix=$destdir", "--recursive", "--level=1", "--no-parent",
+        "--accept", "fetch.cgi*", $url) != 0)
+    {
+	error "problems downloading (wget'ing) build logs";
+    }
+}
 
-if [ -z "$PACKAGE" ] || ( [ -z "$VERSION" ] && [ -z "$DISTRO" ] ); then
-    usage
-    exit 2
-fi
+sub rename_logs {
+    my ($destdir, $pkg) = @_;
+    my %rename;
+    if (opendir(my $dir, $destdir)) {
+	while (my $file = readdir($dir)) {
+	    my $newname;
+	    if ($file =~ /^fetch\.cgi\?.*pkg=$pkg/) {
+		$newname = $file;
+		$newname =~ s/fetch\.cgi//;
+		$newname =~ s/[?;&][^=]+=([^?;&]+)/_$1/g;
+		$newname =~ s/^_//;
+		$newname =~ s/$/.build/;
+		$rename{$file} = $newname;
+	    }
+	}
+	closedir($dir);
+    }
+
+    foreach my $file (keys %rename) {
+	my $newname = $rename{$file};
+	File::Copy::move("$destdir/$file", "$destdir/$newname") or
+	    error "unable to rename '%s' to '%s'", $file, $newname;
+    }
+
+    return values %rename;
+}
+
+my $opt_destdir;
+my @opt_versions;
+my @opt_archs;
+
+# Get and verify options
+unless (GetOptions(
+	"destdir|d=s" => \$opt_destdir,
+	"version|v=s" => \@opt_versions,
+	"arch|a=s" => \@opt_archs))
+{
+    usage();
+}
+
+my ($opt_package, $opt_distro) = @ARGV;
+my @dpkg_parsechangelog;
+
+if (!$opt_package && -f "debian/changelog") {
+    @dpkg_parsechangelog = get_command_output("dpkg-parsechangelog");
+    $opt_package = get_rfc822_field_value("Source", \@dpkg_parsechangelog);
+}
+
+if (!$opt_package) {
+    errormsg "source package was not specified and could not be autoguessed";
+    usage();
+}
+
+if ($opt_distro && @opt_versions) {
+    errormsg "version and distribution options are mutually exclusive";
+    usage();
+}
+
+if (!@opt_versions) {
+    if (!$opt_distro && -f "debian/changelog") {
+	@dpkg_parsechangelog = get_command_output("dpkg-parsechangelog") unless @dpkg_parsechangelog;
+	$opt_distro = get_rfc822_field_value("Distribution", \@dpkg_parsechangelog);
+	if ($opt_distro eq "UNRELEASED") {
+	    # Get distro from the next to current entry
+	    $opt_distro = get_rfc822_field_value("Distribution",
+		[ get_command_output("dpkg-parsechangelog", "-c1", "-o1") ]);
+	}
+    }
+    if (!$opt_distro) {
+	errormsg "neither distribution nor version(s) was specified and could not be autoguessed";
+	usage();
+    }
+}
 
 # Determine destination directory to store logs
-destdir="${DESTDIR:-${PACKAGE}_${VERSION:-${DISTRO}}_logs}"
+unless ($opt_destdir) {
+    $opt_destdir = sprintf("%s_%s_logs", $opt_package,
+	($opt_distro) ? $opt_distro : $opt_versions[0]);
+}
 
-info "Selected output directory for logs:" "$destdir/"
-if [ ! -d "$destdir" ]; then
-    mkdir "$destdir"
-fi
+info("Selected output directory for logs: %s/", $opt_destdir);
+unless (-d $opt_destdir) {
+    mkdir $opt_destdir;
+}
 
-download_logs "$destdir" "$PACKAGE" "$DISTRO" "$VERSION"
-rmdir "$destdir" 2>/dev/null || true
+download_logs($opt_destdir, $opt_package,
+    distro => $opt_distro, ver => \@opt_versions, arch => \@opt_archs);
 
-info "Downloaded build logs (stored to $destdir):"
-if ! rename_logs "$destdir" "$PACKAGE"; then
-    error "no build logs has been downloaded"
-fi
+if (my @logs = rename_logs($opt_destdir, $opt_package)) {
+    info "Downloaded build logs (stored to %s):", $opt_destdir;
+    printmsg "  - %s", $_ foreach @logs;
+} else {
+    error "no build logs have been downloaded";
+}
+
+END {
+    rmdir $opt_destdir if $opt_destdir && $opt_destdir ne ".";
+}
 
 exit 0
