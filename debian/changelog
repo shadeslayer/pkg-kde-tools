@@ -22,6 +22,7 @@ pkg-kde-tools (0.7.0~pre3) UNRELEASED; urgency=low
       pkgkde-symbolshelper use these new subroutines;
     - change datalib path in pkgkde-deb2symbols;
     - rewrite Makefile for reorganized source tree.
+  * Update debian/copyright.
 
  -- Modestas Vainius <modax@debian.org>  Wed, 03 Mar 2010 23:43:10 +0200
 
