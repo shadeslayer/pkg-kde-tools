@@ -14,6 +14,14 @@ pkg-kde-tools (0.7.0~pre3) UNRELEASED; urgency=low
     descriptions of all tools the package provides.
   * Reword dh_sameversiondep manual page a bit.
   * Recommend libwww-perl.
+  * Reorganize source package directory structure:
+    - get rid of symbolshelper, debhelper, vcs subdirectires. Move perl modules
+      to perllib subdirectory and the rest to the top of the source tree;
+    - unify how datalibdir is found and exported in the Debian::PkgKde module
+      ({find,setup}_datalibdir()). Make pkgkde-gensymbols and
+      pkgkde-symbolshelper use these new subroutines;
+    - change datalib path in pkgkde-deb2symbols;
+    - rewrite Makefile for reorganized source tree.
 
  -- Modestas Vainius <modax@debian.org>  Wed, 03 Mar 2010 23:43:10 +0200
 

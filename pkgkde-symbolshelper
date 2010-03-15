@@ -18,16 +18,9 @@
 use strict;
 use warnings;
 
-# Setup environment
-use constant DATADIR => '/usr/share/pkg-kde-tools';
+use Debian::PkgKde qw(setup_datalibdir);
 BEGIN {
-    my $datadir;
-    if ($0 =~ m@^(.+)/[^/]+$@) {
-	$datadir = $1;
-    }
-    if (!defined $datadir || ! -f "$datadir/Dpkg/Shlibs/SymbolFile.pm") {
-	unshift @INC, DATADIR;
-    }
+    setup_datalibdir("Dpkg/Shlibs/SymbolFile.pm");
 }
 
 # Compatibility with dpkg 1.15.5

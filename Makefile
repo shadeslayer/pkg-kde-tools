@@ -1,57 +1,60 @@
-PERLLIBDIR := $(shell perl -MConfig -e 'print $$Config{vendorlib}')
-SYMBOLSHELPER_DIR := symbolshelper
-DEBHELPER_DIR := debhelper
-VCS_DIR := vcs
-
 BINDIR := $(DESTDIR)/usr/bin
 MANDIR := $(DESTDIR)/usr/share/man
 DATADIR := $(DESTDIR)/usr/share/pkg-kde-tools
 DATALIBDIR := $(DATADIR)/lib
+PERLLIBDIR := $(DESTDIR)/$(shell perl -MConfig -e 'print $$Config{vendorlib}')
+
+BINARIES = \
+	dh_movelibkdeinit \
+	dh_sameversiondep \
+	dh_sodeps \
+	pkgkde-debs2symbols \
+	pkgkde-gensymbols \
+	pkgkde-getbuildlogs \
+	pkgkde-override-sc-dev-latest \
+	pkgkde-symbolshelper \
+	pkgkde-vcs
+
+MANPAGES_1 = \
+	man1/pkgkde-vcs.1
+
+PERLPODS_1 = \
+	pkgkde-override-sc-dev-latest \
+	dh_sameversiondep \
+	dh_movelibkdeinit \
+	dh_sodeps
 
 build:
 	# Nothing do build
 
 install:
-	install -d $(DATADIR) $(DATALIBDIR) $(BINDIR) $(MANDIR) $(MANDIR)/man1
+	install -d $(DATADIR) $(DATALIBDIR) $(BINDIR) $(MANDIR) $(MANDIR)/man1 $(PERLLIBDIR)
 	
 	pod2man pkgkde-override-sc-dev-latest > $(MANDIR)/man1/pkgkde-override-sc-dev-latest.1
 	install -m 0755 pkgkde-override-sc-dev-latest $(BINDIR)
 	
-	# Install datalib
+	# Install *lib directories
+	install -d $(DATALIBDIR)
 	cd datalib && find . -type f -exec install -D -m 0644 {} $(DATALIBDIR)/{} \;
+	install -d $(PERLLIBDIR)
+	cd perllib && find . -type f -name "*.pm" -exec install -D -m 0644 {} $(PERLLIBDIR)/{} \;
+	install -d $(DATADIR)/vcs
+	cd vcslib && find . -type f -exec install -D -m 0644 {} $(DATADIR)/vcs/{} \;
 	
-	# symbolshelper
-	cd $(SYMBOLSHELPER_DIR) && find Debian -type f -name "*.pm" -exec \
-	    install -D -m 0644 {} $(DESTDIR)/$(PERLLIBDIR)/{} \;
-	install -m 0755 $(SYMBOLSHELPER_DIR)/pkgkde-symbolshelper $(BINDIR)/pkgkde-symbolshelper
-	install -m 0755 $(SYMBOLSHELPER_DIR)/pkgkde-debs2symbols $(BINDIR)/pkgkde-debs2symbols
-	install -m 0755 $(SYMBOLSHELPER_DIR)/pkgkde-getbuildlogs $(BINDIR)/pkgkde-getbuildlogs
+	# Install binaries
+	install -d $(BINDIR)
+	install -m 0755 $(BINARIES) $(BINDIR)
 	
-	# Improved Dpkg::Shlibs and dpkg-gensymbols
-	cd $(SYMBOLSHELPER_DIR) && find Dpkg -type f -name "*.pm" -exec \
-	    install -D -m 0644 {} $(DATADIR)/{} \;
-	install -m 0755 $(SYMBOLSHELPER_DIR)/pkgkde-gensymbols $(BINDIR)
-	install -m 0755 $(SYMBOLSHELPER_DIR)/dpkg-gensymbols.1 $(MANDIR)/man1/pkgkde-gensymbols.1
-	install -m 0755 $(SYMBOLSHELPER_DIR)/dpkg-gensymbols.pl $(DATADIR)
+	# Install manual pages
+	install -d $(MANDIR)/man1
+	install -m 0644 $(MANPAGES_1) $(MANDIR)/man1
+	
+	# Install POD based manual packages
+	for f in $(PERLPODS_1); do pod2man "$$f" > "$(MANDIR)/man1/$${f%.*}.1"; done
+	
+	# Special overload of system dpkg-gensymbols
+	install -m 0755 dpkg-gensymbols.1 $(MANDIR)/man1/pkgkde-gensymbols.1
 	install -d $(DATADIR)/bin
 	# Make it possible to transparently replace dpkg-gensymbols with
 	# pkgkde-gensymbols
 	ln -sf /usr/bin/pkgkde-gensymbols $(DATADIR)/bin/dpkg-gensymbols
-	
-	# Custom debhelper commands
-	pod2man $(DEBHELPER_DIR)/dh_sameversiondep > $(MANDIR)/man1/dh_sameversiondep.1
-	install -m 0755 $(DEBHELPER_DIR)/dh_sameversiondep $(BINDIR)
-	pod2man $(DEBHELPER_DIR)/dh_movelibkdeinit > $(MANDIR)/man1/dh_movelibkdeinit.1
-	install -m 0755 $(DEBHELPER_DIR)/dh_movelibkdeinit $(BINDIR)
-	pod2man $(DEBHELPER_DIR)/dh_sodeps > $(MANDIR)/man1/dh_sodeps.1
-	install -m 0755 $(DEBHELPER_DIR)/dh_sodeps $(BINDIR)
-	
-	# Debhelper addons
-	cd $(DEBHELPER_DIR) && find Debian -type f -name "*.pm" -exec \
-	    install -D -m 0644 {} $(DESTDIR)/$(PERLLIBDIR)/{} \;
-	
-	# pkgkde-vcs
-	install -d $(DATADIR)/vcs
-	install -m 0755 $(VCS_DIR)/pkgkde-vcs $(BINDIR)
-	install -m 0644 $(VCS_DIR)/pkgkde-vcs.1 $(MANDIR)/man1
-	cd $(VCS_DIR)/vcslib && find . -type f -exec install -D -m 0644 {} $(DATADIR)/vcs/{} \;
