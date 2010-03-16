@@ -1,4 +1,4 @@
-pkg-kde-tools (0.7.0~pre4) UNRELEASED; urgency=low
+pkg-kde-tools (0.7.0) unstable; urgency=low
 
   * `pkgkde-symbolshelper *`: properly handle the case when some substs have
     been detected but symbols differences still remain (rare variant of
@@ -24,7 +24,7 @@ pkg-kde-tools (0.7.0~pre4) UNRELEASED; urgency=low
     - rewrite Makefile for reorganized source tree.
   * Update debian/copyright.
 
- -- Modestas Vainius <modax@debian.org>  Wed, 03 Mar 2010 23:43:10 +0200
+ -- Modestas Vainius <modax@debian.org>  Tue, 16 Mar 2010 02:58:34 +0200
 
 pkg-kde-tools (0.6.8) unstable; urgency=low
 
