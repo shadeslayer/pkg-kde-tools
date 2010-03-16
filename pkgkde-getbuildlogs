@@ -39,6 +39,7 @@ use URI::Escape;
 use HTTP::Response;
 use LWP::UserAgent;
 use HTML::LinkExtor;
+use HTML::Parser;
 
 sub usage {
     usageerr "[ -d destdir ] [ -v version ] [ -a arch ] [ -o ] [ package ] [ distribution ]";
@@ -89,6 +90,18 @@ sub get_rfc822_field_value {
     }
 }
 
+sub html2text {
+    my ($in, $out) = @_;
+    my $body;
+    my $parser = HTML::Parser->new( api_version => 3,
+	start_h => [ sub { if (shift() eq "body") { $body = 1 } }, "tagname" ],
+	end_h   => [ sub { if (shift() eq "body") { $body = 0 } }, "tagname" ],
+	text_h  => [ sub { if ($body) { print $out shift(); } }, "dtext" ]
+    );
+    $parser->ignore_elements("head", "a", "img");
+    return defined($parser->parse_file($in)) && defined($body);
+}
+
 sub download_logs {
     my ($destdir, $pkg, %opts) = @_;
     my $distro = $opts{distro};
@@ -127,6 +140,7 @@ sub download_logs {
 	    foreach my $link (@links) {
 		# Check if it is the link we need
 		if ($link =~ m,/fetch\.cgi(\?[^/]+)$,) {
+		    my ($ok, @status);
 		    my $filename = $1 . ".build";
 		    $filename =~ s/[?;&][^=]+=([^?;&]+)/_$1/g;
 		    $filename =~ s/^_\.*//;
@@ -134,38 +148,58 @@ sub download_logs {
 		    my $file = File::Spec->catfile($destdir, $filename);
 
 		    if ($opts{overwrite} || ! -e $file) {
+			# Create a temporary file
+			my $tmpfile1 = File::Temp->new(TEMPLATE => $filename . ".XXXXXX",
+			    DIR => $destdir);
+			my $tmpfile2 = File::Temp->new(TEMPLATE => $filename . ".XXXXXX",
+			    DIR => $destdir);
+
 			info "Fetching build log to $filename ...";
 			$request = HTTP::Request->new(GET => $link);
 			$request->header("Accept-Encoding" => "deflate, identity");
 			$browser->show_progress(1);
-			$response = $browser->request($request, $file);
+			$tmpfile1->close();
+			$response = $browser->request($request, $tmpfile1->filename);
 			if ($response->is_success()) {
 			    my $is_deflated = $response->header("Content-Encoding");
 			    $is_deflated = defined $is_deflated && $is_deflated eq "deflate";
 			    # Inflate contents if needed
 			    if ($is_deflated) {
-				my $inflatedfile = File::Temp->new(
-				    TEMPLATE => $filename . ".XXXXXX"
-				);
-				if (inflate($file => $inflatedfile, BinModeOut => 1)) {
-				    $inflatedfile->close();
-				    File::Copy::move($inflatedfile->filename, $file) or
-					error "unable to rename '%s' to '%s'",
-					    $inflatedfile->filename, $file;
-				    push @ok, [ $filename, "deflate" ];
+				push @status, "deflate";
+				if (inflate($tmpfile1->filename => $tmpfile2, BinModeOut => 1)) {
+				    $tmpfile2->close();
+				    ($tmpfile1, $tmpfile2) = ($tmpfile2, $tmpfile1);
+				    open($tmpfile2, ">:utf8", $tmpfile2->filename) or
+					syserr "unable to reopen temporary file";
+				    $ok = 1;
 				} else {
-				    push @failed, [ $filename, "deflate" ];
 				    unlink $filename;
 				}
 			    } else {
-				push @ok, [ $filename ];
+				$ok = 1;
 			    }
-			} else {
-			    push @failed, [ $filename ];
+			    if ($ok) {
+				open($tmpfile1, "<:utf8", $tmpfile1->filename);
+				if ($ok = html2text($tmpfile1 => $tmpfile2)) {
+				    $tmpfile1->close();
+				    $tmpfile1 = $tmpfile2;
+				} else {
+				    push @status, "html unstripped";
+				}
+				$tmpfile1->close();
+				$tmpfile2->close();
+				File::Copy::move($tmpfile1->filename, $file) or
+				    error "unable to rename '%s' to '%s'", $tmpfile1->filename, $file;
+			    }
 			}
 		    } else {
 			info "Not overwriting existing build log $filename ...";
-			push @failed, [ $filename, "exists, ignored" ];
+			push @status, "exists, ignored";
+		    }
+		    if ($ok) {
+			push @ok, [ $filename, @status ];
+		    } else {
+			push @failed, [ $filename, @status ];
 		    }
 		}
 	    }
@@ -185,9 +219,9 @@ sub print_summary {
 	info $msg, @_ unless $is_warning;
 	warning $msg, @_ if $is_warning;
 	foreach my $log_info (@$logs) {
-	    my ($filename, $info) = @$log_info;
-	    if (defined $info) {
-		printmsg "  - %s [%s]", $filename, $info;
+	    my ($filename, @info) = @$log_info;
+	    if (@info) {
+		printmsg "  - %s [%s]", $filename, join(", ", @info);
 	    } else {
 		printmsg "  - %s", $filename;
 	    }
