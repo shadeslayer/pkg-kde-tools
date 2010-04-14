@@ -203,6 +203,18 @@ sub get_all_packages {
     return @packages;
 }
 
+sub kill_dupes {
+    my $prev;
+    my @res;
+    foreach my $a (sort @_) {
+	if (!defined $prev || $prev ne $a) {
+	    push @res, $a;
+	}
+	$prev = $a;
+    }
+    return @res;
+}
+
 sub print_changes_list {
     my ($changes, $header, $print_header_sub, $print_sub) = @_;
 
@@ -264,7 +276,9 @@ sub load_patches {
 }
 
 sub patch_symfile {
-    my ($package, $version, $infile, $basefile, @patches) = @_;
+    my ($package, $version, $infile, $basefile, $patches, $confirmed_arches) = @_;
+    my @patches = @$patches;
+    my @confirmed_arches = @$confirmed_arches;
     $basefile = $infile unless $basefile;
     @patches = grep { $_->{package} eq $package } @patches;
 
@@ -351,14 +365,24 @@ sub patch_symfile {
     error("no valid patched symbol files found") unless keys %psymfiles;
 
     # Fork $orig symbol file for the rest (unpatched) confirmed arches.
-    my @carches = grep { ! exists $psymfiles{$_} } $symfile->get_confirmed_arches();
+    my @carches = kill_dupes(
+	grep { $_ ne @confirmed_arches }  grep { ! exists $psymfiles{$_} }
+	    $symfile->get_confirmed_arches()
+    );
+    @confirmed_arches = kill_dupes(
+	grep { ! exists $psymfiles{$_} } @confirmed_arches
+    );
 
     # Finally create a SymbolFile collection and generate template
     my $symfiles = new Debian::PkgKde::SymbolsHelper::SymbolFileCollection($symfile);
     $symfiles->add_new_symfiles(values %psymfiles);
-    $symfiles->add_confirmed_arches(@carches);
+    $symfiles->add_confirmed_arches(undef, @carches);
+    # Add assume_arches at current version
+    $symfiles->add_confirmed_arches($version, @confirmed_arches);
 
     # Detect templinst symbols before substitutions and create template
+    regular_print("Confirmed arches: %s", join(", ", sort(@carches, @confirmed_arches)))
+	if @carches || @confirmed_arches;
     regular_print("Generating symbol file template .... (this might take a while)");
     foreach my $arch ($symfiles->get_new_arches()) {
 	my $symfile = $symfiles->get_symfile($arch);
@@ -519,7 +543,7 @@ sub subcommand_create {
 	    delete $symfiles{$opt_arch};
 	    my $symfiles = Debian::PkgKde::SymbolsHelper::SymbolFileCollection->new($orig_symfile);
 	    $symfiles->add_new_symfiles(values %symfiles);
-	    $symfiles->add_confirmed_arches($opt_arch);
+	    $symfiles->add_confirmed_arches(undef, $opt_arch);
 
 	    # Detect templinst symbols before substitutions and create template
 	    regular_print("Generating symbol file template .... (this might take a while)");
@@ -551,10 +575,12 @@ sub subcommand_create {
 
 sub subcommand_patch {
     my $opt_file2patch;
+    my $opt_confirmed_arches = '';
     my @input_patches;
     my %opts = (
 	get_common_options("obipavV"),
 	"file-to-patch|f=s" => \$opt_file2patch,
+	"confirmed-arches|c=s" => \$opt_confirmed_arches,
     );
     if (GetOptions(%opts)) {
 	check_mandatory_options("p", "");
@@ -567,10 +593,11 @@ sub subcommand_patch {
 	push @input_patches, "-" unless @input_patches;
 
 	my @patches = load_patches(@input_patches);
+	my @confirmed_arches = split(/[\s,]+/, $opt_confirmed_arches);
 	error("no valid patches found.") unless @patches;
 	return out_symfile(
 	    patch_symfile($opt_package, $opt_version, $opt_in, $opt_file2patch,
-		@patches)
+		\@patches, \@confirmed_arches)
 	);
     }
     return 1;
@@ -580,17 +607,20 @@ sub subcommand_batchpatch {
     my @opt_packages;
     my @input_patches;
     my $opt_continue_on_err;
+    my $opt_confirmed_arches = '';
     my $failed_packages = 0;
 
     my %opts = (
 	get_common_options("bavV"),
 	"package|p=s" => \@opt_packages,
-	"continue-on-error|c!" => \$opt_continue_on_err
+	"continue-on-error!" => \$opt_continue_on_err,
+	"confirmed-arches|c=s" => \$opt_confirmed_arches,
     );
     if (GetOptions(%opts)) {
 	@input_patches = @ARGV;
 	push @input_patches, "-" unless @input_patches;
 	my @patches = load_patches(@input_patches);
+	my @confirmed_arches = split(/[\s,]+/, $opt_confirmed_arches);
 	my %packages = map({ $_->{package} => 1 }
 	    grep { defined $_->{package} } @patches);
 
@@ -616,7 +646,8 @@ sub subcommand_batchpatch {
 	    if (my $infile = find_package_symbolfile_path($package, $opt_arch)) {
 		my $template;
 		eval {
-		    $template = patch_symfile($package, $opt_version, $infile, undef, @patches);
+		    $template = patch_symfile($package, $opt_version, $infile, undef,
+			\@patches, \@confirmed_arches);
 		};
 		if ($@) {
 		    if ($opt_continue_on_err) {

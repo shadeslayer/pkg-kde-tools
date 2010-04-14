@@ -112,17 +112,16 @@ sub add_symfiles {
 }
 
 sub add_confirmed_arches {
-    my ($self, @arches) = @_;
+    my ($self, $version, @arches) = @_;
+    $version = $self->get_symfile()->get_confirmed_version() unless $version;
     foreach my $arch (@arches) {
 	if ($self->get_symfile($arch)) {
 	    error("new symbol file has already been added for arch (%s)", $arch);
 	}
     }
-    push @{$self->{versions}{$self->get_symfile()->get_confirmed_version()}},
-	@arches;
+    push @{$self->{versions}{$version}}, @arches;
     push @{$self->{confirmed_arches}}, @arches;
-    $self->{latest} = $self->get_symfile()->get_confirmed_version()
-	unless defined $self->{latest};
+    $self->{latest} = $version unless defined $self->{latest};
 }
 
 sub get_confirmed_arches {
