@@ -10,7 +10,7 @@ Vcs-Browser: http://git.debian.org/?p=pkg-kde/pkg-kde-tools.git;a=summary
 
 Package: pkg-kde-tools
 Architecture: all
-Depends: ${misc:Depends}
+Depends: ${perl:Depends}, ${misc:Depends}
 Recommends: dpkg-dev (>= 1.15.5~), libwww-perl
 Suggests: debhelper (>= 7.3.16), cdbs
 Breaks: kdelibs5-dev (<< 4:4.2.2)
