@@ -365,8 +365,9 @@ sub patch_symfile {
     error("no valid patched symbol files found") unless keys %psymfiles;
 
     # Fork $orig symbol file for the rest (unpatched) confirmed arches.
+    my %confirmed_arches; $confirmed_arches{$_} = 1 foreach @confirmed_arches;
     my @carches = kill_dupes(
-	grep { $_ ne @confirmed_arches }  grep { ! exists $psymfiles{$_} }
+	grep { ! exists $psymfiles{$_} && ! exists $confirmed_arches{$_} }
 	    $symfile->get_confirmed_arches()
     );
     @confirmed_arches = kill_dupes(
