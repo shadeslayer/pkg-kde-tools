@@ -59,16 +59,6 @@ if (check_dpkg_version(1, 15, 5)) {
 	# Finally, run stock dpkg-gensymbols
 	my $exe = "$dir/dpkg-gensymbols.pl";
 
-	# Compatibility with dpkg 1.15.5
-	require Dpkg::IPC;
-	if (! Dpkg::IPC->can("spawn") && Dpkg::IPC->can("fork_and_exec")) {
-	    *Dpkg::IPC::spawn = *Dpkg::IPC::fork_and_exec;
-	    push @Dpkg::IPC::EXPORT, "spawn";
-	    # Fool perl not to emit a warning
-	    my $nowarning = \&Dpkg::IPC::spawn;
-	    $nowarning = \&Dpkg::IPC::fork_and_exec;
-	}
-
 	eval "use Dpkg::Shlibs::SymbolFile";
 	eval "use Debian::PkgKde::SymbolsHelper::Symbol";
 
