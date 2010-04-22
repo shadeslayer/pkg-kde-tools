@@ -2,6 +2,8 @@ pkg-kde-tools (0.7.1~pre1) UNRELEASED; urgency=low
 
   * Remove workaround introduced in 0.7.0.1: no longer needed.
   * pkgkde-symbolshelper: allow to specify confirmed arches for *patch.
+  * Depend on libdpkg-perl (>= 1.15.6~), recommend dpkg-dev of the same
+    version and break earlier dpkg-dev versions.
 
  -- Modestas Vainius <modax@debian.org>  Wed, 14 Apr 2010 20:22:09 +0300
 
