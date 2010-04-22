@@ -16,6 +16,7 @@
 package Debian::PkgKde;
 
 use File::Spec;
+use Cwd qw(realpath);
 
 use base qw(Exporter);
 our @EXPORT = qw(get_program_name
@@ -68,13 +69,21 @@ sub setup_datalibdir {
 }
 
 sub find_exe_in_path {
-    my ($exe) = @_;
+    my ($exe, @exclude) = @_;
+    my @realexclude;
+
+    # Canonicalize files to exclude
+    foreach my $exc (@exclude) {
+	if (my $realexc = realpath($exc)) {
+	    push @realexclude, $realexc;
+	}
+    }
     if (File::Spec->file_name_is_absolute($exe)) {
 	return $exe;
     } elsif ($ENV{PATH}) {
 	foreach my $dir (split /:/, $ENV{PATH}) {
-	    my $path = File::Spec->catfile($dir, $exe);
-	    if (-x $path) {
+	    my $path = realpath(File::Spec->catfile($dir, $exe));
+	    if (-x $path && ! grep({ $path eq $_ } @realexclude)) {
 		return $path;
 	    }
 	}
