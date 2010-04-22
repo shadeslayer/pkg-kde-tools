@@ -169,7 +169,7 @@ my $re_splitsubstvar = qr/^($re_pkgname)(?::($re_pkgname))?(?:-($re_fields))?$/;
 
 # Global substvars file
 my $g_substvars = new Dpkg::Substvars;
-$g_substvars->parse("debian/substvars") if (-r "debian/substvars");
+$g_substvars->load("debian/substvars") if (-r "debian/substvars");
 
 sub extract_package_names {
     my $val = shift;
@@ -201,7 +201,7 @@ sub Shlibsvars::new {
         }, $cls);
     $self->{substvars} = new Dpkg::Substvars;
     if (-r $self->{file}) {
-        $self->{substvars}->parse($self->{file});
+        $self->{substvars}->load($self->{file});
     }
     return $self;
 }
