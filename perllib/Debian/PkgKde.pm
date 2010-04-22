@@ -15,10 +15,12 @@
 
 package Debian::PkgKde;
 
+use File::Spec;
+
 use base qw(Exporter);
 our @EXPORT = qw(get_program_name
     printmsg info warning errormsg error syserr usageerr);
-our @EXPORT_OK = qw(find_datalibdir setup_datalibdir DATALIBDIR);
+our @EXPORT_OK = qw(find_datalibdir setup_datalibdir find_exe_in_path DATALIBDIR);
 
 # Determine datalib for current script. It depends on the context the script
 # was executed from.
@@ -63,6 +65,21 @@ sub setup_datalibdir {
 	error("unable to locate pkg-kde-tools library directory");
     }
     return $dir;
+}
+
+sub find_exe_in_path {
+    my $exe = (@_);
+    if (File::Spec->file_name_is_absolute($exe)) {
+	return $exe;
+    } elsif ($ENV{PATH}) {
+	foreach my $dir (split /:/, $ENV{PATH}) {
+	    my $path = File::Spec->catfile($dir, $exe);
+	    if (-x $path) {
+		return $path;
+	    }
+	}
+    }
+    return undef;
 }
 
 {
