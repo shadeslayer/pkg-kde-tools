@@ -23,16 +23,6 @@ BEGIN {
     setup_datalibdir("Dpkg/Shlibs/SymbolFile.pm");
 }
 
-# Compatibility with dpkg 1.15.5
-BEGIN {
-    require Dpkg::IPC;
-    if (! Dpkg::IPC->can("spawn") && Dpkg::IPC->can("fork_and_exec")) {
-	*Dpkg::IPC::spawn = *Dpkg::IPC::fork_and_exec;
-	push @Dpkg::IPC::EXPORT, "spawn";
-    }
-}
-use Dpkg::IPC;
-
 use File::Spec;
 use File::Basename qw();
 use File::Copy qw();
@@ -40,6 +30,7 @@ use Getopt::Long qw(:config noignore_case);
 use Dpkg::ErrorHandling;
 use Dpkg::Arch qw(get_host_arch get_valid_arches);
 use Dpkg::Version;
+use Dpkg::IPC;
 
 use Debian::PkgKde::SymbolsHelper::SymbolFile;
 use Debian::PkgKde::SymbolsHelper::SymbolFileCollection;
