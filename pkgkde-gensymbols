@@ -19,7 +19,7 @@ use strict;
 use warnings;
 
 use Dpkg;
-use Debian::PkgKde qw(setup_datalibdir);
+use Debian::PkgKde qw(setup_datalibdir find_exe_in_path);
 
 my $old_symbolfile_parse;
 
@@ -52,12 +52,16 @@ sub check_dpkg_version {
     return $ok;
 }
 
-if (check_dpkg_version(1, 15, 5)) {
+if (check_dpkg_version(1, 15, 6)) {
     # Export global datalibdir if needed
-    my $dir = setup_datalibdir(qw(Dpkg/Shlibs/SymbolFile.pm dpkg-gensymbols.pl));
+    my $dir = setup_datalibdir(qw(Dpkg/Shlibs/SymbolFile.pm));
     if (defined $dir) {
 	# Finally, run stock dpkg-gensymbols
-	my $exe = "$dir/dpkg-gensymbols.pl";
+	my $exe = find_exe_in_path("dpkg-gensymbols");
+	unless ($exe) {
+	    print STDERR "pkgkde-gensymbols: dpkg-gensymbols could not be found in PATH", "\n";
+	    exit 1;
+	}
 
 	eval "use Dpkg::Shlibs::SymbolFile";
 	eval "use Debian::PkgKde::SymbolsHelper::Symbol";

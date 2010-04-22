@@ -4,6 +4,9 @@ pkg-kde-tools (0.7.1~pre1) UNRELEASED; urgency=low
   * pkgkde-symbolshelper: allow to specify confirmed arches for *patch.
   * Depend on libdpkg-perl (>= 1.15.6~), recommend dpkg-dev of the same
     version and break earlier dpkg-dev versions.
+  * No longer ship a backported dpkg-gensymbols.pl script. The one from
+    dpkg-dev (>= 1.15.6) is enough now. As a result, make appropriate changes
+    to pkgkde-gensymbols.
 
  -- Modestas Vainius <modax@debian.org>  Wed, 14 Apr 2010 20:22:09 +0300
 

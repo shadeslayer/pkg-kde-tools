@@ -52,9 +52,8 @@ install:
 	# Install POD based manual packages
 	for f in $(PERLPODS_1); do pod2man "$$f" > "$(MANDIR)/man1/$${f%.*}.1"; done
 	
-	# Special overload of system dpkg-gensymbols
-	install -m 0755 dpkg-gensymbols.1 $(MANDIR)/man1/pkgkde-gensymbols.1
-	install -d $(DATADIR)/bin
 	# Make it possible to transparently replace dpkg-gensymbols with
 	# pkgkde-gensymbols
+	install -d $(DATADIR)/bin
 	ln -sf /usr/bin/pkgkde-gensymbols $(DATADIR)/bin/dpkg-gensymbols
+	ln -sf /usr/share/man/man1/dpkg-gensymbols.1.gz $(MANDIR)/man1/pkgkde-gensymbols.1.gz

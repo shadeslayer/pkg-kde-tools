@@ -68,7 +68,7 @@ sub setup_datalibdir {
 }
 
 sub find_exe_in_path {
-    my $exe = (@_);
+    my ($exe) = @_;
     if (File::Spec->file_name_is_absolute($exe)) {
 	return $exe;
     } elsif ($ENV{PATH}) {

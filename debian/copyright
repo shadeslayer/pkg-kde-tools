@@ -56,8 +56,6 @@ The follwing license applies to:
   |  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 
   - datalib/Dpkg/*
-  - datalib/dpkg-gensymbols.pl
-  - dpkg-gensymbols.1
 
   Copyright © 2007 Raphaël Hertzog <hertzog@debian.org>
   Copyright © 2009-2010 Modestas Vainius <modax@debian.org>
