@@ -1,4 +1,4 @@
-pkg-kde-tools (0.7.1~pre1) UNRELEASED; urgency=low
+pkg-kde-tools (0.7.1) unstable; urgency=low
 
   * Remove workaround introduced in 0.7.0.1: no longer needed.
   * pkgkde-symbolshelper: allow to specify confirmed arches for *patch.
@@ -13,7 +13,7 @@ pkg-kde-tools (0.7.1~pre1) UNRELEASED; urgency=low
   * No longer ship stable (v1.0) libdpkg-perl interfaces in pkg-kde-tools.
     Therefore, rm -rf datalib/Dpkg/Compression* datalib/Dpkg/Interface.
 
- -- Modestas Vainius <modax@debian.org>  Wed, 14 Apr 2010 20:22:09 +0300
+ -- Modestas Vainius <modax@debian.org>  Thu, 22 Apr 2010 10:57:29 +0300
 
 pkg-kde-tools (0.7.0.1) experimental; urgency=low
 
