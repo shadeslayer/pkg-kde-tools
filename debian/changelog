@@ -10,6 +10,8 @@ pkg-kde-tools (0.7.1~pre1) UNRELEASED; urgency=low
   * Drop dpkg-dev 1.15.4 compatibility code from dh_sameversiondep.
   * Make dh_sameversiondep work with libdpkg-perl (>= 1.15.6) (Dpkg::Substvars
     API changed). Thanks to Roderich Schupp for the patch (Closes: #577056).
+  * No longer ship stable (v1.0) libdpkg-perl interfaces in pkg-kde-tools.
+    Therefore, rm -rf datalib/Dpkg/Compression* datalib/Dpkg/Interface.
 
  -- Modestas Vainius <modax@debian.org>  Wed, 14 Apr 2010 20:22:09 +0300
 
