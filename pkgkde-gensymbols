@@ -52,12 +52,13 @@ sub check_dpkg_version {
     return $ok;
 }
 
+my $exe = find_exe_in_path("dpkg-gensymbols", $0);
+
 if (check_dpkg_version(1, 15, 6)) {
     # Export global datalibdir if needed
     my $dir = setup_datalibdir(qw(Dpkg/Shlibs/SymbolFile.pm));
     if (defined $dir) {
 	# Finally, run stock dpkg-gensymbols
-	my $exe = find_exe_in_path("dpkg-gensymbols");
 	unless ($exe) {
 	    print STDERR "pkgkde-gensymbols: dpkg-gensymbols could not be found in PATH", "\n";
 	    exit 1;
@@ -78,5 +79,6 @@ if (check_dpkg_version(1, 15, 6)) {
 	exit 1;
     }
 } else {
-    exec '/usr/bin/dpkg-gensymbols', @ARGV;
+    $exe = '/usr/bin/dpkg-gensymbols' unless $exe;
+    exec $exe, @ARGV;
 }
