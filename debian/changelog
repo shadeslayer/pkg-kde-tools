@@ -1,9 +1,9 @@
-pkg-kde-tools (0.7.2) UNRELEASED; urgency=low
+pkg-kde-tools (0.7.2) unstable; urgency=low
 
   * pkgkde-gensymbols: exclude self when looking for dpkg-gensymbols in PATH.
     This should fix endless loop when do()ing system dpkg-gensymbols.
 
- -- Modestas Vainius <modax@debian.org>  Fri, 23 Apr 2010 00:07:12 +0300
+ -- Modestas Vainius <modax@debian.org>  Fri, 23 Apr 2010 00:09:52 +0300
 
 pkg-kde-tools (0.7.1) unstable; urgency=low
 
