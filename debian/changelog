@@ -1,4 +1,4 @@
-pkg-kde-tools (0.7.3) UNRELEASED; urgency=low
+pkg-kde-tools (0.7.3) unstable; urgency=low
 
   * pkgkde-gensymbols: add vim modeline.
   * pkgkde-gensymbols: no longer check dpkg version. It is 1) pointless now
@@ -6,7 +6,7 @@ pkg-kde-tools (0.7.3) UNRELEASED; urgency=low
     the check is inaccurate for our needs as it checks the version of the dpkg
     binary rather than dpkg-dev package.
 
- -- Modestas Vainius <modax@debian.org>  Wed, 28 Apr 2010 23:54:18 +0300
+ -- Modestas Vainius <modax@debian.org>  Thu, 29 Apr 2010 00:03:14 +0300
 
 pkg-kde-tools (0.7.2) unstable; urgency=low
 
