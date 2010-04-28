@@ -1,5 +1,6 @@
 pkg-kde-tools (0.7.3) UNRELEASED; urgency=low
 
+  * pkgkde-gensymbols: add vim modeline.
 
  -- Modestas Vainius <modax@debian.org>  Wed, 28 Apr 2010 23:54:18 +0300
 

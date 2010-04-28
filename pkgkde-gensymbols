@@ -82,3 +82,5 @@ if (check_dpkg_version(1, 15, 6)) {
     $exe = '/usr/bin/dpkg-gensymbols' unless $exe;
     exec $exe, @ARGV;
 }
+
+# vim: noexpandtab ts=8 sw=4
