@@ -1,6 +1,10 @@
 pkg-kde-tools (0.7.3) UNRELEASED; urgency=low
 
   * pkgkde-gensymbols: add vim modeline.
+  * pkgkde-gensymbols: no longer check dpkg version. It is 1) pointless now
+    as pkg-kde-tools depends on the appropriate libdpkg-perl version and 2)
+    the check is inaccurate for our needs as it checks the version of the dpkg
+    binary rather than dpkg-dev package.
 
  -- Modestas Vainius <modax@debian.org>  Wed, 28 Apr 2010 23:54:18 +0300
 
