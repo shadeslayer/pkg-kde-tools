@@ -1,3 +1,8 @@
+pkg-kde-tools (0.7.4~pre1) UNRELEASED; urgency=low
+
+
+ -- Modestas Vainius <modax@debian.org>  Tue, 04 May 2010 11:09:03 +0300
+
 pkg-kde-tools (0.7.3) unstable; urgency=low
 
   * pkgkde-gensymbols: add vim modeline.
