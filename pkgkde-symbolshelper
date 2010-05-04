@@ -162,7 +162,6 @@ sub out_symfile {
     } else {
 	# If -o is not specified, save to the input file.
 	$out_file = $opt_in;
-	$backup = 1 unless defined $backup;
     }
 
     if ($out_file) {
