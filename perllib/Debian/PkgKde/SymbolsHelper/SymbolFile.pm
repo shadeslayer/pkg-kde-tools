@@ -234,7 +234,7 @@ sub patch_template {
 	}
     }
     foreach my $file (values %dumped) {
-	unless ($FILE::Temp::KEEP_ALL) {
+	unless ($File::Temp::KEEP_ALL) {
 	    unlink $file;
 	}
     }
