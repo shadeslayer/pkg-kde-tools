@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# Set up environment for running scripts straight from the source package
+
+loc="`dirname $0`"
+loc="`readlink -e "$loc"`"
+
+export PERL5LIB="$loc/perllib:$lib/datalib:$PERL5LIB"
+export PATH="$loc:$PATH"
+
+# Execute requested script
+exec "$@"
