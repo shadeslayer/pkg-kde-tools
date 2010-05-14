@@ -4,6 +4,8 @@ DATADIR := $(DESTDIR)/usr/share/pkg-kde-tools
 DATALIBDIR := $(DATADIR)/lib
 PERLLIBDIR := $(DESTDIR)/$(shell perl -MConfig -e 'print $$Config{vendorlib}')
 
+VERBOSE ?= 0
+
 BINARIES = \
 	dh_movelibkdeinit \
 	dh_sameversiondep \
@@ -57,3 +59,6 @@ install:
 	install -d $(DATADIR)/bin
 	ln -sf /usr/bin/pkgkde-gensymbols $(DATADIR)/bin/dpkg-gensymbols
 	ln -sf /usr/share/man/man1/dpkg-gensymbols.1.gz $(MANDIR)/man1/pkgkde-gensymbols.1.gz
+
+test:
+	./run-local perl -MTest::Harness -e '$$Test::Harness::verbose=$(VERBOSE); runtests @ARGV;' t/*.t
