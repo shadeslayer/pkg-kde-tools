@@ -1,4 +1,4 @@
-pkg-kde-tools (0.7.4~pre2) UNRELEASED; urgency=low
+pkg-kde-tools (0.8.0) unstable; urgency=low
 
   * pkgkde-symbolshelper: disable symbol file backups by default.
   * pkgkde-symbolshelper: do not bump symbol minimum version when the only
@@ -10,8 +10,10 @@ pkg-kde-tools (0.7.4~pre2) UNRELEASED; urgency=low
     the package.
   * pkgkde-symbolshelper: drop symbolfile and postgensymbols subcommands
     that were deprecated long ago.
+  * Bump major version number due to removal of deprecated options (and
+    possible introduction of FTBFSes for packages which still use them).
 
- -- Modestas Vainius <modax@debian.org>  Tue, 04 May 2010 11:09:03 +0300
+ -- Modestas Vainius <modax@debian.org>  Fri, 14 May 2010 23:13:52 +0300
 
 pkg-kde-tools (0.7.3) unstable; urgency=low
 
