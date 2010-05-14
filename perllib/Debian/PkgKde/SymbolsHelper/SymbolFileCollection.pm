@@ -755,7 +755,8 @@ sub calc_properties {
 
 		# Finally set arch tag
 		$result->add_tag("arch", join(" ", map { "${arch_neg}$_" } sort(@narches)));
-	    } else { # Original symbol has no arch tags
+	    } else { # Original symbol has no more valid arch tags
+		$arch_added += scalar(keys %present);
 		if ($total_arches > 2 && keys(%present) == $total_arches - 1) {
 		    # Use !missing_arch if only a single arch is missing
 		    my $missarch;
@@ -793,8 +794,8 @@ sub calc_properties {
 	}
     }
 
-    # Bump symbol minver if new arches added
-    if (defined $result && keys(%present) && (!@oarches || $arch_added) &&
+    # Bump symbol minver if new arches added or there is no original symbol
+    if (defined $result && keys(%present) && (!defined $osym || $arch_added) &&
         ! $result->is_optional())
     {
 	$result->{minver} = $collection->get_latest_version();
