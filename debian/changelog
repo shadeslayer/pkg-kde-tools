@@ -6,6 +6,8 @@ pkg-kde-tools (0.7.4~pre1) UNRELEASED; urgency=low
   * Add run-local wrapper for easy execution of scripts directly from the
     source package.
   * Add support for perl tests under t/*.t subdirectory to Makefile.
+  * Add t/perl_syntax_check.t for checking syntax of the perl scripts in
+    the package.
 
  -- Modestas Vainius <modax@debian.org>  Tue, 04 May 2010 11:09:03 +0300
 
