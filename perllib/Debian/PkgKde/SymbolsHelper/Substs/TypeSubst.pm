@@ -15,128 +15,10 @@
 
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst;
 
-use strict;
-use warnings;
-use base 'Debian::PkgKde::SymbolsHelper::Subst';
-
-use Debian::PkgKde::SymbolsHelper::Substs;
-
-sub new {
-    my $class = shift;
-    my $self = $class->SUPER::new(@_);
-    $self->{'length'} = 1; # Basic typesubt must be one letter
-    return $self;
-}
-
-sub get_name {
-    my $self = shift;
-    return substr($self->{substvar}, 1, -1);
-}
-
-sub get_types_re {
-    my $self = shift;
-    unless (exists $self->{types_re}) {
-	my $s = '[' . join("", @{$self->{types}}) . ']';
-	$self->{types_re} = qr/$s/;
-    }
-    return $self->{types_re};
-}
-
-sub neutralize {
-    my ($self, $rawname) = @_;
-    my $ret = 0;
-    my $str = "$rawname";
-    my $l = $self->{'length'};
-    my $re = $self->get_types_re();
-
-    while ($str =~ /$re/g) {
-	$rawname->substr(pos($str)-$l, $l, $self->{types}->[0]);
-	$ret = 1;
-    }
-    return ($ret) ? $rawname : undef;
-}
-
-sub hinted_neutralize {
-    my ($self, $rawname, $hint) = @_;
-    my $hintstr = $hint->{str2};
-    my $ret = 1;
-    my $l = $self->{'length'};
-
-    for (my $i = 0; $i < @$hintstr; $i++) {
-	if (defined $hintstr->[$i] && $hintstr->[$i] eq $self->{substvar}) {
-	    $rawname->substr($i, $l, $self->{types}->[0], $self->{substvar});
-	    $ret = 1;
-	}
-    }
-    return ($ret) ? $rawname : undef;
-}
-
-sub detect {
-    my ($self, $rawname, $arch, $arch_rawnames) = @_;
-
-    my $l = $self->{'length'};
-    my $s1 = $rawname;
-    my $t1 = $self->expand($arch);
-    my ($s2, $t2);
-
-    # Find architecture with other type
-    foreach my $a2 (keys %$arch_rawnames) {
-	$t2 = $self->expand($a2);
-	if ($t2 ne $t1) {
-	    $s2 = $arch_rawnames->{$a2};
-	    last;
-	}
-    }
-
-    return 0 unless defined $s2;
-
-    # Verify subst and replace it with types[0] and substvar
-    my $ret = 0;
-    search_next: for (my $pos = 0; ($pos = index($s1, $t1, $pos)) != -1; $pos++) {
-	# Verify on the selected $a2
-	if ($t2 eq substr($s2, $pos, $l)) {
-	    # Maybe subst is already there?
-	    if ($rawname->has_string2() &&
-	        (my $char = $rawname->get_string2_char($pos)))
-	    {
-		if ($char eq $self->{substvar}) {
-		    # Nothing to do
-		    $ret = 1;
-		    $pos += $l-1;
-		    next search_next;
-		} elsif ($char =~ /^{(.*)}$/) {
-		    # Another subst. Verify it
-		    # NOTE: %SUBSTS won't work here due to recursive "use"
-		    my $othersubst = $Debian::PkgKde::SymbolsHelper::Substs::SUBSTS{$1};
-		    if (defined $othersubst && $othersubst->verify_at($pos, $arch_rawnames)) {
-			$ret = 1;
-			next search_next;
-		    }
-		}
-	    }
-	    # Now verify detection on other arches
-	    if ($self->verify_at($pos, $arch_rawnames)) {
-		$rawname->substr($pos, $l, $self->{types}->[0], $self->{substvar});
-		$ret = 1;
-		$pos += $l-1;
-	    }
-	}
-    }
-    return $ret;
-}
-
-sub verify_at {
-    my ($self, $pos, $arch_rawnames) = @_;
-    my $l = $self->{'length'};
-    my $verified = 1;
-    foreach my $a (keys %$arch_rawnames) {
-	my $t = $self->expand($a);
-	if ($t ne substr($arch_rawnames->{$a}, $pos, $l)) {
-	    $verified = 0;
-	    last;
-	}
-    }
-    return $verified;
+# Do not produce subroutine redefined warnings when running this through
+# syntax check. Based on http://www.perlmonks.org/?node_id=389286
+BEGIN {
+    $INC{'Debian/PkgKde/SymbolsHelper/Substs/TypeSubst.pm'} ||= __FILE__;
 }
 
 # Operates on %l% etc. same length types that cannot be present in demanged
@@ -394,6 +276,133 @@ sub new {
 sub _expand {
     my ($self, $arch) = @_;
     return ($arch =~ /arm/) ? 'f' : 'd';
+}
+
+package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst;
+
+use strict;
+use warnings;
+use base 'Debian::PkgKde::SymbolsHelper::Subst';
+
+# NOTE: recursive
+use Debian::PkgKde::SymbolsHelper::Substs;
+
+sub new {
+    my $class = shift;
+    my $self = $class->SUPER::new(@_);
+    $self->{'length'} = 1; # Basic typesubt must be one letter
+    return $self;
+}
+
+sub get_name {
+    my $self = shift;
+    return substr($self->{substvar}, 1, -1);
+}
+
+sub get_types_re {
+    my $self = shift;
+    unless (exists $self->{types_re}) {
+	my $s = '[' . join("", @{$self->{types}}) . ']';
+	$self->{types_re} = qr/$s/;
+    }
+    return $self->{types_re};
+}
+
+sub neutralize {
+    my ($self, $rawname) = @_;
+    my $ret = 0;
+    my $str = "$rawname";
+    my $l = $self->{'length'};
+    my $re = $self->get_types_re();
+
+    while ($str =~ /$re/g) {
+	$rawname->substr(pos($str)-$l, $l, $self->{types}->[0]);
+	$ret = 1;
+    }
+    return ($ret) ? $rawname : undef;
+}
+
+sub hinted_neutralize {
+    my ($self, $rawname, $hint) = @_;
+    my $hintstr = $hint->{str2};
+    my $ret = 1;
+    my $l = $self->{'length'};
+
+    for (my $i = 0; $i < @$hintstr; $i++) {
+	if (defined $hintstr->[$i] && $hintstr->[$i] eq $self->{substvar}) {
+	    $rawname->substr($i, $l, $self->{types}->[0], $self->{substvar});
+	    $ret = 1;
+	}
+    }
+    return ($ret) ? $rawname : undef;
+}
+
+sub detect {
+    my ($self, $rawname, $arch, $arch_rawnames) = @_;
+
+    my $l = $self->{'length'};
+    my $s1 = $rawname;
+    my $t1 = $self->expand($arch);
+    my ($s2, $t2);
+
+    # Find architecture with other type
+    foreach my $a2 (keys %$arch_rawnames) {
+	$t2 = $self->expand($a2);
+	if ($t2 ne $t1) {
+	    $s2 = $arch_rawnames->{$a2};
+	    last;
+	}
+    }
+
+    return 0 unless defined $s2;
+
+    # Verify subst and replace it with types[0] and substvar
+    my $ret = 0;
+    search_next: for (my $pos = 0; ($pos = index($s1, $t1, $pos)) != -1; $pos++) {
+	# Verify on the selected $a2
+	if ($t2 eq substr($s2, $pos, $l)) {
+	    # Maybe subst is already there?
+	    if ($rawname->has_string2() &&
+	        (my $char = $rawname->get_string2_char($pos)))
+	    {
+		if ($char eq $self->{substvar}) {
+		    # Nothing to do
+		    $ret = 1;
+		    $pos += $l-1;
+		    next search_next;
+		} elsif ($char =~ /^{(.*)}$/) {
+		    # Another subst. Verify it
+		    # NOTE: %SUBSTS might not work here due to recursive "use"
+		    my $othersubst = $Debian::PkgKde::SymbolsHelper::Substs::SUBSTS{$1};
+		    if (defined $othersubst && $othersubst->verify_at($pos, $arch_rawnames)) {
+			$ret = 1;
+			next search_next;
+		    }
+		}
+	    }
+	    # Now verify detection on other arches
+	    if ($self->verify_at($pos, $arch_rawnames)) {
+		$rawname->substr($pos, $l, $self->{types}->[0], $self->{substvar});
+		$ret = 1;
+		$pos += $l-1;
+	    }
+	}
+    }
+    return $ret;
+}
+
+sub verify_at {
+    my ($self, $pos, $arch_rawnames) = @_;
+    my $l = $self->{'length'};
+    my $verified = 1;
+    foreach my $a (keys %$arch_rawnames) {
+	my $t = $self->expand($a);
+	if ($t ne substr($arch_rawnames->{$a}, $pos, $l)) {
+	    $verified = 0;
+	    last;
+	}
+    }
+    return $verified;
 }
 
 1;
