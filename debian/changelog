@@ -8,6 +8,8 @@ pkg-kde-tools (0.7.4~pre2) UNRELEASED; urgency=low
   * Add support for perl tests under t/*.t subdirectory to Makefile.
   * Add t/perl_syntax_check.t for checking syntax of the perl scripts in
     the package.
+  * pkgkde-symbolshelper: drop symbolfile and postgensymbols subcommands
+    that were deprecated long ago.
 
  -- Modestas Vainius <modax@debian.org>  Tue, 04 May 2010 11:09:03 +0300
 

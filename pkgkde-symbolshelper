@@ -697,41 +697,6 @@ sub subcommand_rewrite {
     return 1;
 }
 
-sub subcommand_symbolfile {
-    warning("'symbolfile' and debian/*.symbols.in files have been deprecated.");
-    info("You should add substitutions to standard symbol files and " .
-         "use pkgkde-gensymbols as dpkg-gensymbols wrapper.");
-    my %opts = (
-	get_common_options("oipa"),
-    );
-    if (GetOptions(%opts)) {
-	check_mandatory_options("i", "when package (-p) is not specified") unless ($opt_package);
-	unless ($opt_in) {
-	    $opt_in = "debian/$opt_package.symbols.in";
-	    error("symbol template file '$opt_in' was not found for package '$opt_package'") unless (-r $opt_in);
-	}
-	# Redump to new location.
-	my $symfile = Debian::PkgKde::SymbolsHelper::SymbolFile->new(file => $opt_in, arch => $opt_arch);
-	foreach my $sym ($symfile->get_symbols()) {
-	    if ($sym->has_tag("subst")) {
-		my $val = $sym->get_tag_value("subst");
-		if (defined $val && $val eq "compat") {
-		    # Reset symbol template to current name value
-		    $sym->set_symbolname();
-		    $sym->delete_tag("subst");
-		}
-	    }
-	}
-	return out_symfile($symfile);
-    }
-    return 1;
-}
-
-sub subcommand_postgensymbols {
-    warning("postgensymbols has been deprecated. Please remove this call.");
-    return 0;
-}
-
 # Boilerplate for the common subcommand handler
 sub subcommand_boilerplate {
     my %opts = (
@@ -749,8 +714,6 @@ my %SUBCOMMANDS = (
     "patch"		=> [ 2, \&subcommand_patch, "apply dpkg-gensymbols patch(es) to the symbol file template" ],
     "batchpatch"	=> [ 3, \&subcommand_batchpatch, "apply dpkg-gensymbols patches to multiple packages at once" ],
     "rewrite"		=> [ 4, \&subcommand_rewrite, "filter/rewrite symbol file" ],
-    "symbolfile"	=> [ 5, \&subcommand_symbolfile, "deprecated by pkgkde-gensymbols wrapper" ],
-    "postgensymbols"	=> [ 6, \&subcommand_postgensymbols, "deprecated. Does nothing" ],
 );
 
 report_options(info_fh => \*STDERR);
