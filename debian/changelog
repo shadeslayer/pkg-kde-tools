@@ -1,3 +1,8 @@
+pkg-kde-tools (0.8.1) UNRELEASED; urgency=low
+
+
+ -- Modestas Vainius <modax@debian.org>  Tue, 25 May 2010 17:31:29 +0300
+
 pkg-kde-tools (0.8.0) unstable; urgency=low
 
   * pkgkde-symbolshelper: disable symbol file backups by default.
