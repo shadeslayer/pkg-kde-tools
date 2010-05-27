@@ -3,8 +3,13 @@ _cdbs_debian_qt_kde = 1
 
 include /usr/share/cdbs/1/class/cmake.mk
 include /usr/share/cdbs/1/rules/debhelper.mk
-include /usr/share/cdbs/1/rules/patchsys-quilt.mk
 include /usr/share/cdbs/1/rules/utils.mk
+
+# If quilt is in Build-Depends, enable quilt patch system support
+# for 1.0 format.
+ifneq ($(shell sed -n '/^Build-Depends: / { : lookforquilt { /\bquilt\b/ { p; b; }; n; /^[[:space:]]\+/ { b lookforquilt };  } }' debian/control),)
+    include /usr/share/cdbs/1/rules/patchsys-quilt.mk
+endif
 
 DEB_PKG_KDE_DATA := /usr/share/pkg-kde-tools
 DEB_PKG_KDE_MAKEFILES := $(DEB_PKG_KDE_DATA)/makefiles/1

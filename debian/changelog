@@ -2,6 +2,8 @@ pkg-kde-tools (0.8.1) UNRELEASED; urgency=low
 
   * Drop deprecated `pkgkde-symbolshelper symbolfile` support from
     cdbs/symbolshelper.mk.
+  * qt-kde-team/1/debian-qt-kde.mk: enable quilt patchsystem only if 
+    quilt is in Build-Depends. This adds support for 3.0 (quilt) source format.
 
  -- Modestas Vainius <modax@debian.org>  Tue, 25 May 2010 17:31:29 +0300
 
