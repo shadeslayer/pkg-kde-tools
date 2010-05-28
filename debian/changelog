@@ -4,6 +4,9 @@ pkg-kde-tools (0.9.0~pre1) UNRELEASED; urgency=low
     cdbs/symbolshelper.mk.
   * qt-kde-team/1/debian-qt-kde.mk: enable quilt patchsystem only if 
     quilt is in Build-Depends. This adds support for 3.0 (quilt) source format.
+  * Switch HTML_INSTALL_DIR from /usr/share/doc/kde4/HTML to
+    /usr/share/doc/kde/HTML, add NEWS entry about this important change which
+    may trigger FTBFSes in the third party packages.
 
  -- Modestas Vainius <modax@debian.org>  Tue, 25 May 2010 17:31:29 +0300
 

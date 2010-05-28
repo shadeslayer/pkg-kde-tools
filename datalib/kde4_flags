@@ -5,7 +5,7 @@
 -DKDE4_USE_ALWAYS_FULL_RPATH=false
 -DCONFIG_INSTALL_DIR=/usr/share/kde4/config
 -DDATA_INSTALL_DIR=/usr/share/kde4/apps
--DHTML_INSTALL_DIR=/usr/share/doc/kde4/HTML
+-DHTML_INSTALL_DIR=/usr/share/doc/kde/HTML
 -DKCFG_INSTALL_DIR=/usr/share/kde4/config.kcfg
 -DLIB_INSTALL_DIR=/usr/lib
 -DSYSCONF_INSTALL_DIR=/etc
