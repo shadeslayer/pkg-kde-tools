@@ -1,4 +1,4 @@
-pkg-kde-tools (0.9.0~pre2) UNRELEASED; urgency=low
+pkg-kde-tools (0.9.0~pre3) UNRELEASED; urgency=low
 
   * Drop deprecated `pkgkde-symbolshelper symbolfile` support from
     cdbs/symbolshelper.mk.
