@@ -7,6 +7,8 @@ pkg-kde-tools (0.9.0~pre2) UNRELEASED; urgency=low
   * Switch HTML_INSTALL_DIR from /usr/share/doc/kde4/HTML to
     /usr/share/doc/kde/HTML, add NEWS entry about this important change which
     may trigger FTBFSes in the third party packages.
+  * debian-qt-kde.mk: replace usr/share/doc/kde4 references with
+    usr/share/doc/kde.
 
  -- Modestas Vainius <modax@debian.org>  Tue, 25 May 2010 17:31:29 +0300
 
