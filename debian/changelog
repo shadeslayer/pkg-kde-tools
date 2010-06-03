@@ -1,3 +1,8 @@
+pkg-kde-tools (0.9.1) UNRELEASED; urgency=low
+
+
+ -- Modestas Vainius <modax@debian.org>  Fri, 04 Jun 2010 00:54:11 +0300
+
 pkg-kde-tools (0.9.0) unstable; urgency=low
 
   * Drop deprecated `pkgkde-symbolshelper symbolfile` support from
