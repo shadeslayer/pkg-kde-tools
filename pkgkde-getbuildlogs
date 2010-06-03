@@ -26,20 +26,14 @@ use File::Spec;
 use IO::Uncompress::Inflate qw(inflate);
 
 # Load extra modules (from libwww-perl and its dependencies)
-BEGIN {
+INIT {
     eval "use HTTP::Request";
     if ($@) {
 	error "in order to use this utility, you have to install libwww-perl package";
     }
+    eval "use URI; use URI::QueryParam; use URI::Escape;";
+    eval "use HTTP::Response; use LWP::UserAgent; use HTML::LinkExtor; use HTML::Parser;";
 }
-
-use URI;
-use URI::QueryParam;
-use URI::Escape;
-use HTTP::Response;
-use LWP::UserAgent;
-use HTML::LinkExtor;
-use HTML::Parser;
 
 sub usage {
     usageerr "[ -d destdir ] [ -v version ] [ -a arch ] [ -o ] [ package ] [ distribution ]";
