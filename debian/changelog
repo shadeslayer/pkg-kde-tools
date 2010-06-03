@@ -1,9 +1,9 @@
-pkg-kde-tools (0.9.1) UNRELEASED; urgency=low
+pkg-kde-tools (0.9.1) unstable; urgency=low
 
   * pkgkde-getbuildlogs: load HTTP::Request & friends in the INIT block in
     order to pass syntax check without libwww-perl installed (Closes: #584375).
 
- -- Modestas Vainius <modax@debian.org>  Fri, 04 Jun 2010 00:54:11 +0300
+ -- Modestas Vainius <modax@debian.org>  Fri, 04 Jun 2010 01:04:28 +0300
 
 pkg-kde-tools (0.9.0) unstable; urgency=low
 
