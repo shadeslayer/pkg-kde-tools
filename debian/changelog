@@ -1,3 +1,8 @@
+pkg-kde-tools (0.9.2) UNRELEASED; urgency=low
+
+
+ -- Modestas Vainius <modax@debian.org>  Fri, 11 Jun 2010 16:36:59 +0300
+
 pkg-kde-tools (0.9.1) unstable; urgency=low
 
   * pkgkde-getbuildlogs: load HTTP::Request & friends in the INIT block in
