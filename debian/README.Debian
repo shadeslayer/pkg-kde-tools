@@ -12,8 +12,10 @@ pkg-kde-tools for Debian
     note that /usr/share/pkg-kde-tools/makefiles/1/debhelper/kde.mk has been
     dropped in pkg-kde-tools 0.7.0.
 
- Note: to enable linking with --as-needed (disabled by default), you should set
-       DEB_KDE_LINK_WITH_AS_NEEDED to 'yes' before the include.
+ In order to link with --as-needed (disabled by default), you could set
+ DEB_KDE_LINK_WITH_AS_NEEDED to 'yes' before the include. However, please note
+ that enabling DEB_KDE_LINK_WITH_AS_NEEDED implicitly links with --no-undefined
+ as well unless DEB_KDE_LINK_WITH_NO_UNDEFINED is set to `no`.
 
 Using with Debhelper Command Sequencer `dh`
 ------------------------------------------

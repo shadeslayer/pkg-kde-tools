@@ -19,15 +19,28 @@ endif
 # with --as-needed (off by default)
 DEB_KDE_LINK_WITH_AS_NEEDED ?= no
 ifneq (,$(findstring yes, $(DEB_KDE_LINK_WITH_AS_NEEDED)))
+    DEB_KDE_LINK_WITH_AS_NEEDED := no
     ifeq (,$(findstring no-as-needed, $(DEB_BUILD_OPTIONS)))
         DEB_KDE_LINK_WITH_AS_NEEDED := yes
-        DEB_CMAKE_CUSTOM_FLAGS += \
-            -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--no-undefined -Wl,--as-needed" \
-            -DCMAKE_MODULE_LINKER_FLAGS="-Wl,--no-undefined -Wl,--as-needed" \
-            -DCMAKE_EXE_LINKER_FLAGS="-Wl,--no-undefined -Wl,--as-needed"
-    else
-        DEB_KDE_LINK_WITH_AS_NEEDED := no
+        DEB_KDE_LINKER_FLAGS := -Wl,--as-needed
     endif
-else
-    DEB_KDE_LINK_WITH_AS_NEEDED := no
+endif
+
+# Set the DEB_KDE_LINK_WITH_NO_UNDEFINED to no to disable linking with
+# --no-undefined (default value is inherited from DEB_KDE_LINK_WITH_AS_NEEDED
+# (legacy behaviour))
+DEB_KDE_LINK_WITH_NO_UNDEFINED ?= $(DEB_KDE_LINK_WITH_AS_NEEDED)
+ifneq (,$(findstring yes, $(DEB_KDE_LINK_WITH_NO_UNDEFINED)))
+    DEB_KDE_LINK_WITH_NO_UNDEFINED := no
+    ifeq (,$(findstring no-no-undefined, $(DEB_BUILD_OPTIONS)))
+        DEB_KDE_LINK_WITH_NO_UNDEFINED := yes
+        DEB_KDE_LINKER_FLAGS += -Wl,--no-undefined
+    endif
+endif
+
+ifneq (,$(DEB_KDE_LINKER_FLAGS))
+    DEB_CMAKE_CUSTOM_FLAGS += \
+        -DCMAKE_SHARED_LINKER_FLAGS="$(DEB_KDE_LINKER_FLAGS)" \
+        -DCMAKE_MODULE_LINKER_FLAGS="$(DEB_KDE_LINKER_FLAGS)" \
+        -DCMAKE_EXE_LINKER_FLAGS="$(DEB_KDE_LINKER_FLAGS)"
 endif
