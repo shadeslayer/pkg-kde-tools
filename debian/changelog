@@ -1,11 +1,11 @@
-pkg-kde-tools (0.9.2) UNRELEASED; urgency=low
+pkg-kde-tools (0.9.2) unstable; urgency=medium
 
   * Add libdpkg-perl (>= 1.15.6~) to Build-Depends. Needed for symbolshelper
     syntax checks.
   * Add support for DEB_KDE_LINK_WITH_NO_UNDEFINED (defaults to
     DEB_KDE_LINK_WITH_AS_NEEDED value) to variables.mk.
 
- -- Modestas Vainius <modax@debian.org>  Fri, 11 Jun 2010 16:36:59 +0300
+ -- Modestas Vainius <modax@debian.org>  Sat, 12 Jun 2010 11:30:50 +0300
 
 pkg-kde-tools (0.9.1) unstable; urgency=low
 
