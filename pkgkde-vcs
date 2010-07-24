@@ -117,6 +117,7 @@ get_debian_package_info()
         fi
         DEB_SOURCE="$(echo "$_pchangelog" | _get_deb_field 'Source')"
         DEB_DISTRIBUTION="$(echo "$_pchangelog" | _get_deb_field 'Distribution')"
+        DEB_URGENCY="$(echo "$_pchangelog" | _get_deb_field 'Urgency')"
     else
         die "debian/changelog could not be found in $rootdir"
     fi

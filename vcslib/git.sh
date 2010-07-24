@@ -24,7 +24,7 @@ git_tag()
     git_is_working_tree_clean || die "working tree is dirty. Commit changes before tagging."
 
     tag_path="debian/`git_compat_debver $DEB_VERSION_WO_EPOCH`"
-    tag_msg="$DEB_VERSION/$DEB_DISTRIBUTION"
+    tag_msg="$DEB_VERSION $DEB_DISTRIBUTION; urgency=$DEB_URGENCY"
 
     runcmd git tag $tag_path -m "$tag_msg" "$@"
 }

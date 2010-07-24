@@ -1,5 +1,7 @@
 pkg-kde-tools (0.9.3) UNRELEASED; urgency=low
 
+  * Use a new tag message style in `pkgkde-vcs tag`:
+    <version> <distribution>; urgency=<urgency>
 
  -- Modestas Vainius <modax@debian.org>  Sun, 25 Jul 2010 01:58:49 +0300
 
