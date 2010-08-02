@@ -1,3 +1,9 @@
+pkg-kde-tools (0.9.4) UNRELEASED; urgency=low
+
+  * Bump Standards-Verstion to 3.9.1: no changes needed.
+
+ -- Modestas Vainius <modax@debian.org>  Tue, 03 Aug 2010 01:44:35 +0300
+
 pkg-kde-tools (0.9.3) unstable; urgency=low
 
   * Use a new tag message style in `pkgkde-vcs tag`:
