@@ -1,4 +1,4 @@
-pkg-kde-tools (0.9.4) UNRELEASED; urgency=low
+pkg-kde-tools (0.9.4) unstable; urgency=low
 
   * Bump Standards-Verstion to 3.9.1: no changes needed.
   * Fix "dpkg: * has bad syntax: invalid character in revision number" error
@@ -6,7 +6,7 @@ pkg-kde-tools (0.9.4) UNRELEASED; urgency=low
   * Use perl API in place of dpkg --compare-versions (kde buildsystem).
   * Add lintian override for "capitalization-error-in-description kde KDE".
 
- -- Modestas Vainius <modax@debian.org>  Tue, 03 Aug 2010 01:44:35 +0300
+ -- Modestas Vainius <modax@debian.org>  Sun, 20 Feb 2011 12:46:01 +0200
 
 pkg-kde-tools (0.9.3) unstable; urgency=low
 
