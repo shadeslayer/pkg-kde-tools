@@ -1,3 +1,8 @@
+pkg-kde-tools (0.9.5) UNRELEASED; urgency=low
+
+
+ -- Modestas Vainius <modax@debian.org>  Sun, 20 Feb 2011 19:20:12 +0200
+
 pkg-kde-tools (0.9.4) unstable; urgency=low
 
   * Bump Standards-Verstion to 3.9.1: no changes needed.
