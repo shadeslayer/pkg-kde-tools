@@ -1,6 +1,8 @@
 pkg-kde-tools (0.9.4) UNRELEASED; urgency=low
 
   * Bump Standards-Verstion to 3.9.1: no changes needed.
+  * Fix "dpkg: * has bad syntax: invalid character in revision number" error
+    which debhelper kde buildsystem used to spit (it wasn't fatal though).
 
  -- Modestas Vainius <modax@debian.org>  Tue, 03 Aug 2010 01:44:35 +0300
 

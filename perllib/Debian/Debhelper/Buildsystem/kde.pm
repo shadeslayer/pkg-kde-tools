@@ -50,7 +50,7 @@ sub configure {
     my @flags = $this->get_kde4_flags();
 
     # Skip RPATH if kdelibs5-dev is older than 4:4.4.0
-    my $kdever = `dpkg-query -f='\${Version}\n' -W kdelibs5-dev 2>/dev/null`;
+    my $kdever = `dpkg-query -f='\${Version}' -W kdelibs5-dev 2>/dev/null`;
     if ($kdever &&
         system("dpkg", "--compare-versions", $kdever, "lt", "4:4.4.0") == 0)
     {
