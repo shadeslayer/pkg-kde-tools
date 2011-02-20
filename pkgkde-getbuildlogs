@@ -64,6 +64,14 @@ sub as_array {
     return @ret;
 }
 
+sub in_array {
+    my $value = shift;
+    foreach my $member (@_) {
+	return 1 if $member eq $value;
+    }
+    return 0;
+}
+
 sub get_command_output {
     my @lines;
     open(my $cmd, "-|", @_) or syserr("unable to execute command %s", $_[0]);
@@ -96,19 +104,93 @@ sub html2text {
     return defined($parser->parse_file($in)) && defined($body);
 }
 
+sub fetch_log {
+    my ($browser, $uri, %opts) = @_;
+    my $ok = 0;
+    my @status;
+    my ($filename, $file);
+
+    # Construct log filename
+    $filename = sprintf("%s_%s_%s_%s.build",
+	$uri->query_param("pkg"),
+	$uri->query_param("ver"),
+	$uri->query_param("arch"),
+	$uri->query_param("stamp"));
+    $file = File::Spec->catfile($opts{destdir}, $filename)
+	if defined $opts{destdir};
+
+    # Check overwrite option
+    if (!$opts{overwrite} && -e $file) {
+	info "Not overwriting existing build log at $file ...";
+    } else {
+	# Create a temporary file
+	my %tmpfileopts = ( TEMPLATE => $filename . ".XXXXXX" );
+	$tmpfileopts{DIR} = $opts{destdir} if exists $opts{destdir};
+	my $tmpfile1 = File::Temp->new(%tmpfileopts);
+	my $tmpfile2 = File::Temp->new(%tmpfileopts);
+
+	info "Fetching build log to $filename ...";
+	my $request = HTTP::Request->new(GET => $uri);
+	$request->header("Accept-Encoding" => "deflate, identity");
+	$browser->show_progress(1);
+	$tmpfile1->close();
+	my $response = $browser->request($request, $tmpfile1->filename);
+	if ($response->is_success()) {
+	    my $is_deflated = $response->header("Content-Encoding");
+	    $is_deflated = defined $is_deflated && $is_deflated eq "deflate";
+	    # Inflate contents if needed
+	    if ($is_deflated) {
+		push @status, "deflate";
+		if (inflate($tmpfile1->filename => $tmpfile2, BinModeOut => 1)) {
+		    $tmpfile2->close();
+		    ($tmpfile1, $tmpfile2) = ($tmpfile2, $tmpfile1);
+		    open($tmpfile2, ">:utf8", $tmpfile2->filename) or
+			syserr "unable to reopen temporary file";
+		    $ok = 1;
+		} else {
+		    unlink $filename;
+		}
+	    } else {
+		$ok = 1;
+	    }
+	    if ($ok) {
+		open($tmpfile1, "<:utf8", $tmpfile1->filename);
+		if ($ok = html2text($tmpfile1 => $tmpfile2)) {
+		    $tmpfile1->close();
+		    $tmpfile1 = $tmpfile2;
+		} else {
+		    push @status, "html unstripped";
+		}
+		$tmpfile1->close();
+		$tmpfile2->close();
+		File::Copy::move($tmpfile1->filename, $file) or
+		    error "unable to rename '%s' to '%s'", $tmpfile1->filename, $file;
+	    }
+	}
+    }
+    return ($ok, [ $filename, @status ]);
+}
+
 sub download_logs {
-    my ($destdir, $pkg, %opts) = @_;
+    my ($pkg, %opts) = @_;
     my $distro = $opts{distro};
+    my @arches = as_array($opts{arch});
+    my @vers = as_array($opts{ver});
     my $url;
 
     # Construct index URL
     if (defined $distro) {
-        $url = construct_url('https://buildd.debian.org/pkg.cgi',
-	    pkg => $pkg, dist => $distro, arch => [ as_array($opts{arch}) ]);
+	$url = construct_url('https://buildd.debian.org/status/package.php',
+	    p => $pkg, suite => $distro);
     } elsif (defined $opts{ver}) {
-        $url = construct_url('https://buildd.debian.org/build.cgi',
-	    pkg => $pkg, ver => [ as_array($opts{ver}) ],
-	    arch => [ as_array($opts{arch}) ])
+	if (scalar(@arches) == 1 && scalar(@vers) == 1) {
+	    $url = construct_url('https://buildd.debian.org/build.php',
+		pkg => $pkg, ver => \@vers, arch => \@arches);
+	} else {
+	    # Only single ver + single arch query is supported by build.php.
+	    # For anything else fallback to url filtering (see below)
+	    $url = construct_url('https://buildd.debian.org/build.php', pkg => $pkg);
+	}
     } else {
 	error "neither version(s) nor distribution was specified";
     }
@@ -131,70 +213,37 @@ sub download_logs {
 	    @links = map { shift @{$_}; +{ @{$_} }->{href} } @links;
 	    my @ok;
 	    my @failed;
+	    my %latest_logs;
+
+	    # Collect links we need to fetch
 	    foreach my $link (@links) {
 		# Check if it is the link we need
 		if ($link =~ m,/fetch\.cgi(\?[^/]+)$,) {
-		    my ($ok, @status);
-		    my $filename = $1 . ".build";
-		    $filename =~ s/[?;&][^=]+=([^?;&]+)/_$1/g;
-		    $filename =~ s/^_\.*//;
-		    $filename = uri_unescape($filename);
-		    my $file = File::Spec->catfile($destdir, $filename);
+		    # We might need to filter out links based on the arch and
+		    # version we need
+		    my $loguri = URI->new($link);
+		    my $ver = $loguri->query_param("ver");
+		    my $arch = $loguri->query_param("arch");
+		    my $stamp = $loguri->query_param("stamp");
+		    next if @vers && !in_array($ver, @vers);
+		    next if @arches && !in_array($arch, @arches);
 
-		    if ($opts{overwrite} || ! -e $file) {
-			# Create a temporary file
-			my $tmpfile1 = File::Temp->new(TEMPLATE => $filename . ".XXXXXX",
-			    DIR => $destdir);
-			my $tmpfile2 = File::Temp->new(TEMPLATE => $filename . ".XXXXXX",
-			    DIR => $destdir);
+		    # Ensure that we are fetching the latest log for ver/arch
+		    my $k = $ver . "_" . $arch;
+		    if (!exists $latest_logs{$k} || $latest_logs{$k}{stamp} < $stamp) {
+			$latest_logs{$k} = { stamp => $stamp, uri => $loguri };
+		    }
+		}
+	    }
 
-			info "Fetching build log to $filename ...";
-			$request = HTTP::Request->new(GET => $link);
-			$request->header("Accept-Encoding" => "deflate, identity");
-			$browser->show_progress(1);
-			$tmpfile1->close();
-			$response = $browser->request($request, $tmpfile1->filename);
-			if ($response->is_success()) {
-			    my $is_deflated = $response->header("Content-Encoding");
-			    $is_deflated = defined $is_deflated && $is_deflated eq "deflate";
-			    # Inflate contents if needed
-			    if ($is_deflated) {
-				push @status, "deflate";
-				if (inflate($tmpfile1->filename => $tmpfile2, BinModeOut => 1)) {
-				    $tmpfile2->close();
-				    ($tmpfile1, $tmpfile2) = ($tmpfile2, $tmpfile1);
-				    open($tmpfile2, ">:utf8", $tmpfile2->filename) or
-					syserr "unable to reopen temporary file";
-				    $ok = 1;
-				} else {
-				    unlink $filename;
-				}
-			    } else {
-				$ok = 1;
-			    }
-			    if ($ok) {
-				open($tmpfile1, "<:utf8", $tmpfile1->filename);
-				if ($ok = html2text($tmpfile1 => $tmpfile2)) {
-				    $tmpfile1->close();
-				    $tmpfile1 = $tmpfile2;
-				} else {
-				    push @status, "html unstripped";
-				}
-				$tmpfile1->close();
-				$tmpfile2->close();
-				File::Copy::move($tmpfile1->filename, $file) or
-				    error "unable to rename '%s' to '%s'", $tmpfile1->filename, $file;
-			    }
-			}
-		    } else {
-			info "Not overwriting existing build log $filename ...";
-			push @status, "exists, ignored";
-		    }
-		    if ($ok) {
-			push @ok, [ $filename, @status ];
-		    } else {
-			push @failed, [ $filename, @status ];
-		    }
+	    # Fetch logs
+	    foreach my $k (sort keys %latest_logs) {
+		my $loguri = $latest_logs{$k}{uri};
+		my ($ok, $status) = fetch_log($browser, $loguri, %opts);
+		if ($ok) {
+		    push @ok, $status;
+		} else {
+		    push @failed, $status;
 		}
 	    }
 	    return (@ok || @failed) ?  (\@ok, \@failed) : ();
@@ -284,7 +333,7 @@ unless (-d $opt_destdir) {
 }
 
 my ($ok_logs, $failed_logs) =
-    download_logs($opt_destdir, $opt_package, overwrite => $opt_force,
+    download_logs($opt_package, overwrite => $opt_force, destdir => $opt_destdir,
 	distro => $opt_distro, ver => \@opt_versions, arch => \@opt_archs);
 
 if (defined $ok_logs) {

@@ -1,5 +1,7 @@
 pkg-kde-tools (0.9.5) UNRELEASED; urgency=low
 
+  * Make pkgkde-getbuildlogs work with new infrastructure on
+    https://buildd.debian.org.
 
  -- Modestas Vainius <modax@debian.org>  Sun, 20 Feb 2011 19:20:12 +0200
 
