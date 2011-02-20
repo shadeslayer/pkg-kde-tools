@@ -4,6 +4,7 @@ pkg-kde-tools (0.9.4) UNRELEASED; urgency=low
   * Fix "dpkg: * has bad syntax: invalid character in revision number" error
     which debhelper kde buildsystem used to spit (it wasn't fatal though).
   * Use perl API in place of dpkg --compare-versions (kde buildsystem).
+  * Add lintian override for "capitalization-error-in-description kde KDE".
 
  -- Modestas Vainius <modax@debian.org>  Tue, 03 Aug 2010 01:44:35 +0300
 
