@@ -9,6 +9,8 @@ package Debian::Debhelper::Buildsystem::kde;
 use strict;
 use warnings;
 use Debian::Debhelper::Dh_Lib qw(error);
+use Dpkg::Version qw();
+
 use base 'Debian::Debhelper::Buildsystem::cmake';
 
 sub DESCRIPTION {
@@ -51,8 +53,7 @@ sub configure {
 
     # Skip RPATH if kdelibs5-dev is older than 4:4.4.0
     my $kdever = `dpkg-query -f='\${Version}' -W kdelibs5-dev 2>/dev/null`;
-    if ($kdever &&
-        system("dpkg", "--compare-versions", $kdever, "lt", "4:4.4.0") == 0)
+    if ($kdever && Dpkg::Version::version_compare($kdever, "4:4.4.0") < 0)
     {
         push @flags, "-DCMAKE_SKIP_RPATH:BOOL=ON";
     }
