@@ -13,86 +13,82 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-# Load command sequences: $(target)_commands variables
-include $(dir $(lastword $(MAKEFILE_LIST)))/commands.mk
-
-dhmk_top_makefile = $(firstword $(MAKEFILE_LIST))
+dhmk_top_makefile := $(firstword $(MAKEFILE_LIST))
+dhmk_this_makefile := $(lastword $(MAKEFILE_LIST))
 dhmk_stamped_targets = configure build
 dhmk_dynamic_targets = install binary-indep binary-arch binary clean
 dhmk_standard_targets = $(dhmk_stamped_targets) $(dhmk_dynamic_targets)
-dhmk_all_commands = $(strip $(foreach t,$(standard_targets),$($(t)_commands)))
+dhmk_rules_mk = debian/dhmk_rules.mk
 
-dhmk_overrides_mk = debian/dhmk_command_overrides.mk
-dhmk_calc_overrides_magic = \#\#dhmk_calc_overrides\#\#
+# $(call butfirstword,TEXT,DELIMITER)
+butfirstword = $(patsubst $(firstword $(subst $2, ,$1))$2%,%,$1)
 
+# This makefile is not parallel compatible by design (e.g. command chains
+# below)
+.NOTPARALLEL:
+
+# FORCE target is used in the prerequsite lists to imitiate .PHONY behaviour
+.PHONY: FORCE
+
+############ Handle override calculation ############ 
 ifeq ($(dhmk_calc_overrides),yes)
 
-# Handle override calculation
-
+# Emit magic directives for commands which are not overriden
 override_%: FORCE
-	$(dhmk_calc_overrides_magic) dhmk_$@ = no
+	##dhmk_no_override##$*
 
-# NOTE: implicit targets do not work as expected when grouped together. The
-# following workaround is needed to generate a separate rule for each target.
-define dhmk_t_override_code
-$(eval $(t)_override_%: FORCE
-	$(CALC_OVERRIDES_MAGIC) dhmk_$$@ = no
-)
-endef
-$(foreach t,$(dhmk_standard_targets),$(dhmk_t_override))
-
-calc_overrides: $(foreach cmd,$(dhmk_all_commands),override_$(cmd))
-calc_overrides: $(foreach t,$(dhmk_standard_targets),\
-    $(foreach cmd,$(strip $($(t)_commands)),$(t)_override_$(cmd)))
-.PHONY: calc_overrides
 else
+############ Do all sequencing ######################
 
-# Run override calculation and include a generated file
+# Generate and include a dhmk rules file
+$(dhmk_rules_mk): $(MAKEFILE_LIST)
+	$(dir $(dhmk_this_makefile))dhmk.pl $(dhmk_rules_mk) $(dhmk_top_makefile)
 
-$(dhmk_overrides_mk): $(MAKEFILE_LIST)
-	$(MAKE) -f $(dhmk_top_makefile) -j1 -n --no-print-directory \
-        calc_overrides dhmk_calc_overrides=yes 2>&1 | \
-        sed -n '/^$(dhmk_calc_overrides_magic)[[:space:]]\+/ \
-        { s/^$(dhmk_calc_overrides_magic)[[:space:]]\+//; p }' > $@
+# Create an out-of-date rules file if it does not exist. Avoids make warning
+include $(shell test ! -f $(dhmk_rules_mk) && touch -t 197001030000 $(dhmk_rules_mk); echo $(dhmk_rules_mk))
 
--include $(dhmk_overrides_mk)
+# Routine to run a specific command ($1 should be {target}_{command})
+dhmk_override_cmd = $(if $(dhmk_$1),$(MAKE) -f $(dhmk_top_makefile) $1)
+dhmk_run_command = $(or $(call dhmk_override_cmd,override_$(call butfirstword $1,_)),$($1))
 
-endif
+# Generate dhmk_{pre,post}_{target}_{command} targets for each target+command
+$(foreach t,$(dhmk_standard_targets),$(foreach c,$(dhmk_$(t)_commands),dhmk_pre_$(t)_$(c))): dhmk_pre_%:
+	$(call dhmk_run_command,$*)
+$(foreach t,$(dhmk_standard_targets),$(foreach c,$(dhmk_$(t)_commands),dhmk_post_$(t)_$(c))): dhmk_post_%:
 
-dhmk_get_override = $(if $(dhmk_$(1)),,$(MAKE) -f $(dhmk_top_makefile) $(1))
-# Empty line before endef is necessary
-define dhmk_run_command
-$(or $(call dhmk_get_override,$(1)_override_$(2)),\
-     $(call dhmk_get_override,override_$(2)),\
-     $(2)\
-)
-
-endef
-
-# Generate command chains for the standard targets
-$(foreach t,$(dhmk_standard_targets),debian/dhmk_$(t)): debian/dhmk_%:
-	$(foreach cmd,$(strip $($*_commands)),\
-		$(call dhmk_run_command,$*,$(cmd)) $(dhmk_target_dh_options))
-	$(if $(filter $*,$(dhmk_stamped_targets)),touch $@)
-	# "$*" is done
-
-# Mark dynamic targets as phony
-.PHONY: $(foreach t,$(dhmk_dynamic_targets),debian/dhmk_$(t))
-
-# Relationships between targets + common options
-# NOTE: do not use standard targets here directly, use their debian/dhmk_target
-# counterparts.
+# Relationships between targets + export common options (to submake)
 debian/dhmk_build: debian/dhmk_configure
 debian/dhmk_install: debian/dhmk_build
 debian/dhmk_binary: debian/dhmk_install
 debian/dhmk_binary-arch: debian/dhmk_install
-debian/dhmk_binary-arch: dhmk_target_dh_options = -a
+debian/dhmk_binary-arch: export dhmk_target_dh_options = -a
 debian/dhmk_binary-indep: debian/dhmk_install
-debian/dhmk_binary-indep: dhmk_target_dh_options = -i
+debian/dhmk_binary-indep: export dhmk_target_dh_options = -i
+
+# Mark dynamic standard targets as PHONY
+.PHONY: $(foreach t,$(dhmk_dynamic_targets),debian/dhmk_$(t))
+
+# Create debina/dhmk_{action} targets.
+# NOTE: dhmk_run_{target}_commands are defined below
+$(foreach t,$(dhmk_standard_targets),debian/dhmk_$(t)): debian/dhmk_%:
+	$(MAKE) -f $(dhmk_top_makefile) dhmk_run_$*_commands
+	$(if $(filter $*,$(dhmk_stamped_targets)),touch $@)
+	$(if $(filter clean,$*),rm -f $(dhmk_rules_mk))
+	# "$*" is complete
+
+.PHONY: $(foreach t,$(dhmk_standard_targets),dhmk_run_$(t)_commands \
+    dhmk_pre_$(t) dhmk_post_$(t) \
+    $(foreach c,$(dhmk_$(t)_commands),dhmk_pre_$(t)_$(c) dhmk_post_$(t)_$(c)))
 
 # Implicitly delegate other targets to debian/dhmk_% ones. Hence the top
 # targets (build, configure, install ...) are still cancellable.
 %: debian/dhmk_%
-	echo "$@ action has been successfully completed."
+	@echo "$@ action has been completed successfully."
 
-.PHONY: FORCE
+.SECONDEXPANSION:
+
+# Generate command chains for the standard targets
+$(foreach t,$(dhmk_standard_targets),dhmk_run_$(t)_commands): dhmk_run_%_commands: dhmk_pre_% $$(foreach c,$$(dhmk_%_commands),dhmk_pre_%_$$(c) dhmk_post_%_$$(c)) dhmk_post_%
+
+endif # ifeq (dhmk_calc_overrides,yes)
+

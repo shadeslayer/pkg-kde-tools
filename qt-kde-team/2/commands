@@ -1,21 +1,27 @@
-define configure_commands
+# Standard target commands are defined here.
+# File format is:
+# target:
+# 	command1
+# 	command2
+# 	command3
+# 	...
+# Use $targetname in place of a command to insert commands from the previously
+# defined target.
+configure:
 	dh_testdir
 	dh_auto_configure
-endef
 
-define build_commands
+build:
 	dh_testdir
 	dh_auto_build
 	dh_auto_test
-endef
 
-define clean_commands
+clean:
 	dh_testdir
 	dh_auto_clean
 	dh_clean
-endef
 
-define install_commands
+install:
 	dh_testroot
 	dh_prep
 	dh_installdirs
@@ -54,22 +60,18 @@ define install_commands
 	dh_link
 	dh_compress
 	dh_fixperms
-endef
 
-define binary-indep_commands
+binary-indep:
 	dh_installdeb
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb
-endef
 
-define binary-arch_commands
+binary-arch:
 	dh_strip
 	dh_makeshlibs
 	dh_shlibdeps
-    $(binary-indep_commands)
-endef
+	$binary-indep
 
-define binary_commands
-    $(binary-arch_commands)
-endef
+binary:
+	$binary-arch
