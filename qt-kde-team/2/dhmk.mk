@@ -68,7 +68,8 @@ debian/dhmk_binary-indep: export dhmk_target_dh_options = -i
 $(foreach t,$(dhmk_standard_targets),debian/dhmk_$(t)): debian/dhmk_%:
 	$(MAKE) -f $(dhmk_top_makefile) dhmk_run_$*_commands
 	$(if $(filter $*,$(dhmk_stamped_targets)),touch $@)
-	$(if $(filter clean,$*),rm -f $(dhmk_rules_mk))
+	$(if $(filter clean,$*),rm -f $(dhmk_rules_mk)\
+	    $(foreach t,$(dhmk_stamped_targets),debian/dhmk_$(t)))
 	# "$*" is complete
 
 .PHONY: $(foreach t,$(dhmk_standard_targets),dhmk_run_$(t)_commands \
