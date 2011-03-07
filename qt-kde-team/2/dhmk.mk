@@ -19,6 +19,7 @@ dhmk_stamped_targets = configure build
 dhmk_dynamic_targets = install binary-indep binary-arch binary clean
 dhmk_standard_targets = $(dhmk_stamped_targets) $(dhmk_dynamic_targets)
 dhmk_rules_mk = debian/dhmk_rules.mk
+dhmk_dhmk_pl := $(dir $(dhmk_this_makefile))dhmk.pl
 
 # $(call butfirstword,TEXT,DELIMITER)
 butfirstword = $(patsubst $(firstword $(subst $2, ,$1))$2%,%,$1)
@@ -41,8 +42,8 @@ else
 ############ Do all sequencing ######################
 
 # Generate and include a dhmk rules file
-$(dhmk_rules_mk): $(MAKEFILE_LIST)
-	$(dir $(dhmk_this_makefile))dhmk.pl $(dhmk_rules_mk) $(dhmk_top_makefile)
+$(dhmk_rules_mk): $(MAKEFILE_LIST) $(dhmk_dhmk_pl)
+	$(dhmk_dhmk_pl) $(dh)
 
 # Create an out-of-date rules file if it does not exist. Avoids make warning
 include $(shell test ! -f $(dhmk_rules_mk) && touch -t 197001030000 $(dhmk_rules_mk); echo $(dhmk_rules_mk))

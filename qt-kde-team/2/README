@@ -17,9 +17,9 @@ benefit, but makes it hard to fix bugs like #510855.
 
 2) Like dh(1), dhmk supports override_{dh_command} targets.
 
-3) dhmk should support most of dh(1) addons (TODO).
+3) dhmk should support most of dh(1) addons.
 
-4) Like dh(1), dhmk supports passing of additional options to all dh_commands (TODO).
+4) Like dh(1), dhmk supports passing of additional options to all dh_commands.
 
 5) In addition to dh(1) addons, dhmk is extendable with makefile snippets as well.
 
@@ -35,10 +35,10 @@ create a respective custom make target manually. The dhmk sequence is still
 accessible via debian/dhmk_{action} target.
 
 3) In order to enable a dh(1) addon, append --with=addon (or --with addon) to
-the "dh" variable *before* including dhmk.mk (TODO).
+the "dh" variable *before* including dhmk.mk.
 
 4) In order to pass additional options to all dh_commands (dh(1) way), append
-them to "dh" variable (preferably after --) *before* including dhmk.mk (TODO).
+them to "dh" variable (preferably after --) *before* including dhmk.mk.
 The command line interface is compatible with dh compat level 7 or higher.
 
 Extending dhmk with makefile snippets (templating recommendations)

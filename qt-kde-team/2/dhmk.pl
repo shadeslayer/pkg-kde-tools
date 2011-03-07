@@ -18,6 +18,161 @@
 use strict;
 use warnings;
 
+package Debian::PkgKde::Dhmk::DhCompat;
+
+my $targets;
+my %extra_cmd_opts;
+
+sub _find_cmd_and_do {
+    # &$proc($cmd_array_ref, $cmd_index_ref)
+    my ($proc, $command) = @_;
+    foreach my $tname (keys %$targets) {
+        my $tcmds = $targets->{$tname}{cmds};
+        for (my $i = 0; $i < @$tcmds; $i++) {
+            if (!defined($command) || $tcmds->[$i] eq $command) {
+                &$proc($tcmds, \$i);
+            }
+        }
+    }
+}
+
+sub _escape_shell {
+    my @opts = @_;
+    s/'/'"'"'/g foreach @opts;
+    if (wantarray) {
+        return map({ "'$_'" } @opts);
+    } else {
+        return "'" . join("' '", @opts) . "'";
+    }
+}
+
+############### Dh Addon API ############################
+
+# Insert $new_command in sequences before $existing_command
+sub insert_before {
+    my ($existing_command, $new_command) = @_;
+    return _find_cmd_and_do(sub {
+            my ($cmds, $i) = ($_[0], ${$_[1]});
+            if ($i == 0) {
+                unshift @$cmds, $new_command;
+            } else {
+                my @tail = splice(@$cmds, $i);
+                push @$cmds, $new_command, @tail;
+            }
+            ${$_[1]}++;
+        }, $existing_command);
+}
+
+# Insert $new_command in sequences after $existing_command
+sub insert_after {
+    my ($existing_command, $new_command) = @_;
+    return _find_cmd_and_do(sub {
+            my ($cmds, $i) = ($_[0], ${$_[1]});
+            my @tail = ($i < $#{$cmds}) ? splice(@$cmds, $i+1) : ();
+#            print $#_, join("--", @tail), "\n";
+            push @$cmds, $new_command, @tail;
+            ${$_[1]}++;
+        }, $existing_command);
+}
+
+# Remove $existing_command from the list of commands to run in all sequences.
+sub remove_command {
+    my ($existing_command) = @_;
+    return _find_cmd_and_do(sub {
+            my ($cmds, $i) = ($_[0], ${$_[1]});
+            splice(@$cmds, $i, 1);
+            ${$_[1]}--;
+        }, $existing_command);
+}
+
+# Add $new_command to the beginning of the specified sequence. If the sequence
+# does not exist, it will be created.
+sub add_command {
+    my ($new_command, $sequence) = @_;
+    if (exists $targets->{$sequence}) {
+        unshift @{$targets->{$sequence}{cmds}}, $new_command;
+    } else {
+        $targets->{$sequence} = { cmds => [ $new_command ], deps => "" };
+    }
+}
+
+# Append $opt1, $opt2 etc. to the list of additional options which dh passes
+# when running the specified $command.
+sub add_command_options {
+    my ($command, @opts) = @_;
+    push @{$extra_cmd_opts{$command}}, @opts;
+}
+
+# Remove @opts from the list of additional options which dh passes when running
+# the specified $command. If @opts is empty, remove all extra options
+sub remove_command_options {
+    my ($command, @opts) = @_;
+    if (exists $extra_cmd_opts{$command}) {
+        if (!@opts) {
+            delete $extra_cmd_opts{$command};
+        } else {
+            my $re = "(\Q" . join("\E|\Q", @opts) . "\E)";
+            $extra_cmd_opts{$command} = [ grep { !/^$re$/ } @{$extra_cmd_opts{$command}} ];
+        }
+    }
+}
+
+########### Main module subroutines ###################
+
+# Initialize jail
+sub init {
+    my %opts = @_;
+    $targets = $opts{targets};
+}
+
+# Load addons
+sub load_addons {
+    my @addons = @_;
+    foreach my $addon (@addons) {
+        my $mod="Debian::Debhelper::Sequence::$addon";
+        $mod=~s/-/_/g;
+        eval "use $mod";
+        if ($@) {
+            die "unable to load addon $addon: $@";
+        }
+    }
+
+    # Merge $extra_cmd_opts to $targets
+    foreach my $c (keys %extra_cmd_opts) {
+        next if !@{$extra_cmd_opts{$c}};
+        _find_cmd_and_do(sub {
+                my ($cmds, $i) = ($_[0], ${$_[1]});
+                $cmds->[$i] .= " " . _escape_shell(@{$extra_cmd_opts{$c}});
+            }, $c);
+    }
+
+    return 1;
+}
+
+# Add extra options to each command
+sub add_extraopts {
+    my @opts;
+    # Convert "--option value" syntax to --option=value like dh(1) would do
+    foreach my $opt (@_) {
+        if ($opt =~ /^-/) {
+            push @opts, $opt;
+        } elsif (@opts && $opts[$#opts] =~ /^--/) {
+            $opts[$#opts] .= "=" . $opt;
+        } else {
+            push @opts, $opt;
+        }
+    }
+    my $shescaped =" " . join(" ", map({ s/^'-/-O'-/; $_ } _escape_shell(@opts)));
+    _find_cmd_and_do(sub {
+        my ($cmds, $i) = ($_[0], ${$_[1]});
+        $cmds->[$i] .= $shescaped;
+    });
+}
+
+1;
+
+package main;
+
 use File::Basename qw();
 use File::Spec;
 
@@ -68,6 +223,65 @@ sub parse_commands_file {
     close($fh);
 
     return \%targets;
+}
+
+sub parse_cmdline {
+    my @addons;
+    my @extraopts;
+    my $optname = "";
+    my $optval;
+    my $opts_need_values = qr/with(?:out)?/;
+    my $opts_no_values = qr//;
+    foreach my $arg (@ARGV) {
+        if ($optname eq "--") {
+            $optval = $arg;
+        } elsif ($optname && !defined $optval) {
+            $optval = $arg;
+        } elsif ($arg eq "--") {
+            $optname = "--";
+            $optval = undef;
+        } elsif ($arg =~ /^--($opts_need_values)=(.*)$/) {
+            $optname = $1;
+            $optval = $2 || "";
+        } elsif ($arg =~ /^--($opts_need_values)$/) {
+            $optname = $1;
+            $optval = undef;
+        } elsif ($arg =~ /^--($opts_no_values)=(.*)$/) {
+            die "option $1 does not accept a value";
+        } elsif ($arg =~ /^--($opts_no_values)$/) {
+            $optname = $1;
+            $optval = "";
+        } else {
+            $optval = $arg;
+        }
+        if (defined $optval) {
+            if ($optname eq "" || $optname eq "--") {
+                push @extraopts, $optval;
+                # Do not reset $optname
+            } else {
+                if ($optname =~ /^$opts_need_values$/) {
+                    if ($optval eq "") {
+                        die "option $optname requires a value";
+                    }
+                    if ($optname eq "with") {
+                        push @addons, split(/,/, $optval);
+                    } elsif ($optname eq "without") {
+                        @addons = grep { $_ ne $optval } @addons;
+                    } else {
+                        die "internal bug: unrecognized dhmk.pl option: $optname (val: $optval)";
+                    }
+                } elsif ($optname =~ /^$opts_no_values$/) {
+                    # No such options exist yet
+                } else {
+                    die "unrecognized command line option: $optname";
+                }
+                $optname = "";
+                $optval = undef;
+            }
+        }
+    }
+
+    return ( addons => \@addons, extraopts => \@extraopts );
 }
 
 sub get_commands {
@@ -141,11 +355,22 @@ sub write_dhmk_rules {
 }
 
 my $COMMANDS_FILE = File::Spec->catfile(File::Basename::dirname($0), "commands");
-my $DHMK_RULES_FILE = $ARGV[0] || "debian/dhmk_rules.mk";
-my $RULES_FILE = $ARGV[1] || "debian/rules";
+my $DHMK_RULES_FILE = "debian/dhmk_rules.mk";
+my $RULES_FILE = "debian/rules";
 
 eval {
     my $targets = parse_commands_file($COMMANDS_FILE);
+    my %cmdopts = parse_cmdline();
+
+    Debian::PkgKde::Dhmk::DhCompat::init(targets => $targets);
+    if (@{$cmdopts{addons}}) {
+        if (!Debian::PkgKde::Dhmk::DhCompat::load_addons(@{$cmdopts{addons}})) {
+            die "unable to load requested dh addons: " . join(", ", @{$cmdopts{addons}});
+        }
+    }
+    if (@{$cmdopts{extraopts}}) {
+        Debian::PkgKde::Dhmk::DhCompat::add_extraopts(@{$cmdopts{extraopts}});
+    }
     my $commands = get_commands($targets);
     my $overrides = calc_overrides([ keys %$commands ], $RULES_FILE);
     write_dhmk_rules($DHMK_RULES_FILE, $RULES_FILE, $targets, $overrides);
