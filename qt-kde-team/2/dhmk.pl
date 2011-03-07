@@ -286,28 +286,23 @@ sub parse_cmdline {
 
 sub get_commands {
     my ($targets) = @_;
-    my %commands;
-    foreach my $tname (keys %$targets) {
-        my $t = $targets->{$tname}{cmds};
-        foreach my $c (@$t) {
-            if ($c =~ /^(\S+)/) {
-                push @{$commands{$1}}, $tname;
-            } else {
-                die "internal error: unrecognized command '$c'";
-            }
+    my %cmds;
+    foreach my $t (values %$targets) {
+        foreach my $c (@{$t->{cmds}}) {
+            $cmds{$1} = 1 if $c =~ /^(\S+)/;
         }
     }
-    return \%commands;
+    return sort keys %cmds;
 }
 
 sub calc_overrides {
-    my ($commands, $rules_file) = @_;
+    my ($rules_file, @commands) = @_;
     my $magic = "##dhmk_no_override##";
 
     # Initialize all overrides first
     my %overrides;
     my @override_targets;
-    foreach my $c (@$commands) {
+    foreach my $c (@commands) {
         $overrides{$c} = 1;
         push @override_targets, "override_$c";
     }
@@ -371,8 +366,7 @@ eval {
     if (@{$cmdopts{extraopts}}) {
         Debian::PkgKde::Dhmk::DhCompat::add_extraopts(@{$cmdopts{extraopts}});
     }
-    my $commands = get_commands($targets);
-    my $overrides = calc_overrides([ keys %$commands ], $RULES_FILE);
+    my $overrides = calc_overrides($RULES_FILE, get_commands($targets));
     write_dhmk_rules($DHMK_RULES_FILE, $RULES_FILE, $targets, $overrides);
 };
 if ($@) {
