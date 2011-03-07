@@ -63,7 +63,7 @@ debian/dhmk_binary-indep: export dhmk_target_dh_options = -i
 # Mark dynamic standard targets as PHONY
 .PHONY: $(foreach t,$(dhmk_dynamic_targets),debian/dhmk_$(t))
 
-# Create debina/dhmk_{action} targets.
+# Create debian/dhmk_{action} targets.
 # NOTE: dhmk_run_{target}_commands are defined below
 $(foreach t,$(dhmk_standard_targets),debian/dhmk_$(t)): debian/dhmk_%:
 	$(MAKE) -f $(dhmk_top_makefile) dhmk_run_$*_commands
