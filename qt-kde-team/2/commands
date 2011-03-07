@@ -1,6 +1,6 @@
 # Standard target commands are defined here.
 # File format is:
-# target:
+# target: prerequisite_target(s) ...
 # 	command1
 # 	command2
 # 	command3
@@ -11,7 +11,7 @@ configure:
 	dh_testdir
 	dh_auto_configure
 
-build:
+build: configure
 	dh_testdir
 	dh_auto_build
 	dh_auto_test
@@ -21,7 +21,7 @@ clean:
 	dh_auto_clean
 	dh_clean
 
-install:
+install: build
 	dh_testroot
 	dh_prep
 	dh_installdirs
@@ -61,17 +61,17 @@ install:
 	dh_compress
 	dh_fixperms
 
-binary-indep:
+binary-indep: install
 	dh_installdeb
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb
 
-binary-arch:
+binary-arch: install
 	dh_strip
 	dh_makeshlibs
 	dh_shlibdeps
 	$binary-indep
 
-binary:
+binary: install
 	$binary-arch

@@ -56,13 +56,8 @@ $(foreach t,$(dhmk_standard_targets),$(foreach c,$(dhmk_$(t)_commands),dhmk_pre_
 	$(call dhmk_run_command,$*)
 $(foreach t,$(dhmk_standard_targets),$(foreach c,$(dhmk_$(t)_commands),dhmk_post_$(t)_$(c))): dhmk_post_%:
 
-# Relationships between targets + export common options (to submake)
-debian/dhmk_build: debian/dhmk_configure
-debian/dhmk_install: debian/dhmk_build
-debian/dhmk_binary: debian/dhmk_install
-debian/dhmk_binary-arch: debian/dhmk_install
+# Export common options for some actions (to submake)
 debian/dhmk_binary-arch: export dhmk_target_dh_options = -a
-debian/dhmk_binary-indep: debian/dhmk_install
 debian/dhmk_binary-indep: export dhmk_target_dh_options = -i
 
 # Mark dynamic standard targets as PHONY
@@ -86,6 +81,9 @@ $(foreach t,$(dhmk_standard_targets),debian/dhmk_$(t)): debian/dhmk_%:
 	@echo "$@ action has been completed successfully."
 
 .SECONDEXPANSION:
+
+# Relationships (depends/prerequisites)
+$(foreach t,$(dhmk_standard_targets),debian/dhmk_$(t)): debian/dhmk_%: $$(foreach d,$$(dhmk_%_depends),debian/dhmk_$$d)
 
 # Generate command chains for the standard targets
 $(foreach t,$(dhmk_standard_targets),dhmk_run_$(t)_commands): dhmk_run_%_commands: dhmk_pre_% $$(foreach c,$$(dhmk_%_commands),dhmk_pre_%_$$(c) dhmk_post_%_$$(c)) dhmk_post_%

@@ -41,20 +41,22 @@ sub parse_commands_file {
         chop $line;
         if ($line =~ /^\s*#/ || $line =~ /^\s*$/) {
             next; # comment or empty line
-        } elsif ($line =~ /^(\S.+):\s*$/) {
+        } elsif ($line =~ /^(\S.+):\s*(.*)$/) {
             $t = $1;
+            $targets{$t}{deps} = $2 || "";
+            $targets{$t}{cmds} = [];
         } elsif (defined $t) {
             if ($line =~ /^\s+(.*)$/) {
                 my $c = $1;
                 # If it's a variable, dereference it
                 if ($c =~ /^\s*\$(\S+)\s*$/) {
                     if (exists $targets{$1}) {
-                        push @{$targets{$t}}, @{$targets{$1}};
+                        push @{$targets{$t}{cmds}}, @{$targets{$1}{cmds}};
                     } else {
                         die "could not dereference variable \$$1. Target '$1' was not defined yet";
                     }
                 } else {
-                    push @{$targets{$t}}, $c;
+                    push @{$targets{$t}{cmds}}, $c;
                 }
             } else {
                 die "dangling command '$line'. Missing target definition";
@@ -72,7 +74,7 @@ sub get_commands {
     my ($targets) = @_;
     my %commands;
     foreach my $tname (keys %$targets) {
-        my $t = $targets->{$tname};
+        my $t = $targets->{$tname}{cmds};
         foreach my $c (@$t) {
             if ($c =~ /^(\S+)/) {
                 push @{$commands{$1}}, $tname;
@@ -118,16 +120,18 @@ sub write_dhmk_rules {
     my ($dhmk_file, $rules_file, $targets, $overrides) = @_;
     open (my $fh, ">", $dhmk_file) or
         die "unable to open dhmk rules file ($dhmk_file) for writing: $!";
-    print $fh "# Target command sequences", "\n";
+    print $fh "# Action command sequences", "\n";
     foreach my $tname (keys %$targets) {
         my $t = $targets->{$tname};
         my @commands;
-        foreach my $cline (@$t) {
+        foreach my $cline (@{$t->{cmds}}) {
             my $c = ($cline =~ /^(\S+)/) && $1;
             push @commands, $c;
             print $fh $tname, "_", $c, " = ", $cline, "\n";
         }
-        print $fh "dhmk_". $tname, "_commands = ", join(" ", @commands), "\n\n";
+        print $fh "dhmk_", $tname, "_commands = ", join(" ", @commands), "\n";
+        print $fh "dhmk_", $tname, "_depends = ", $t->{deps}, "\n";
+        print $fh "\n";
     }
     print $fh "# Overrides", "\n";
     foreach my $o (sort keys %$overrides) {
