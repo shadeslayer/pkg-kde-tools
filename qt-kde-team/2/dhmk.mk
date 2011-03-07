@@ -32,7 +32,7 @@ butfirstword = $(patsubst $(firstword $(subst $2, ,$1))$2%,%,$1)
 .PHONY: FORCE
 
 ############ Handle override calculation ############ 
-ifeq ($(dhmk_calc_overrides),yes)
+ifeq ($(dhmk_override_info_mode),yes)
 
 # Emit magic directives for commands which are not overriden
 override_%: FORCE
@@ -90,5 +90,5 @@ $(foreach t,$(dhmk_standard_targets),debian/dhmk_$(t)): debian/dhmk_%: $$(foreac
 # Generate command chains for the standard targets
 $(foreach t,$(dhmk_standard_targets),dhmk_run_$(t)_commands): dhmk_run_%_commands: dhmk_pre_% $$(foreach c,$$(dhmk_%_commands),dhmk_pre_%_$$(c) dhmk_post_%_$$(c)) dhmk_post_%
 
-endif # ifeq (dhmk_calc_overrides,yes)
+endif # ifeq (dhmk_override_info_mode,yes)
 

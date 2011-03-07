@@ -295,7 +295,7 @@ sub get_commands {
     return sort keys %cmds;
 }
 
-sub calc_overrides {
+sub get_override_info {
     my ($rules_file, @commands) = @_;
     my $magic = "##dhmk_no_override##";
 
@@ -311,7 +311,7 @@ sub calc_overrides {
     open(my $make, "-|", "make", "-f", $rules_file, "-j1", "-n",
         "--no-print-directory",
         @override_targets,
-        "dhmk_calc_overrides=yes") or
+        "dhmk_override_info_mode=yes") or
         die "unable to execute make for override calculation: $!";
     while (my $line = <$make>) {
         if ($line =~ /^$magic(.*)$/ && exists $overrides{$1}) {
@@ -319,7 +319,7 @@ sub calc_overrides {
         }
     }
     if (!close($make)) {
-        die "make (calc_override) failed with $?";
+        die "make (get_override_info) failed with $?";
     }
 
     return \%overrides;
@@ -366,7 +366,7 @@ eval {
     if (@{$cmdopts{extraopts}}) {
         Debian::PkgKde::Dhmk::DhCompat::add_extraopts(@{$cmdopts{extraopts}});
     }
-    my $overrides = calc_overrides($RULES_FILE, get_commands($targets));
+    my $overrides = get_override_info($RULES_FILE, get_commands($targets));
     write_dhmk_rules($DHMK_RULES_FILE, $RULES_FILE, $targets, $overrides);
 };
 if ($@) {
