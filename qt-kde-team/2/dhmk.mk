@@ -55,12 +55,12 @@ dhmk_run_command = $(or $(call dhmk_override_cmd,override_$(call butfirstword,$1
 
 # Generate dhmk_{pre,post}_{target}_{command} targets for each target+command
 $(foreach t,$(dhmk_standard_targets),$(foreach c,$(dhmk_$(t)_commands),dhmk_pre_$(t)_$(c))): dhmk_pre_%:
-	$(call dhmk_run_command,$*)
+	$(call dhmk_run_command,$*) # $(and $(DH_INTERNAL_OPTIONS),[$(DH_INTERNAL_OPTIONS)])
 $(foreach t,$(dhmk_standard_targets),$(foreach c,$(dhmk_$(t)_commands),dhmk_post_$(t)_$(c))): dhmk_post_%:
 
 # Export -a/-i options for indep/arch specific targets
-$(foreach t,$(dhmk_indeparch_targets),debian/dhmk_$(t)-indep): export DH_OPTIONS = -i
-$(foreach t,$(dhmk_indeparch_targets),debian/dhmk_$(t)-arch): export DH_OPTIONS = -a
+$(foreach t,$(dhmk_indeparch_targets),debian/dhmk_$(t)-indep): export DH_INTERNAL_OPTIONS := -i
+$(foreach t,$(dhmk_indeparch_targets),debian/dhmk_$(t)-arch):  export DH_INTERNAL_OPTIONS := -a
 
 # Mark dynamic standard targets as PHONY
 .PHONY: $(foreach t,$(dhmk_dynamic_targets),debian/dhmk_$(t))
@@ -68,7 +68,6 @@ $(foreach t,$(dhmk_indeparch_targets),debian/dhmk_$(t)-arch): export DH_OPTIONS 
 # Create debian/dhmk_{action} targets.
 # NOTE: dhmk_run_{target}_commands are defined below
 $(foreach t,$(dhmk_standard_targets),debian/dhmk_$(t)): debian/dhmk_%:
-	$(if $(DH_OPTIONS),#### NOTE: DH_OPTIONS is set to $(DH_OPTIONS) ####)
 	$(MAKE) -f $(dhmk_top_makefile) dhmk_run_$*_commands
 	$(if $(filter $*,$(dhmk_stamped_targets)),touch $@)
 	$(if $(filter clean,$*),rm -f $(dhmk_rules_mk)\
