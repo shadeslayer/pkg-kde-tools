@@ -167,6 +167,7 @@ sub add_extraopts {
         my ($cmds, $i) = ($_[0], ${$_[1]});
         $cmds->[$i] .= $shescaped;
     });
+    return $shescaped;
 }
 
 1;
@@ -326,7 +327,7 @@ sub get_override_info {
 }
 
 sub write_dhmk_rules {
-    my ($dhmk_file, $rules_file, $targets, $overrides) = @_;
+    my ($dhmk_file, $rules_file, $targets, $overrides, $extraopts) = @_;
     open (my $fh, ">", $dhmk_file) or
         die "unable to open dhmk rules file ($dhmk_file) for writing: $!";
     print $fh "# Action command sequences", "\n";
@@ -342,10 +343,24 @@ sub write_dhmk_rules {
         print $fh "dhmk_", $tname, "_depends = ", $t->{deps}, "\n";
         print $fh "\n";
     }
+
     print $fh "# Overrides", "\n";
     foreach my $o (sort keys %$overrides) {
         print $fh "dhmk_override_", $o, " = yes", "\n";
     }
+    print $fh "\n";
+
+    # Export specified extra options for debhelper programs (e.g. for use in
+    # overrides)
+    if ($extraopts) {
+        print $fh "# Export specified extra options for debhelper programs", "\n";
+        print $fh "define DHMK_OPTIONS", "\n";
+        print $fh $extraopts, "\n";
+        print $fh "endef", "\n";
+        print $fh "export DHMK_OPTIONS", "\n";
+        print $fh "\n";
+    }
+
     close($fh);
 }
 
@@ -356,6 +371,7 @@ my $RULES_FILE = "debian/rules";
 eval {
     my $targets = parse_commands_file($COMMANDS_FILE);
     my %cmdopts = parse_cmdline();
+    my $shextraopts;
 
     Debian::PkgKde::Dhmk::DhCompat::init(targets => $targets);
     if (@{$cmdopts{addons}}) {
@@ -364,10 +380,10 @@ eval {
         }
     }
     if (@{$cmdopts{extraopts}}) {
-        Debian::PkgKde::Dhmk::DhCompat::add_extraopts(@{$cmdopts{extraopts}});
+        $shextraopts = Debian::PkgKde::Dhmk::DhCompat::add_extraopts(@{$cmdopts{extraopts}});
     }
     my $overrides = get_override_info($RULES_FILE, get_commands($targets));
-    write_dhmk_rules($DHMK_RULES_FILE, $RULES_FILE, $targets, $overrides);
+    write_dhmk_rules($DHMK_RULES_FILE, $RULES_FILE, $targets, $overrides, $shextraopts);
 };
 if ($@) {
     die "error: $@"
