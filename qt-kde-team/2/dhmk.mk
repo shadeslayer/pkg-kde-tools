@@ -15,9 +15,10 @@
 
 dhmk_top_makefile := $(firstword $(MAKEFILE_LIST))
 dhmk_this_makefile := $(lastword $(MAKEFILE_LIST))
-dhmk_stamped_targets = configure build
-dhmk_dynamic_targets = install binary-indep binary-arch binary clean
+dhmk_stamped_targets = configure build-indep build-arch build
+dhmk_dynamic_targets = install-indep install-arch install binary-indep binary-arch binary clean
 dhmk_standard_targets = $(dhmk_stamped_targets) $(dhmk_dynamic_targets)
+dhmk_indeparch_targets := build install binary
 dhmk_rules_mk = debian/dhmk_rules.mk
 dhmk_dhmk_pl := $(dir $(dhmk_this_makefile))dhmk.pl
 
@@ -57,9 +58,9 @@ $(foreach t,$(dhmk_standard_targets),$(foreach c,$(dhmk_$(t)_commands),dhmk_pre_
 	$(call dhmk_run_command,$*)
 $(foreach t,$(dhmk_standard_targets),$(foreach c,$(dhmk_$(t)_commands),dhmk_post_$(t)_$(c))): dhmk_post_%:
 
-# Export common options for some actions (to submake)
-debian/dhmk_binary-arch: export DH_OPTIONS = -a
-debian/dhmk_binary-indep: export DH_OPTIONS = -i
+# Export -a/-i options for indep/arch specific targets
+$(foreach t,$(dhmk_indeparch_targets),debian/dhmk_$(t)-indep): export DH_OPTIONS = -i
+$(foreach t,$(dhmk_indeparch_targets),debian/dhmk_$(t)-arch): export DH_OPTIONS = -a
 
 # Mark dynamic standard targets as PHONY
 .PHONY: $(foreach t,$(dhmk_dynamic_targets),debian/dhmk_$(t))

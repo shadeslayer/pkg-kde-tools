@@ -16,6 +16,12 @@ build: configure
 	dh_auto_build
 	dh_auto_test
 
+build-indep: configure
+	$build
+
+build-arch: configure
+	$build
+
 clean:
 	dh_testdir
 	dh_auto_clean
@@ -61,13 +67,19 @@ install: build
 	dh_compress
 	dh_fixperms
 
-binary-indep: install
+install-indep: build-indep
+	$install
+
+install-arch: build-arch
+	$install
+
+binary-indep: install-indep
 	dh_installdeb
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb
 
-binary-arch: install
+binary-arch: install-arch
 	dh_strip
 	dh_makeshlibs
 	dh_shlibdeps
