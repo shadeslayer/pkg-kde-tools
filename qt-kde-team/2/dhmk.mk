@@ -18,7 +18,7 @@ dhmk_this_makefile := $(lastword $(MAKEFILE_LIST))
 dhmk_stamped_targets = configure build-indep build-arch build
 dhmk_dynamic_targets = install-indep install-arch install binary-indep binary-arch binary clean
 dhmk_standard_targets = $(dhmk_stamped_targets) $(dhmk_dynamic_targets)
-dhmk_indeparch_targets := build install binary
+dhmk_indeparch_targets = build install binary
 dhmk_rules_mk = debian/dhmk_rules.mk
 dhmk_dhmk_pl := $(dir $(dhmk_this_makefile))dhmk.pl
 
