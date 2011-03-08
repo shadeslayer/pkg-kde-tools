@@ -58,8 +58,8 @@ $(foreach t,$(dhmk_standard_targets),$(foreach c,$(dhmk_$(t)_commands),dhmk_pre_
 $(foreach t,$(dhmk_standard_targets),$(foreach c,$(dhmk_$(t)_commands),dhmk_post_$(t)_$(c))): dhmk_post_%:
 
 # Export common options for some actions (to submake)
-debian/dhmk_binary-arch: export dhmk_target_dh_options = -a
-debian/dhmk_binary-indep: export dhmk_target_dh_options = -i
+debian/dhmk_binary-arch: export DH_OPTIONS = -a
+debian/dhmk_binary-indep: export DH_OPTIONS = -i
 
 # Mark dynamic standard targets as PHONY
 .PHONY: $(foreach t,$(dhmk_dynamic_targets),debian/dhmk_$(t))
@@ -67,6 +67,7 @@ debian/dhmk_binary-indep: export dhmk_target_dh_options = -i
 # Create debian/dhmk_{action} targets.
 # NOTE: dhmk_run_{target}_commands are defined below
 $(foreach t,$(dhmk_standard_targets),debian/dhmk_$(t)): debian/dhmk_%:
+	$(if $(DH_OPTIONS),#### NOTE: DH_OPTIONS is set to $(DH_OPTIONS) ####)
 	$(MAKE) -f $(dhmk_top_makefile) dhmk_run_$*_commands
 	$(if $(filter $*,$(dhmk_stamped_targets)),touch $@)
 	$(if $(filter clean,$*),rm -f $(dhmk_rules_mk)\
