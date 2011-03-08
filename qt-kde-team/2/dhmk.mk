@@ -22,6 +22,10 @@ dhmk_indeparch_targets = build install binary
 dhmk_rules_mk = debian/dhmk_rules.mk
 dhmk_dhmk_pl := $(dir $(dhmk_this_makefile))dhmk.pl
 
+# Variables holding all (incl. -indep, -arch) targets for each action
+$(foreach t,$(dhmk_standard_targets),\
+    $(eval dhmk_$(t)_targets = $(if $(filter $t,$(dhmk_indeparch_targets)),$t-indep $t-arch) $t))
+
 # $(call butfirstword,TEXT,DELIMITER)
 butfirstword = $(patsubst $(firstword $(subst $2, ,$1))$2%,%,$1)
 
