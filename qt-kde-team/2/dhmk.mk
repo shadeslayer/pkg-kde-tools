@@ -13,8 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-dhmk_top_makefile := $(firstword $(MAKEFILE_LIST))
+ifndef dhmk_this_makefile
+
 dhmk_this_makefile := $(lastword $(MAKEFILE_LIST))
+dhmk_top_makefile := $(firstword $(MAKEFILE_LIST))
 dhmk_stamped_targets = configure build-indep build-arch build
 dhmk_dynamic_targets = install-indep install-arch install binary-indep binary-arch binary clean
 dhmk_standard_targets = $(dhmk_stamped_targets) $(dhmk_dynamic_targets)
@@ -97,3 +99,4 @@ $(foreach t,$(dhmk_standard_targets),dhmk_run_$(t)_commands): dhmk_run_%_command
 
 endif # ifeq (dhmk_override_info_mode,yes)
 
+endif # ifndef dhmk_this_makefile
