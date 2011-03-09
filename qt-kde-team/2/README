@@ -1,0 +1,65 @@
+What is dhmk?
+-------------
+
+dhmk is yet another debhelper command sequencer. Unlike dh(1), it uses make(1)
+to execute all commands. The perl part (dhmk.pl) is used to support dh(1)
+addons and dynamically calculate override_* targets.
+
+dhmk aims to mimic the most useful features of dh(1) adding a couple of its
+own. Some highlights include:
+
+1) Unlike dh(1), dhmk sequencer is based on the traditional debian/rules
+layout. It means that progress tracking revolves around standard
+targets/actions (configure, build, install, binary etc.) rather than on
+per-(command+package) basis (i.e. debian/*.debhelper.log files) basis.
+"per-(command+package)" tracking gets complicated giving not too much real
+benefit, but makes it hard to fix bugs like #510855.
+
+2) Like dh(1), dhmk supports override_{dh_command} targets.
+
+3) dhmk should support most of dh(1) addons.
+
+4) Like dh(1), dhmk supports passing of additional options to all dh_commands.
+
+5) In addition to dh(1) addons, dhmk is extendable with makefile snippets as well.
+
+Altering default dhmk action sequences
+--------------------------------------
+
+1) If override_{dh_command} target exists in debian/rules, it will be executed
+instead of the default dh_command command whenever the latter appears in the
+action sequence (as dh(1) would do).
+
+2) In order to override the whole action (configure, build, install etc.), just
+create a respective custom make target manually. The dhmk sequence is still
+accessible via debian/dhmk_{action} target.
+
+3) In order to enable a dh(1) addon, append --with=addon (or --with addon) to
+the "dh" variable *before* including dhmk.mk.
+
+4) In order to pass additional options to all dh_commands (dh(1) way), append
+them to "dh" variable (preferably after --) *before* including dhmk.mk.
+The command line interface is compatible with dh compat level 7 or higher.
+
+Extending dhmk with makefile snippets (templating recommendations)
+------------------------------------------------------------------
+
+dhmk sequences can be extented by include'ing additional makefile snippets in
+debian/rules.
+
+1) Snippets may hook to the pre_{action}_{dh_command} target in order to do
+additional work *before* dh_command runs at the specific action.
+
+2) Snippets may hook to the pre_{action}_{dh_command} target in order to do
+additional work *after* dh_command runs at the specific action.
+
+3) Snippets may hook to the pre_{action} target in order to do additional work
+at the beginning of the specific action sequence.
+
+4) Snippets may hook to the post_{action} target in order to do additional work
+at the end of the specific action sequence.
+
+5) Snippets may alter the contents of the "{action}_{dh_command}" variable in
+order to change command line (including the command itself) of the specified
+dh_command whenever it runs during the specified action. Snippets should
+preferably NOT use override_{dh_command} targets.
