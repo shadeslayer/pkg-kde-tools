@@ -128,12 +128,32 @@ sub init {
 # Load addons
 sub load_addons {
     my @addons = @_;
+    my %env_changes;
+
+    # Backup current environment in order to export changes which addons have
+    # made to it
+    my %oldenv = %ENV;
+
     foreach my $addon (@addons) {
         my $mod="Debian::Debhelper::Sequence::$addon";
         $mod=~s/-/_/g;
         eval "use $mod";
         if ($@) {
             die "unable to load addon $addon: $@";
+        }
+    }
+
+    # Compare environment and note changes
+    foreach my $e (keys %ENV) {
+        if (!exists $oldenv{$e} || (($ENV{$e} || "") ne ($oldenv{$e} || "")))
+        {
+            $env_changes{$e} = $ENV{$e};
+        }
+    }
+    foreach my $e (keys %oldenv) {
+        if (!exists $ENV{$e}) {
+            # Environment variable was delete
+            $env_changes{$e} = undef;
         }
     }
 
@@ -146,7 +166,7 @@ sub load_addons {
             }, $c);
     }
 
-    return 1;
+    return \%env_changes;
 }
 
 # Generate extra options from command line options
@@ -321,8 +341,24 @@ sub get_override_info {
     return \%overrides;
 }
 
+sub write_envvar {
+    my ($fh, $name, $value, $escape) = @_;
+    $escape = 1 if !defined $escape;
+
+    if ($value) {
+        $value =~ s/\$/\$\$/g if $escape;
+
+        print $fh "define $name", "\n", $value, "\n", "endef", "\n";
+        print $fh "export $name", "\n";
+    } else {
+        print $fh "export $name =", "\n";
+    }
+}
+
 sub write_dhmk_rules {
-    my ($dhmk_file, $rules_file, $targets, $overrides, $extraopts) = @_;
+    my ($dhmk_file, $rules_file, $targets, $overrides,
+        $extraopts, $env_changes) = @_;
+
     open (my $fh, ">", $dhmk_file) or
         die "unable to open dhmk rules file ($dhmk_file) for writing: $!";
     print $fh "# Action command sequences", "\n";
@@ -349,10 +385,15 @@ sub write_dhmk_rules {
     # overrides)
     if ($extraopts) {
         print $fh "# Export specified extra options for debhelper programs", "\n";
-        print $fh "define DHMK_OPTIONS", "\n";
-        print $fh $extraopts, "\n";
-        print $fh "endef", "\n";
-        print $fh "export DHMK_OPTIONS", "\n";
+        write_envvar($fh, "DHMK_OPTIONS", $extraopts, 0);
+        print $fh "\n";
+    }
+
+    if (keys %$env_changes) {
+        print $fh "# Export environment changes", "\n";
+        foreach my $e (keys %$env_changes) {
+            write_envvar($fh, $e, $env_changes->{$e});
+        }
         print $fh "\n";
     }
 
@@ -367,10 +408,12 @@ eval {
     my $targets = parse_commands_file($COMMANDS_FILE);
     my %cmdopts = parse_cmdline();
     my $shextraopts;
+    my $env_changes;
 
     Debian::PkgKde::Dhmk::DhCompat::init(targets => $targets);
     if (@{$cmdopts{addons}}) {
-        if (!Debian::PkgKde::Dhmk::DhCompat::load_addons(@{$cmdopts{addons}})) {
+        $env_changes = Debian::PkgKde::Dhmk::DhCompat::load_addons(@{$cmdopts{addons}});
+        if (!$env_changes) {
             die "unable to load requested dh addons: " . join(", ", @{$cmdopts{addons}});
         }
     }
@@ -378,7 +421,8 @@ eval {
         $shextraopts = Debian::PkgKde::Dhmk::DhCompat::gen_extraopts(@{$cmdopts{extraopts}});
     }
     my $overrides = get_override_info($RULES_FILE, get_commands($targets));
-    write_dhmk_rules($DHMK_RULES_FILE, $RULES_FILE, $targets, $overrides, $shextraopts);
+    write_dhmk_rules($DHMK_RULES_FILE, $RULES_FILE, $targets, $overrides,
+        $shextraopts, $env_changes);
 };
 if ($@) {
     die "error: $@"
