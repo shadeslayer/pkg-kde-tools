@@ -5,11 +5,13 @@ dqk_sourcepkg := $(shell dpkg-parsechangelog | sed -n '/^Source:/{ s/^Source:[[:
 dqk_destdir = $(CURDIR)/debian/tmp
 
 # We want to use kde and pkgkde-symbolshelper plugins by default
-# Moreover, KDE packages are parallel safe
-dh := --with=kde,pkgkde-symbolshelper --parallel $(dh)
+dh := --with=kde,pkgkde-symbolshelper $(dh)
 
 # Include dhmk file
 include $(dqk_dir)dhmk.mk
+
+# KDE packages are parallel safe. Add --parallel to dh_auto_% commands
+$(call set_command_options,dh_auto_%, += --parallel)
 
 # TODO:
 # DEB_KDE_DISABLE_POLICY_CHECK lists distributions for which
@@ -23,7 +25,7 @@ include $(dqk_dir)dhmk.mk
 
 # Since cmake 2.6.2 or higher is required from now on, enable relative paths to
 # get more ccache hits.
-configure_dh_auto_configure += "-u-DCMAKE_USE_RELATIVE_PATHS=ON"
+$(call set_command_options,dh_auto_configure, += "-u-DCMAKE_USE_RELATIVE_PATHS=ON")
 
 # Run dh_sameversiondep
 run_dh_sameversiondep:

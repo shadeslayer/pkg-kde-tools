@@ -29,6 +29,11 @@ $(foreach t,$(dhmk_indeparch_targets),$(eval dhmk_$(t)_targets = $(t)-indep $(t)
 $(foreach t,$(filter-out %-arch %-indep,$(dhmk_standard_targets)),\
     $(eval dhmk_$(t)_targets += $(t)))
 
+# A helper routine to set additional command options
+set_command_options = $(foreach t,$(filter $(or $3,%),$(dhmk_standard_targets)),\
+                        $(foreach c,$(filter $1,$(dhmk_$(t)_commands)),\
+                          $(eval $(t)_$(c) $2)))
+
 # $(call butfirstword,TEXT,DELIMITER)
 butfirstword = $(patsubst $(firstword $(subst $2, ,$1))$2%,%,$1)
 
