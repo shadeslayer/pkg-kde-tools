@@ -55,7 +55,7 @@ include $(shell test ! -f $(dhmk_rules_mk) && touch -t 197001030000 $(dhmk_rules
 
 # Routine to run a specific command ($1 should be {target}_{command})
 dhmk_override_cmd = $(if $(dhmk_$1),$(MAKE) -f $(dhmk_top_makefile) $1)
-dhmk_run_command = $(or $(call dhmk_override_cmd,override_$(call butfirstword,$1,_)),$($1))
+dhmk_run_command = $(or $(call dhmk_override_cmd,override_$(call butfirstword,$1,_)),$($1) $(DHMK_OPTIONS))
 
 # Generate dhmk_{pre,post}_{target}_{command} targets for each target+command
 $(foreach t,$(dhmk_standard_targets),$(foreach c,$(dhmk_$(t)_commands),dhmk_pre_$(t)_$(c))): dhmk_pre_%:

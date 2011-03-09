@@ -149,8 +149,8 @@ sub load_addons {
     return 1;
 }
 
-# Add extra options to each command
-sub add_extraopts {
+# Generate extra options from command line options
+sub gen_extraopts {
     my @opts;
     # Convert "--option value" syntax to --option=value like dh(1) would do
     foreach my $opt (@_) {
@@ -162,12 +162,7 @@ sub add_extraopts {
             push @opts, $opt;
         }
     }
-    my $shescaped =" " . join(" ", map({ s/^'-/-O'-/; $_ } _escape_shell(@opts)));
-    _find_cmd_and_do(sub {
-        my ($cmds, $i) = ($_[0], ${$_[1]});
-        $cmds->[$i] .= $shescaped;
-    });
-    return $shescaped;
+    return join(" ", map({ s/^'-/-O'-/; $_ } _escape_shell(@opts)));
 }
 
 1;
@@ -380,7 +375,7 @@ eval {
         }
     }
     if (@{$cmdopts{extraopts}}) {
-        $shextraopts = Debian::PkgKde::Dhmk::DhCompat::add_extraopts(@{$cmdopts{extraopts}});
+        $shextraopts = Debian::PkgKde::Dhmk::DhCompat::gen_extraopts(@{$cmdopts{extraopts}});
     }
     my $overrides = get_override_info($RULES_FILE, get_commands($targets));
     write_dhmk_rules($DHMK_RULES_FILE, $RULES_FILE, $targets, $overrides, $shextraopts);
