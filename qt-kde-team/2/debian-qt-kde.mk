@@ -28,7 +28,7 @@ configure_dh_auto_configure += "-u-DCMAKE_USE_RELATIVE_PATHS=ON"
 # Run dh_sameversiondep
 run_dh_sameversiondep:
 	dh_sameversiondep
-$(foreach t,$(dhmk_install_targets),post_$(t)_dh_shlibdeps): run_dh_sameversiondep
+$(foreach t,$(dhmk_binary_targets),pre_$(t)_dh_gencontrol): run_dh_sameversiondep
 
 endif # ifndef dqk_dir
 debian/stamp-man-pages:
