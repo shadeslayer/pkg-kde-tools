@@ -38,7 +38,7 @@ endif
 ifneq (,$(DEB_STRICT_LOCAL_SHLIBS_PACKAGES))
 
 libpkgs_gen_strict_local_shlibs:
-	foreach pkg in $(DEB_STRICT_LOCAL_SHLIBS_PACKAGES); do \
+	for pkg in $(DEB_STRICT_LOCAL_SHLIBS_PACKAGES); do \
 	    if test -e debian/$$pkg/DEBIAN/shlibs; then \
 	        echo "Generating strict local shlibs for the '$$pkg' package ..."; \
 		    sed 's/>=[^)]*/= $(libpkgs_binver)/' debian/$$pkg/DEBIAN/shlibs >> debian/shlibs.local; \
