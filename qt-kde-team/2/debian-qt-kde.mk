@@ -2,6 +2,7 @@ ifndef dqk_dir
 
 dqk_dir := $(dir $(lastword $(MAKEFILE_LIST)))
 dqk_sourcepkg := $(shell dpkg-parsechangelog | sed -n '/^Source:/{ s/^Source:[[:space:]]*//; p; q }')
+dqk_upstream_version ?= $(shell dpkg-parsechangelog | sed -n '/^Version:/{ s/^Version:[[:space:]]*\(.*\)-.*/\1/g; p; q }')
 dqk_destdir = $(CURDIR)/debian/tmp
 
 # We want to use kde and pkgkde-symbolshelper plugins by default
@@ -10,14 +11,13 @@ dh := --with=kde,pkgkde-symbolshelper $(dh)
 # Include dhmk file
 include $(dqk_dir)dhmk.mk
 
+# dqk_disable_policy_check lists distributions for which policy check should be
+# disabled
+dqk_disable_policy_check ?=
+include $(dqk_dir)policy.mk
+
 # KDE packages are parallel safe. Add --parallel to dh_auto_% commands
 $(call set_command_options,dh_auto_%, += --parallel)
-
-# TODO:
-# DEB_KDE_DISABLE_POLICY_CHECK lists distributions for which
-# policy check should be disabled
-# DEB_KDE_DISABLE_POLICY_CHECK ?=
-# include $(DEB_PKG_KDE_QT_KDE_TEAM)/policy.mk
 
 # Link with --as-needed by default
 # (subject to be moved to kde dh addon/debhelper buildsystem)
