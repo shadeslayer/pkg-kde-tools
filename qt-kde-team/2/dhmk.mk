@@ -57,10 +57,10 @@ include $(shell test ! -f $(dhmk_rules_mk) && touch -t 197001030000 $(dhmk_rules
 dhmk_override_cmd = $(if $(dhmk_$1),$(MAKE) -f $(dhmk_top_makefile) $1)
 dhmk_run_command = $(or $(call dhmk_override_cmd,override_$(call butfirstword,$1,_)),$($1) $(DHMK_OPTIONS))
 
-# Generate dhmk_{pre,post}_{target}_{command} targets for each target+command
-$(foreach t,$(dhmk_standard_targets),$(foreach c,$(dhmk_$(t)_commands),dhmk_pre_$(t)_$(c))): dhmk_pre_%:
+# Generate {pre,post}_{target}_{command} targets for each target+command
+$(foreach t,$(dhmk_standard_targets),$(foreach c,$(dhmk_$(t)_commands),pre_$(t)_$(c))): pre_%:
 	$(call dhmk_run_command,$*) # $(and $(DH_INTERNAL_OPTIONS),[$(DH_INTERNAL_OPTIONS)])
-$(foreach t,$(dhmk_standard_targets),$(foreach c,$(dhmk_$(t)_commands),dhmk_post_$(t)_$(c))): dhmk_post_%:
+$(foreach t,$(dhmk_standard_targets),$(foreach c,$(dhmk_$(t)_commands),post_$(t)_$(c))): post_%:
 
 # Export -a/-i options for indep/arch specific targets
 $(foreach t,$(dhmk_indeparch_targets),debian/dhmk_$(t)-indep): export DH_INTERNAL_OPTIONS := -i
@@ -79,8 +79,8 @@ $(foreach t,$(dhmk_standard_targets),debian/dhmk_$(t)): debian/dhmk_%:
 	# "$*" is complete
 
 .PHONY: $(foreach t,$(dhmk_standard_targets),dhmk_run_$(t)_commands \
-    dhmk_pre_$(t) dhmk_post_$(t) \
-    $(foreach c,$(dhmk_$(t)_commands),dhmk_pre_$(t)_$(c) dhmk_post_$(t)_$(c)))
+    pre_$(t) post_$(t) \
+    $(foreach c,$(dhmk_$(t)_commands),pre_$(t)_$(c) post_$(t)_$(c)))
 
 # Implicitly delegate other targets to debian/dhmk_% ones. Hence the top
 # targets (build, configure, install ...) are still cancellable.
@@ -93,7 +93,7 @@ $(foreach t,$(dhmk_standard_targets),debian/dhmk_$(t)): debian/dhmk_%:
 $(foreach t,$(dhmk_standard_targets),debian/dhmk_$(t)): debian/dhmk_%: $$(foreach d,$$(dhmk_%_depends),debian/dhmk_$$d)
 
 # Generate command chains for the standard targets
-$(foreach t,$(dhmk_standard_targets),dhmk_run_$(t)_commands): dhmk_run_%_commands: dhmk_pre_% $$(foreach c,$$(dhmk_%_commands),dhmk_pre_%_$$(c) dhmk_post_%_$$(c)) dhmk_post_%
+$(foreach t,$(dhmk_standard_targets),dhmk_run_$(t)_commands): dhmk_run_%_commands: pre_% $$(foreach c,$$(dhmk_%_commands),pre_%_$$(c) post_%_$$(c)) post_%
 
 endif # ifeq (dhmk_override_info_mode,yes)
 

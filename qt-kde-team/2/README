@@ -47,19 +47,19 @@ Extending dhmk with makefile snippets (templating recommendations)
 dhmk sequences can be extented by include'ing additional makefile snippets in
 debian/rules.
 
-1) Snippets may hook to the dhmk_pre_{action}_{dh_command} target in order to
-do additional work *before* dh_command runs at the specific action.
+1) Snippets may hook to the pre_{action}_{dh_command} target in order to do
+additional work *before* dh_command runs at the specific action.
 
-2) Snippets may hook to the dhmk_pre_{action}_{dh_command} target in order to
-do additional work *after* dh_command runs at the specific action.
+2) Snippets may hook to the pre_{action}_{dh_command} target in order to do
+additional work *after* dh_command runs at the specific action.
 
-3) Snippets may hook to the dhmk_pre_{action} target in order to do additional
-work at the beginning of the specific action sequence.
+3) Snippets may hook to the pre_{action} target in order to do additional work
+at the beginning of the specific action sequence.
 
-4) Snippets may hook to the dhmk_post_{action} target in order to do additional
-work at the end of the specific action sequence.
+4) Snippets may hook to the post_{action} target in order to do additional work
+at the end of the specific action sequence.
 
-5) Snippets may alter the contents of the "{target}_{dh_command}" variable in
+5) Snippets may alter the contents of the "{action}_{dh_command}" variable in
 order to change command line (including the command itself) of the specified
 dh_command whenever it runs during the specified action. Snippets should
 preferably NOT use override_{dh_command} targets.
