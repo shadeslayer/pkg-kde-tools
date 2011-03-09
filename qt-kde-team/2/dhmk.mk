@@ -25,8 +25,9 @@ dhmk_rules_mk = debian/dhmk_rules.mk
 dhmk_dhmk_pl := $(dir $(dhmk_this_makefile))dhmk.pl
 
 # Variables holding all (incl. -indep, -arch) targets for each action
-$(foreach t,$(dhmk_standard_targets),\
-    $(eval dhmk_$(t)_targets = $(if $(filter $t,$(dhmk_indeparch_targets)),$t-indep $t-arch) $t))
+$(foreach t,$(dhmk_indeparch_targets),$(eval dhmk_$(t)_targets = $(t)-indep $(t)-arch))
+$(foreach t,$(filter-out %-arch %-indep,$(dhmk_standard_targets)),\
+    $(eval dhmk_$(t)_targets += $(t)))
 
 # $(call butfirstword,TEXT,DELIMITER)
 butfirstword = $(patsubst $(firstword $(subst $2, ,$1))$2%,%,$1)
