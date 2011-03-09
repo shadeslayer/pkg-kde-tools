@@ -19,9 +19,27 @@ $(call set_command_options,dh_auto_%, += --parallel)
 # DEB_KDE_DISABLE_POLICY_CHECK ?=
 # include $(DEB_PKG_KDE_QT_KDE_TEAM)/policy.mk
 
-# TODO:
 # Link with --as-needed by default
-# DEB_KDE_LINK_WITH_AS_NEEDED ?= yes
+# (subject to be moved to kde dh addon/debhelper buildsystem)
+link_with_as_needed ?= yes
+ifneq (,$(findstring yes, $(link_with_as_needed)))
+    link_with_as_needed := no
+    ifeq (,$(findstring no-as-needed, $(DEB_BUILD_OPTIONS)))
+        link_with_as_needed := yes
+        export LDFLAGS += -Wl,--as-needed
+    endif
+endif
+
+# Set the link_with_no_undefined=no in order to disable linking with
+# --no-undefined (default value is inherited from $(link_with_as_needed))
+link_with_no_undefined ?= $(link_with_as_needed)
+ifneq (,$(findstring yes, $(link_with_no_undefined)))
+    link_with_no_undefined := no
+    ifeq (,$(findstring no-no-undefined, $(DEB_BUILD_OPTIONS)))
+        link_with_no_undefined := yes
+        export LDFLAGS += -Wl,--no-undefined
+    endif
+endif
 
 # Since cmake 2.6.2 or higher is required from now on, enable relative paths to
 # get more ccache hits.

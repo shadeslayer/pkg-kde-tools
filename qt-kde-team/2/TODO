@@ -1,3 +1,2 @@
-* DEB_KDE_LINK_WITH_AS_NEEDED
 * policy
 * --remaining-packages on the second and subsequent reruns (without clean)
