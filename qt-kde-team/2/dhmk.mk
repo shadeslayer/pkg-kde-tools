@@ -61,7 +61,7 @@ dhmk_run_command = $(or $(call dhmk_override_cmd,override_$(call butfirstword,$1
 
 # Generate {pre,post}_{target}_{command} targets for each target+command
 $(foreach t,$(dhmk_standard_targets),$(foreach c,$(dhmk_$(t)_commands),pre_$(t)_$(c))): pre_%:
-	$(call dhmk_run_command,$*) # $(and $(DH_INTERNAL_OPTIONS),[$(DH_INTERNAL_OPTIONS)])
+	$(call dhmk_run_command,$*) $(and $(DH_INTERNAL_OPTIONS),# [$(DH_INTERNAL_OPTIONS)])
 $(foreach t,$(dhmk_standard_targets),$(foreach c,$(dhmk_$(t)_commands),post_$(t)_$(c))): post_%:
 
 # Export -a/-i options for indep/arch specific targets
