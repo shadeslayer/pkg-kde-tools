@@ -1,4 +1,4 @@
-pkg-kde-tools (0.10.0~pre1) UNRELEASED; urgency=low
+pkg-kde-tools (0.10.0~pre2) UNRELEASED; urgency=low
 
   * Implement a new build debian/rules build engine (dubbed dhmk) for Qt/KDE
     team packages. See qt-kde-team/2/README for more information.
