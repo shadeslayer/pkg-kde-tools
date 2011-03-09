@@ -21,22 +21,22 @@ $(call set_command_options,dh_auto_%, += --parallel)
 
 # Link with --as-needed by default
 # (subject to be moved to kde dh addon/debhelper buildsystem)
-link_with_as_needed ?= yes
-ifneq (,$(findstring yes, $(link_with_as_needed)))
-    link_with_as_needed := no
+dqk_link_with_as_needed ?= yes
+ifneq (,$(findstring yes, $(dqk_link_with_as_needed)))
+    dqk_link_with_as_needed := no
     ifeq (,$(findstring no-as-needed, $(DEB_BUILD_OPTIONS)))
-        link_with_as_needed := yes
+        dqk_link_with_as_needed := yes
         export LDFLAGS += -Wl,--as-needed
     endif
 endif
 
 # Set the link_with_no_undefined=no in order to disable linking with
-# --no-undefined (default value is inherited from $(link_with_as_needed))
-link_with_no_undefined ?= $(link_with_as_needed)
-ifneq (,$(findstring yes, $(link_with_no_undefined)))
-    link_with_no_undefined := no
+# --no-undefined (default value is inherited from $(dqk_link_with_as_needed))
+dqk_link_with_no_undefined ?= $(dqk_link_with_as_needed)
+ifneq (,$(findstring yes, $(dqk_link_with_no_undefined)))
+    dqk_link_with_no_undefined := no
     ifeq (,$(findstring no-no-undefined, $(DEB_BUILD_OPTIONS)))
-        link_with_no_undefined := yes
+        dqk_link_with_no_undefined := yes
         export LDFLAGS += -Wl,--no-undefined
     endif
 endif
