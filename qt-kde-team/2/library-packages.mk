@@ -3,42 +3,42 @@ libpkgs_arch_pkgs := $(shell dh_listpackages -a)
 libpkgs_subst_hooks := $(foreach t,binary-arch binary,pre_$(t)_dh_gencontrol)
 
 # All library packages
-DEB_LIBRARY_PACKAGES := $(filter-out %-dev,$(filter lib%,$(libpkgs_arch_pkgs)))
+libpkgs_all_packages := $(filter-out %-dev,$(filter lib%,$(libpkgs_arch_pkgs)))
 
-ifneq (,$(DEB_ALL_LIBRARIES_SUBST_PACKAGES))
+ifneq (,$(libpkgs_addsubst_allLibraries))
 
-libpkgs_allLibraries_subst := $(foreach pkg,$(DEB_LIBRARY_PACKAGES),$(patsubst %,% (= $(libpkgs_binver)),,$(pkg)))
+libpkgs_allLibraries_subst := $(foreach pkg,$(libpkgs_all_packages),$(patsubst %,% (= $(libpkgs_binver)),,$(pkg)))
 
-libpkgs_add_allLibraries:
+libpkgs_addsubst_allLibraries:
 	echo 'allLibraries=$(libpkgs_allLibraries_subst)' | \
-		tee -a $(foreach pkg,$(DEB_ALL_LIBRARIES_SUBST_PACKAGES),debian/$(pkg).substvars) > /dev/null
+		tee -a $(foreach pkg,$(libpkgs_addsubst_allLibraries),debian/$(pkg).substvars) > /dev/null
 
 $(libpkgs_subst_hooks): libpkgs_add_allLibraries
-.PHONY: libpkgs_add_allLibraries
+.PHONY: libpkgs_addsubst_allLibraries
 
 endif
 
 # KDE 4.3 library packages
-ifneq (,$(DEB_KDE43_LIBRARY_PACKAGES))
-ifneq (,$(DEB_KDE43_LIBRARIES_SUBST_PACKAGES))
+ifneq (,$(libpkgs_kde43_packages))
+ifneq (,$(libpkgs_addsubst_kde43Libraries))
 
-libpkgs_kde43Libraries_subst := $(foreach pkg,$(DEB_KDE43_LIBRARY_PACKAGES),$(patsubst %,% (= $(libpkgs_binver)),,$(pkg)))
+libpkgs_kde43Libraries_subst := $(foreach pkg,$(libpkgs_kde43_packages),$(patsubst %,% (= $(libpkgs_binver)),,$(pkg)))
 
 libpkgs_add_kde43Libraries:
 	echo 'kde43Libraries=$(libpkgs_kde43Libraries_subst)' | \
-		tee -a $(foreach pkg,$(DEB_KDE43_LIBRARIES_SUBST_PACKAGES),debian/$(pkg).substvars) > /dev/null
+		tee -a $(foreach pkg,$(libpkgs_addsubst_kde43Libraries),debian/$(pkg).substvars) > /dev/null
 
-$(libpkgs_subst_hooks): libpkgs_add_kde43Libraries
-.PHONY: libpkgs_add_kde43Libraries
+$(libpkgs_subst_hooks): libpkgs_addsubst_kde43Libraries
+.PHONY: libpkgs_addsubst_kde43Libraries
 
 endif
 endif
 
 # Generate strict local shlibs if requested
-ifneq (,$(DEB_STRICT_LOCAL_SHLIBS_PACKAGES))
+ifneq (,$(libpkgs_gen_strict_local_shlibs))
 
 libpkgs_gen_strict_local_shlibs:
-	for pkg in $(DEB_STRICT_LOCAL_SHLIBS_PACKAGES); do \
+	for pkg in $(libpkgs_gen_strict_local_shlibs); do \
 	    if test -e debian/$$pkg/DEBIAN/shlibs; then \
 	        echo "Generating strict local shlibs for the '$$pkg' package ..."; \
 		    sed 's/>=[^)]*/= $(libpkgs_binver)/' debian/$$pkg/DEBIAN/shlibs >> debian/shlibs.local; \
