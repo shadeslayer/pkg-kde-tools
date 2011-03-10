@@ -147,13 +147,7 @@ sub load_addons {
     foreach my $e (keys %ENV) {
         if (!exists $oldenv{$e} || (($ENV{$e} || "") ne ($oldenv{$e} || "")))
         {
-            $env_changes{$e} = $ENV{$e};
-        }
-    }
-    foreach my $e (keys %oldenv) {
-        if (!exists $ENV{$e}) {
-            # Environment variable was delete
-            $env_changes{$e} = undef;
+            $env_changes{$e} = { old => $oldenv{$e}, new => $ENV{$e} };
         }
     }
 
@@ -350,18 +344,22 @@ sub get_override_info {
     return \%overrides;
 }
 
-sub write_envvar {
+sub write_definevar {
     my ($fh, $name, $value, $escape) = @_;
     $escape = 1 if !defined $escape;
 
     if ($value) {
         $value =~ s/\$/\$\$/g if $escape;
-
         print $fh "define $name", "\n", $value, "\n", "endef", "\n";
-        print $fh "export $name", "\n";
     } else {
-        print $fh "export $name =", "\n";
+        print $fh "$name =", "\n";
     }
+}
+
+sub write_exportvar {
+    my ($fh, $name,$export) = @_;
+    $export = "export" if !defined $export;
+    print $fh "$export $name", "\n";
 }
 
 sub write_dhmk_rules {
@@ -398,14 +396,24 @@ sub write_dhmk_rules {
     # overrides)
     if ($extraopts) {
         print $fh "# Export specified extra options for debhelper programs", "\n";
-        write_envvar($fh, "DHMK_OPTIONS", $extraopts, 0);
+        write_definevar($fh, "DHMK_OPTIONS", $extraopts, 0);
+        write_exportvar($fh, "DHMK_OPTIONS");
         print $fh "\n";
     }
 
     if (keys %$env_changes) {
         print $fh "# Export environment changes", "\n";
         foreach my $e (keys %$env_changes) {
-            write_envvar($fh, $e, $env_changes->{$e});
+            print $fh "dhmk_envvar_orig_$e := \$($e)\n";
+            if (defined ($env_changes->{$e}{new})) {
+                write_definevar($fh, $e, $env_changes->{$e}{new});
+            } else {
+                write_export($fh, $e, "unexport");
+            }
+        }
+        # Restore all modified environment variables when remaking $dhmk_file
+        foreach my $e (keys %$env_changes) {
+            print $fh "$dhmk_file: $e = \$(dhmk_envvar_orig_$e)", "\n";
         }
         print $fh "\n";
     }
