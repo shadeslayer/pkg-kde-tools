@@ -189,8 +189,17 @@ sub gen_extraopts {
 
 package main;
 
-use File::Basename qw();
-use File::Spec;
+sub basename {
+    my ($filename) = @_;
+    $filename =~ s,^.*/([^/]+)/*$,$1,;
+    return $filename;
+}
+
+sub dirname {
+    my ($filename) = @_;
+    $filename =~ s,[^/]+/*$,,;
+    return $filename;
+}
 
 sub parse_commands_file {
     my ($filename) = @_;
@@ -400,7 +409,7 @@ sub write_dhmk_rules {
     close($fh);
 }
 
-my $COMMANDS_FILE = File::Spec->catfile(File::Basename::dirname($0), "commands");
+my $COMMANDS_FILE = dirname($0) . "/commands";
 my $DHMK_RULES_FILE = "debian/dhmk_rules.mk";
 my $RULES_FILE = "debian/rules";
 
