@@ -37,6 +37,10 @@ set_command_options = $(foreach t,$(filter $(or $3,%),$(dhmk_standard_targets)),
 # $(call butfirstword,TEXT,DELIMITER)
 butfirstword = $(patsubst $(firstword $(subst $2, ,$1))$2%,%,$1)
 
+# Use this to retrieve full command line to the overriden command in the
+# override_% targets
+overriden_command = $($(DHMK_TARGET)_$(call butfirstword,$@,_)) $(DHMK_OPTIONS)
+
 # This makefile is not parallel compatible by design (e.g. command chains
 # below)
 .NOTPARALLEL:
@@ -80,7 +84,7 @@ $(foreach t,$(dhmk_indeparch_targets),debian/dhmk_$(t)-arch):  export DH_INTERNA
 # Create debian/dhmk_{action} targets.
 # NOTE: dhmk_run_{target}_commands are defined below
 $(foreach t,$(dhmk_standard_targets),debian/dhmk_$(t)): debian/dhmk_%:
-	$(MAKE) -f $(dhmk_top_makefile) dhmk_run_$*_commands
+	$(MAKE) -f $(dhmk_top_makefile) dhmk_run_$*_commands DHMK_TARGET="$*"
 	$(if $(filter $*,$(dhmk_stamped_targets)),touch $@)
 	$(if $(filter clean,$*),rm -f $(dhmk_rules_mk)\
 	    $(foreach t,$(dhmk_stamped_targets),debian/dhmk_$(t)))
@@ -97,7 +101,8 @@ $(foreach t,$(dhmk_standard_targets),debian/dhmk_$(t)): debian/dhmk_%:
 
 .SECONDEXPANSION:
 
-# Relationships (depends/prerequisites)
+# Specify relationships (depends/prerequisites) and export DHMK_TARGET
+# environment variable for each top target
 $(foreach t,$(dhmk_standard_targets),debian/dhmk_$(t)): debian/dhmk_%: $$(foreach d,$$(dhmk_%_depends),debian/dhmk_$$d)
 
 # Generate command chains for the standard targets
