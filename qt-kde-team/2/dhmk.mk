@@ -65,8 +65,17 @@ $(dhmk_rules_mk): $(MAKEFILE_LIST) $(dhmk_dhmk_pl)
 # Create an out-of-date rules file if it does not exist. Avoids make warning
 include $(shell test ! -f $(dhmk_rules_mk) && touch -t 197001030000 $(dhmk_rules_mk); echo $(dhmk_rules_mk))
 
+# Routine used to run an override target if there is one ($1 should be
+# override_{command})
+define dhmk_override_cmd
+$(if $(dhmk_$1),
+	# Running override target ($1)
+	test -z "`ls debian/*.debhelper.log 2>/dev/null`" || sed -i '/^$1[[:space:]]/d' debian/*.debhelper.log
+	$(MAKE) -f $(dhmk_top_makefile) $1 DH_INTERNAL_OVERRIDE="$(call butfirstword,$1,_)" \
+)
+endef
+
 # Routine to run a specific command ($1 should be {target}_{command})
-dhmk_override_cmd = $(if $(dhmk_$1),$(MAKE) -f $(dhmk_top_makefile) $1)
 dhmk_run_command = $(or $(call dhmk_override_cmd,override_$(call butfirstword,$1,_)),$($1) $(DHMK_OPTIONS))
 
 # Generate {pre,post}_{target}_{command} targets for each target+command
