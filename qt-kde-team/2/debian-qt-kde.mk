@@ -50,7 +50,6 @@ run_dh_sameversiondep:
 	dh_sameversiondep
 $(foreach t,$(dhmk_binary_targets),pre_$(t)_dh_gencontrol): run_dh_sameversiondep
 
-endif # ifndef dqk_dir
 debian/stamp-man-pages:
 	if ! test -d debian/man/out; then mkdir -p debian/man/out; fi
 	for f in $$(find debian/man -name '*.sgml'); do \
@@ -88,3 +87,5 @@ install_to_doc-html_package:
 $(foreach t,install-indep install,post_$(t)_dh_install): install_to_doc-html_package
 
 .PHONY: run_dh_sameversiondep cleanup_manpages install_to_doc-html_package
+
+endif # ifndef dqk_dir
