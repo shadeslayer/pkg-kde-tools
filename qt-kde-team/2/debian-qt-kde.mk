@@ -1,15 +1,20 @@
 ifndef dqk_dir
 
 dqk_dir := $(dir $(lastword $(MAKEFILE_LIST)))
+
+# Include dhmk file
+include $(dqk_dir)dhmk.mk
+
+# For performance reasons skip the rest in the override info mode. The slowdown
+# is mostly caused by $(shell) functions (e.g. dpkg-parsechangelog).
+ifneq ($(dhmk_override_info_mode),yes)
+
 dqk_sourcepkg := $(shell dpkg-parsechangelog | sed -n '/^Source:/{ s/^Source:[[:space:]]*//; p; q }')
 dqk_upstream_version ?= $(shell dpkg-parsechangelog | sed -n '/^Version:/{ s/^Version:[[:space:]]*\(.*\)-.*/\1/g; p; q }')
 dqk_destdir = $(CURDIR)/debian/tmp
 
 # We want to use kde and pkgkde-symbolshelper plugins by default
 dh := --with=kde,pkgkde-symbolshelper $(dh)
-
-# Include dhmk file
-include $(dqk_dir)dhmk.mk
 
 # dqk_disable_policy_check lists distributions for which policy check should be
 # disabled
@@ -88,4 +93,5 @@ $(foreach t,install-indep install,post_$(t)_dh_install): install_to_doc-html_pac
 
 .PHONY: run_dh_sameversiondep cleanup_manpages install_to_doc-html_package
 
+endif # ifneq ($(dhmk_override_info_mode),yes)
 endif # ifndef dqk_dir
