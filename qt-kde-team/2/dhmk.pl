@@ -327,6 +327,8 @@ sub get_override_info {
     }
 
     # Now remove overrides based on the rules file output
+    my $saved_makeflags = $ENV{MAKEFLAGS};
+    delete $ENV{MAKEFLAGS};
     open(my $make, "-|", "make", "-f", $rules_file, "-j1", "-n",
         "--no-print-directory",
         @override_targets,
@@ -340,6 +342,7 @@ sub get_override_info {
     if (!close($make)) {
         die "make (get_override_info) failed with $?";
     }
+    $ENV{MAKEFLAGS} = $saved_makeflags if defined $saved_makeflags;
 
     return \%overrides;
 }
