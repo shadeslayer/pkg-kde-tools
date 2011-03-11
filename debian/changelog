@@ -1,11 +1,11 @@
-pkg-kde-tools (0.11.1) UNRELEASED; urgency=low
+pkg-kde-tools (0.11.1) unstable; urgency=low
 
   * Move most of kde4_flags to qt-kde-team/1/debian-qt-kde.mk as absolute
     majority of them are kde4libs specific anyway. This is done in order to
     avoid cmake 2.8.4 warnings about unused variables and unnecessary
     duplication of configuration.
 
- -- Modestas Vainius <modax@debian.org>  Fri, 11 Mar 2011 14:20:37 +0200
+ -- Modestas Vainius <modax@debian.org>  Fri, 11 Mar 2011 20:25:23 +0200
 
 pkg-kde-tools (0.11.0) unstable; urgency=low
 
