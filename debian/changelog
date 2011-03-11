@@ -1,3 +1,8 @@
+pkg-kde-tools (0.11.1) UNRELEASED; urgency=low
+
+
+ -- Modestas Vainius <modax@debian.org>  Fri, 11 Mar 2011 14:20:37 +0200
+
 pkg-kde-tools (0.11.0) unstable; urgency=low
 
   * dhmk.mk: add a shortcut variable $(overriden_command) for getting full
