@@ -1,3 +1,14 @@
+pkg-kde-tools (0.11.0) unstable; urgency=low
+
+  * dhmk.mk: add a shortcut variable $(overriden_command) for getting full
+    original command line of the overriden command in the override targets.
+  * Some bug fixes and performance improvements for the whole qt-kde-team/2
+    debian/rules build engine.
+  * It's highly recommended for qt-kde-team/2/debian-qt-kde.mk based packages
+    to build-depend on pkg-kde-tools 0.11 now.
+
+ -- Modestas Vainius <modax@debian.org>  Fri, 11 Mar 2011 03:18:56 +0200
+
 pkg-kde-tools (0.10.0) unstable; urgency=low
 
   * Implement a new build debian/rules build engine (dubbed dhmk) for Qt/KDE
