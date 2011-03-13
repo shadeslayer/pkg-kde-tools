@@ -1,5 +1,6 @@
 pkg-kde-tools (0.11.3) UNRELEASED; urgency=low
 
+  * "Innocent" backtick in the echo statement causes packages to FTBFS. Fix it.
 
  -- Modestas Vainius <modax@debian.org>  Sun, 13 Mar 2011 21:33:02 +0200
 

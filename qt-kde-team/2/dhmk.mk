@@ -106,7 +106,7 @@ $(foreach t,$(dhmk_standard_targets),debian/dhmk_$(t)): debian/dhmk_%:
 # Implicitly delegate other targets to debian/dhmk_% ones. Hence the top
 # targets (build, configure, install ...) are still cancellable.
 %: debian/dhmk_%
-	@echo "SUCCESS making standard target `$@'."
+	@echo "-- SUCCESS making standard target '$@'."
 
 .SECONDEXPANSION:
 
