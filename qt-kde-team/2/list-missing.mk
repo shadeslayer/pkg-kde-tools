@@ -19,8 +19,8 @@
 ifdef dqk_dir
 
 list-missing:
-	@if test -d $(dqk_destdir); then \
-	  (cd $(dqk_destdir) && find . -type f -o -type l | grep -v '/DEBIAN/' | sort) > debian/dhmk-install-list; \
+	@if test -d debian/tmp; then \
+	  (cd debian/tmp && find . -type f -o -type l | grep -v '/DEBIAN/' | sort) > debian/dhmk-install-list; \
 	  (for package in $(shell dh_listpackages); do \
 	     (cd debian/$$package && find . -type f -o -type l); \
 	   done; \
@@ -28,7 +28,7 @@ list-missing:
 	   ) | sort -u > debian/dhmk-package-list; \
 	  diff -u debian/dhmk-install-list debian/dhmk-package-list | sed '1,2d' | egrep '^-' || true; \
 	else \
-	  echo "All files were installed into debian/$(dqk_sourcedir)."; \
+	  echo "All files were installed into debian/$(shell dh_listpackages | head -n1)."; \
 	fi
 
 post-clean:
