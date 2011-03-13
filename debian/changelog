@@ -1,9 +1,9 @@
-pkg-kde-tools (0.11.3) UNRELEASED; urgency=low
+pkg-kde-tools (0.11.3) unstable; urgency=low
 
   * "Innocent" backtick in the echo statement causes packages to FTBFS. Fix it.
   * Some tweaks to qt-kde-team/2/list-missing.mk.
 
- -- Modestas Vainius <modax@debian.org>  Sun, 13 Mar 2011 21:33:02 +0200
+ -- Modestas Vainius <modax@debian.org>  Sun, 13 Mar 2011 21:40:03 +0200
 
 pkg-kde-tools (0.11.2) unstable; urgency=low
 
