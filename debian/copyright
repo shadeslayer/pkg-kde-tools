@@ -55,6 +55,12 @@ The follwing license applies to:
   |  along with this package; if not, write to the Free Software
   |  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 
+  - qt-kde-team/2/list-missing.mk
+
+  Copyright © 2003 Colin Walters <walters@debian.org>
+  Copyright © 2005-2011 Jonas Smedegaard <dr@jones.dk>
+  Copyright © 2010-2011 Modestas Vainius <modax@debian.org>
+
   - datalib/Dpkg/*
 
   Copyright © 2007 Raphaël Hertzog <hertzog@debian.org>
@@ -98,6 +104,7 @@ The follwing license applies to:
 
   On Debian systems, the complete text of the GNU General
   Public License can be found in `/usr/share/common-licenses/GPL-1'
+
 
 The Debian packaging is:
 
