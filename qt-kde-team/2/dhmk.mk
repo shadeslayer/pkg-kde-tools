@@ -97,7 +97,7 @@ $(foreach t,$(dhmk_standard_targets),debian/dhmk_$(t)): debian/dhmk_%:
 	$(if $(filter $*,$(dhmk_stamped_targets)),touch $@)
 	$(if $(filter clean,$*),rm -f $(dhmk_rules_mk)\
 	    $(foreach t,$(dhmk_stamped_targets),debian/dhmk_$(t)))
-	# "$*" is complete
+	# "$*" target is done
 
 .PHONY: $(foreach t,$(dhmk_standard_targets),dhmk_run_$(t)_commands \
     pre_$(t) post_$(t) \
@@ -106,7 +106,7 @@ $(foreach t,$(dhmk_standard_targets),debian/dhmk_$(t)): debian/dhmk_%:
 # Implicitly delegate other targets to debian/dhmk_% ones. Hence the top
 # targets (build, configure, install ...) are still cancellable.
 %: debian/dhmk_%
-	@echo "$@ action has been completed successfully."
+	@echo "SUCCESS making standard target `$@'."
 
 .SECONDEXPANSION:
 
