@@ -26,17 +26,6 @@ DEB_KDE_LINK_WITH_AS_NEEDED ?= yes
 # Our packages are parallel safe
 DEB_BUILD_PARALLEL = yes
 
-# Include default KDE 4 cmake configuration variables
-include $(DEB_PKG_KDE_MAKEFILES)/variables.mk
-
-# Add support for pkgkde-symbolshelper by default
-include $(DEB_PKG_KDE_MAKEFILES)/cdbs/symbolshelper.mk
-
-# Since cmake 2.6.2 or higher is required from now on, enable
-# relative paths to get more ccache hits.
-# NOTE: might not work with vanilla 2.6.2, only with Debian's one.
-DEB_CMAKE_KDE4_FLAGS += -DCMAKE_USE_RELATIVE_PATHS=ON
-
 # Readd old (<< 0.11.1) flags from the kde4_flags here. Absolute majority of
 # those are kde4libs specific but add them anyway in order to avoid accidental
 # breakage in the old packaging (esp. kde4libs).
@@ -52,6 +41,17 @@ DEB_CMAKE_KDE4_FLAGS += \
     -DLIB_INSTALL_DIR=/usr/lib \
     -DSYSCONF_INSTALL_DIR=/etc \
     -DLIBKDEINIT_INSTALL_DIR:PATH=/usr/lib/kde4/libkdeinit
+
+# Include default KDE 4 cmake configuration variables
+include $(DEB_PKG_KDE_MAKEFILES)/variables.mk
+
+# Add support for pkgkde-symbolshelper by default
+include $(DEB_PKG_KDE_MAKEFILES)/cdbs/symbolshelper.mk
+
+# Since cmake 2.6.2 or higher is required from now on, enable
+# relative paths to get more ccache hits.
+# NOTE: might not work with vanilla 2.6.2, only with Debian's one.
+DEB_CMAKE_KDE4_FLAGS += -DCMAKE_USE_RELATIVE_PATHS=ON
 
 # Pass standard KDE 4 flags to cmake via appropriate CDBS variable
 # (DEB_CMAKE_EXTRA_FLAGS)
