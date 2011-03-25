@@ -1,10 +1,10 @@
-pkg-kde-tools (0.11.4) UNRELEASED; urgency=low
+pkg-kde-tools (0.11.4) unstable; urgency=low
 
   * qt-kde-team/1: set old kde4 flags before including variables.mk hence some
     hacks (like DEB_CONFIG_INSTALL_DIR stuff) will work as before.
     (Closes: #618200)
 
- -- Modestas Vainius <modax@debian.org>  Fri, 25 Mar 2011 23:24:21 +0200
+ -- Modestas Vainius <modax@debian.org>  Fri, 25 Mar 2011 23:42:22 +0200
 
 pkg-kde-tools (0.11.3) unstable; urgency=low
 
