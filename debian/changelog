@@ -1,3 +1,8 @@
+pkg-kde-tools (0.12.0~pre1) UNRELEASED; urgency=low
+
+
+ -- Modestas Vainius <modax@debian.org>  Fri, 25 Mar 2011 23:47:26 +0200
+
 pkg-kde-tools (0.11.4) unstable; urgency=low
 
   * qt-kde-team/1: set old kde4 flags before including variables.mk hence some
