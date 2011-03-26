@@ -1,2 +1,3 @@
+cmake usr/share/pkg-kde-tools/
 makefiles usr/share/pkg-kde-tools/
 qt-kde-team usr/share/pkg-kde-tools/
