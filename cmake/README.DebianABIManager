@@ -80,13 +80,13 @@ of custom debian/control fields.
 
 * X-Debian-ABI - specifies a custom ABI sequence number to be assigned for the
   library in question. Its presence tells DebianABIManager to process the
-  package so all unstable-BC must have it. The value must be a non-negative
-  integer. Whenever a new unstable-BC library is introduced or upstream
-  changes SONAME of the existing one, the value of this field should be set to
-  0. In that case, the script won't change SONAME but only version symbols of
-  the library. Whenever the library breaks BC without changing SONAME, bump
-  this value. Then the script will change both SONAME and symbol versions of
-  the library.
+  package so all unstable-BC library packages must have it. The value must be a
+  non-negative integer. Whenever a new unstable-BC library is introduced or
+  upstream changes SONAME of the existing one, the value of this field should
+  be set to 0. In that case, the script won't change SONAME but only version
+  symbols of the library. Whenever the library breaks BC without changing
+  SONAME, bump this value. Then the script will change both SONAME and symbol
+  versions of the library.
 
 * X-CMake-Target - typically DebianABIManager should be able to guess CMake
   target of the library from the package name. However, sometimes it may fail
