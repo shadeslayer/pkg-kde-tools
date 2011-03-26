@@ -1,0 +1,3 @@
+@debabi_symver@ {
+    global: *;
+};

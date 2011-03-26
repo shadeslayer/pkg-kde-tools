@@ -1,0 +1,162 @@
+Glossary
+--------
+
+* BC - Binary Compatibility.
+
+* BIC - Binary InCompatible.
+
+* Undefined (UNDEF) symbol - a symbol reference. It will be resolved to
+  the implementation/definition in the external shared library by dynamic
+  linker.
+
+* Unstable-BC library - a library which is prone to break BC without SONAME
+  change.
+
+Background
+----------
+
+1) Unstable-BC libraries should get all symbols versioned from the beginning.
+   That's because undefined unversioned symbols may bind to any symbol of the
+   same name in any library which dynamic linker (recursively) loaded [1]:
+
+   | In case only the object file with the reference does not use versioning
+   | but the object with the definition does, then the reference only matches
+   | the base definition. [ ...] If there is no symbol definition with such an
+   | version index and there is exactly one version for which this symbol is
+   | defined, then this version is accepted.
+
+   It does not matter if a real symbol in the library is versioned or not. The
+   first same-name real symbol seen by dynamic linker will be bound to the
+   unversioned UNDEF. It means that developers basically have no control over
+   this process UNDEF symbol is unversioned.
+
+2) Unlike unversioned (Base) symbols, versioned UNDEF symbols have version
+   and originating library information assigned to them. According to [1]:
+
+   | The last case is if the object with the references uses symbol
+   | versions but the object with the definitions has none.  In this case a
+   | matching symbol is accepted unless the object's name matches the one
+   | in the Elfxx_Verneed entry.  In the latter case this is a fatal error.
+
+  However, I determined that this is not the case since middle 1999 [2]. This
+  situation is not a fatal error but merely a warning [3]. However, I'm pretty
+  sure that it's a bug in the dynamic linker which may get fixed one day.
+  Respective assert() is in place [4] but it does not fire in release builds.
+
+3) Versioned symbols cannot be easily "moved" from one library to another down
+   the library dependency tree without breakage (as it was done e.g. with
+   "libkutils4 -> libkcmutils4 libkemoticons4 libkidletime4 libkprintutils4"
+   split). But this should be a non-issue for unstable-BC libraries.
+
+Having in mind the points 1 and 2 above, all symbols in the unstable-BC
+libraries should get a unique-per-ABI version. As soon as upstream breaks BC
+without bumping SOVERSION, SONAME should be bumped package name should be
+changed. However, initially, it is better to keep original upstream SONAME.
+This strategy allows to preserve some compatibility with the rest of the world
+as long as upstream does not break BC without bumping SOVERSION (i.e. plays
+nice). In particular:
+
+a) external binaries (which supposedly have unversioned UNDEF symbols as
+   pushed by upstream, see point 1) will work with unstable-BC libraries as
+   packaged by Debian;
+
+b) binaries with versioned UNDEF symbols (i.e. linked against our unstable-
+   BC libraries) will work with unstable-BC libraries as built from upstream
+   sources (kdesrc-build) or packaged by other distros which do not use
+   incompatible symbol versioning. That's because of point 2 and as long as
+   the linker bug is not fixed.
+
+BC handling with DebianABIManager
+---------------------------------
+
+In order to minimize patching of upstream sources, tasks of SONAME (SOVERSION)
+bumping and symbol versioning (as described above) are handled by
+DebianABIManager.cmake script [5] on-the-fly.
+
+DebianABIManager is capable of managing only a single library per package.
+Morever, the package must be properly named according to Debian library naming
+standards (as enforced by lintian). DebianABIManager is configured via a couple
+of custom debian/control fields.
+
+* X-Debian-ABI - specifies a custom ABI sequence number to be assigned for the
+  library in question. Its presence tells DebianABIManager to process the
+  package so all unstable-BC must have it. The value must be a non-negative
+  integer. Whenever a new unstable-BC library is introduced or upstream
+  changes SONAME of the existing one, the value of this field should be set to
+  0. In that case, the script won't change SONAME but only version symbols of
+  the library. Whenever the library breaks BC without changing SONAME, bump
+  this value. Then the script will change both SONAME and symbol versions of
+  the library.
+
+* X-CMake-Target - typically DebianABIManager should be able to guess CMake
+  target of the library from the package name. However, sometimes it may fail
+  to do so (e.g. when upstream changed OUTPUT_NAME of the target or package
+  name is non-standard). Then speficy this field and set it to the proper CMake
+  target name for the library.
+
+In order to use DebianABIManager in the source package, add the following line
+near the bottom of the main CMakeLists.txt (recommended patch name -
+enable_debianabimanager.diff) and pass -DCMAKE_BUILD_TYPE=Debian to cmake
+(the latter is implicit for KDE packages in Debian). Otherwise,
+DebianABIManager won't have any effect.
+
+include(/usr/share/pkg-kde-tools/cmake/DebianABIManager.cmake)
+
+Internally, the script sets "ABI_<upstream SOVERSION>_<X-Debian-ABI>" version
+for all symbols of the library (via --version-script linker option). In addition,
+if X-Debian-ABI value is greater than 0, SOVERSION of the library target will
+be modified by appending the string "abi<X-Debian-ABI>" to it. As this
+effectively changes the SONAME of the library, make sure to adjust package name
+and install file accordingly.
+
+Examples
+--------
+
+1) debian/control:
+
+Package: libfoo4
+X-Debian-ABI: 0
+
+Symbols of the library (CMake target "foo") with SONAME "libfoo.so.4" will be
+versioned as "ABI_4_0". SONAME is kept unchanged from original.
+
+2) debian/control:
+
+Package: libbar5abi1
+X-Debian-ABI: 1
+
+SONAME of the library (CMake target "bar") will be changed from "libbar.so.5"
+to "libbar.so.5abi1". Symbols will be versioned as "ABI_5_1".
+
+3) debian/control:
+
+Package: libfoobaz2abi10
+X-Debian-ABI: 10
+X-CMake-Target: foobazlib
+
+SONAME of the library (CMake target "foobazlib") will be changed from "libfoobaz.so.2"
+to "libfoobaz.so.2abi10". Symbols will be versioned as "ABI_2_10".
+
+KDE Software Compiliation 4.6
+-----------------------------
+
+DebianABIManager is used for KDE SC packaging since 4.6. Therefore, all
+unstable-BC library packages that kept BC throughout 4.4 -> 4.6 cycle should
+be assigned "X-Debian-ABI: 0" field. Otherwise, if the library broke BC but
+kept the SONAME, X-Debian-ABI should be set to 1 and packages should be renamed
+by appending "abi1" to their name (discarding previous [a-f] suffixes if any).
+
+As 4.6 is a transitional release from unversioned to versioned symbols, it
+might make sense to add "Breaks" against old libs (<< 4:4.6) to all future
+"abi1" packages. That's to avoid weird crashes if both old unversioned and new
+versioned BIC libraries end up getting loaded in the same process space. While
+it's possible, it's also highly unlikely because unstable-BC libs are not very
+popular. So let's not do this "Breaks" stuff for first release.
+
+[1] http://www.akkadia.org/drepper/symbol-versioning
+[2] http://sourceware.org/git/?p=glibc.git;a=commit;h=9a8fcca0b33c26759134a545ac45251df53418a3
+[3] <apppath>: <libpath>: no version information available (required by <apppath>)
+[4] http://sourceware.org/git/?p=glibc.git;a=blob;f=elf/dl-lookup.c;hb=glibc-2.13#l168
+[5] /usr/share/pkg-kde-tools/cmake/DebianABIManager.cmake
+
+ -- Modestas Vainius <modax@debian.org>  Fri, 25 Mar 2011 23:47:26 +0200
