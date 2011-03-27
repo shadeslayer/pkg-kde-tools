@@ -51,11 +51,17 @@ sub configure {
     my $this=shift;
     my @flags = $this->get_kde4_flags();
 
-    # Skip RPATH if kdelibs5-dev is older than 4:4.4.0
     my $kdever = `dpkg-query -f='\${Version}' -W kdelibs5-dev 2>/dev/null`;
-    if ($kdever && Dpkg::Version::version_compare($kdever, "4:4.4.0") < 0)
-    {
-        push @flags, "-DCMAKE_SKIP_RPATH:BOOL=ON";
+    if ($kdever) {
+        if (Dpkg::Version::version_compare($kdever, "4:4.4.0") < 0) {
+            # Skip RPATH if kdelibs5-dev is older than 4:4.4.0
+            push @flags, "-DCMAKE_SKIP_RPATH:BOOL=ON";
+        } elsif (Dpkg::Version::version_compare($kdever, "4:4.6.1") < 0) {
+            # Manually set ENABLE_LIBKDEINIT_RUNPATH:BOOL=ON if kdelibs5-dev is
+            # older than 4:4.6.1. Later kdelibs5-dev revisions enable this
+            # automatically whenever CMAKE_BUILD_TYPE is set to Debian (default)
+            push @flags, "-DENABLE_LIBKDEINIT_RUNPATH:BOOL=ON";
+        }
     }
 
     return $this->SUPER::configure(@flags, @_);

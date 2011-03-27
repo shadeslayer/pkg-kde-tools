@@ -14,6 +14,13 @@ DEB_KDELIBS5_DEV_VER_OLD := $(shell dpkg --compare-versions $(DEB_KDELIBS5_DEV_V
 ifeq (yes,$(DEB_KDELIBS5_DEV_VER_OLD))
     DEB_CMAKE_KDE4_FLAGS += -DCMAKE_SKIP_RPATH:BOOL=ON
 endif
+# Manually set ENABLE_LIBKDEINIT_RUNPATH:BOOL=ON if kdelibs5-dev is
+# older than 4:4.6.1. Later kdelibs5-dev revisions enable this
+# automatically whenever CMAKE_BUILD_TYPE is set to Debian (default)
+DEB_KDELIBS5_DEV_VER_OLD := $(shell dpkg --compare-versions $(DEB_KDELIBS5_DEV_VER) lt 4:4.6.1 2>/dev/null && echo yes)
+ifeq (yes,$(DEB_KDELIBS5_DEV_VER_OLD))
+    DEB_CMAKE_KDE4_FLAGS += -DENABLE_LIBKDEINIT_RUNPATH:BOOL=ON
+endif
 
 # Set the DEB_KDE_LINK_WITH_AS_NEEDED to yes to enable linking
 # with --as-needed (off by default)
