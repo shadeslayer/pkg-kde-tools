@@ -4,6 +4,8 @@ pkg-kde-tools (0.12.0~pre4) UNRELEASED; urgency=low
     /usr/share/doc/pkg-kde-tools/README.DebianABIManager for more information.
   * Since kdelibs5-dev 4.6.1, ENABLE_LIBKDEINIT_RUNPATH defaults to ON whenever
     CMAKE_BUILD_TYPE is Debian.
+  * Fix a typo in qt-kde-team/2/library-packages.mk: makes
+    libpkgs_addsubst_allLibraries work.
 
  -- Modestas Vainius <modax@debian.org>  Fri, 25 Mar 2011 23:47:26 +0200
 

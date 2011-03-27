@@ -13,7 +13,7 @@ libpkgs_addsubst_allLibraries:
 	echo 'allLibraries=$(libpkgs_allLibraries_subst)' | \
 		tee -a $(foreach pkg,$(libpkgs_addsubst_allLibraries),debian/$(pkg).substvars) > /dev/null
 
-$(libpkgs_subst_hooks): libpkgs_add_allLibraries
+$(libpkgs_subst_hooks): libpkgs_addsubst_allLibraries
 .PHONY: libpkgs_addsubst_allLibraries
 
 endif
