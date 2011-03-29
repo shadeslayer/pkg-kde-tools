@@ -68,7 +68,7 @@ debian/stamp-man-pages:
 		> debian/man/out/`basename $$f .man`.`head -n1 $$f | awk '{print $$NF}'`; \
 	done
 	touch debian/stamp-man-pages
-$(foreach t,binary-arch binary,post_$(t)_dh_auto_build): debian/stamp-man-pages
+$(foreach t,build-arch build-indep build,post_$(t)_dh_auto_build): debian/stamp-man-pages
 
 cleanup_manpages:
 	rm -rf debian/man/out

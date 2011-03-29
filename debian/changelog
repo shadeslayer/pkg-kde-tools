@@ -6,6 +6,8 @@ pkg-kde-tools (0.12.0~pre5) UNRELEASED; urgency=low
     CMAKE_BUILD_TYPE is Debian.
   * Fix a typo in qt-kde-team/2/library-packages.mk: makes
     libpkgs_addsubst_allLibraries work.
+  * qt-kde-team/2/debian-qt-kde.mk: attach debian/stamp-man-pages properly.
+    dh_auto_build is executed when build* targets are run, not binary*.
 
  -- Modestas Vainius <modax@debian.org>  Fri, 25 Mar 2011 23:47:26 +0200
 
