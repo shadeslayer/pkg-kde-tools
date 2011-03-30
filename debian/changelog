@@ -1,4 +1,4 @@
-pkg-kde-tools (0.12.0~pre7) unstable; urgency=low
+pkg-kde-tools (0.12.0~pre7) UNRELEASED; urgency=low
 
   * Implement and add DebianABIManager. Refer to
     /usr/share/doc/pkg-kde-tools/README.DebianABIManager for more information.
