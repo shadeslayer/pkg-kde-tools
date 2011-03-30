@@ -1,4 +1,4 @@
-pkg-kde-tools (0.12.0~pre7) UNRELEASED; urgency=low
+pkg-kde-tools (0.12.0~pre8) UNRELEASED; urgency=low
 
   * Implement and add DebianABIManager. Refer to
     /usr/share/doc/pkg-kde-tools/README.DebianABIManager for more information.
@@ -13,7 +13,7 @@ pkg-kde-tools (0.12.0~pre7) UNRELEASED; urgency=low
   * Switch debian/rules engine to home-grown dhmk. This might help to
     detect regressions and might ease testing and development process.
 
- -- Modestas Vainius <modax@debian.org>  Wed, 30 Mar 2011 16:32:12 +0300
+ -- Modestas Vainius <modax@debian.org>  Thu, 31 Mar 2011 00:51:03 +0300
 
 pkg-kde-tools (0.11.4) unstable; urgency=low
 
