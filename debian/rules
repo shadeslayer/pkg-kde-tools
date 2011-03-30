@@ -1,4 +1,3 @@
 #!/usr/bin/make -f
 
-%:
-	dh $@
+include qt-kde-team/2/dhmk.mk
