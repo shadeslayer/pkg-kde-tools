@@ -8,6 +8,8 @@ pkg-kde-tools (0.12.0~pre7) UNRELEASED; urgency=low
     libpkgs_addsubst_allLibraries work.
   * qt-kde-team/2/debian-qt-kde.mk: attach debian/stamp-man-pages properly.
     dh_auto_build is executed when build* targets are run, not binary*.
+  * Rename 'overriden_command' to 'overridden_command' (which is correct
+    spelling). But keep 'overriden_command' as an alias for now.
 
  -- Modestas Vainius <modax@debian.org>  Wed, 30 Mar 2011 16:32:12 +0300
 

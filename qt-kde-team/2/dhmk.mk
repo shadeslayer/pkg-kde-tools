@@ -37,9 +37,12 @@ set_command_options = $(foreach t,$(filter $(or $3,%),$(dhmk_standard_targets)),
 # $(call butfirstword,TEXT,DELIMITER)
 butfirstword = $(patsubst $(firstword $(subst $2, ,$1))$2%,%,$1)
 
-# Use this to retrieve full command line to the overriden command in the
+# Use this to retrieve full command line to the overridden command in the
 # override_% targets
-overriden_command = $($(DHMK_TARGET)_$(call butfirstword,$@,_)) $(DHMK_OPTIONS)
+overridden_command = $($(DHMK_TARGET)_$(call butfirstword,$@,_)) $(DHMK_OPTIONS)
+# Keep $(overriden_command) alias to preserve compatibility with debian/rules which
+# were written for pkg-kde-tools << 0.12.
+overriden_command = $(overridden_command)
 
 # This makefile is not parallel compatible by design (e.g. command chains
 # below)
