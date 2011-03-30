@@ -73,10 +73,10 @@ In order to minimize patching of upstream sources, tasks of SONAME (SOVERSION)
 bumping and symbol versioning (as described above) are handled by
 DebianABIManager.cmake script [5] on-the-fly.
 
-DebianABIManager is capable of managing only a single library per package.
-Morever, the package must be properly named according to Debian library naming
-standards (as enforced by lintian). DebianABIManager is configured via a couple
-of custom debian/control fields.
+DebianABIManager is capable of managing only a single library per binary
+package.  Morever, the package must be properly named according to Debian
+library naming standards (as enforced by lintian). DebianABIManager is
+configured via a couple of custom debian/control fields.
 
 * X-Debian-ABI - specifies a custom ABI sequence number to be assigned for the
   library in question. Its presence tells DebianABIManager to process the
