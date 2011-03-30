@@ -80,10 +80,15 @@ if (CMAKE_BUILD_TYPE AND CMAKE_BUILD_TYPE STREQUAL "Debian")
             if (debabi_target)
                 set(debabi_${debabi_pkg}_CMake-Target ${debabi_target}) # for success log
 
-                # Do not add soversion suffix if ABI is 0
+                # Do not add SOVERSION / VERSION suffix if ABI is 0
                 if (${debabi_${debabi_pkg}_Debian-ABI} GREATER 0)
                     set(debabi_soversion "${debabi_origsoversion}${DEBABI_VERSION_PREFIX}${debabi_${debabi_pkg}_Debian-ABI}")
                     set_target_properties(${debabi_target} PROPERTIES SOVERSION "${debabi_soversion}")
+                    get_target_property(debabi_version ${debabi_target} VERSION)
+                    if (debabi_version)
+                        set(debabi_version "${debabi_version}.${DEBABI_VERSION_PREFIX}${debabi_${debabi_pkg}_Debian-ABI}")
+                        set_target_properties(${debabi_target} PROPERTIES VERSION "${debabi_version}")
+                    endif (debabi_version)
                 endif (${debabi_${debabi_pkg}_Debian-ABI} GREATER 0)
 
                 # Generate symbol version. Do it always even if ABI is 0. So ABI_4_0, ABI_4_1, ...
@@ -117,8 +122,9 @@ if (CMAKE_BUILD_TYPE AND CMAKE_BUILD_TYPE STREQUAL "Debian")
         message("-------------------------------------------------------------------")
         foreach (debabi_pkg ${debabi_okpkgs})
             get_target_property(debabi_soversion ${debabi_${debabi_pkg}_CMake-Target} SOVERSION)
+            get_target_property(debabi_version ${debabi_${debabi_pkg}_CMake-Target} VERSION)
             get_target_property(debabi_symver ${debabi_${debabi_pkg}_CMake-Target} DEBABI_SYMVER)
-            message("   * ${debabi_pkg} - SOVERSION: ${debabi_soversion}; SYMVER: ${debabi_symver}")
+            message("   * ${debabi_pkg} - SOVERSION: ${debabi_soversion}; VERSION: ${debabi_version}; SYMVER: ${debabi_symver}")
         endforeach (debabi_pkg ${debabi_okpkgs})
     endif (debabi_failedpkgs)
 endif (CMAKE_BUILD_TYPE AND CMAKE_BUILD_TYPE STREQUAL "Debian")

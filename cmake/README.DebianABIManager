@@ -104,10 +104,11 @@ include(/usr/share/pkg-kde-tools/cmake/DebianABIManager.cmake)
 
 Internally, the script sets "ABI_<upstream SOVERSION>_<X-Debian-ABI>" version
 for all symbols of the library (via --version-script linker option). In addition,
-if X-Debian-ABI value is greater than 0, SOVERSION of the library target will
-be modified by appending the string "abi<X-Debian-ABI>" to it. As this
-effectively changes the SONAME of the library, make sure to adjust package name
-and install file accordingly.
+if X-Debian-ABI value is greater than 0, SOVERSION and VERSION properties of the
+library target will be modified by appending strings "abi<X-Debian-ABI>" and
+".abi<X-Debian-ABI>" respectively to them. As this effectively changes the
+SONAME and filename of the library, make sure to adjust package name and
+install file accordingly.
 
 Examples
 --------
@@ -118,7 +119,8 @@ Package: libfoo4
 X-Debian-ABI: 0
 
 Symbols of the library (CMake target "foo") with SONAME "libfoo.so.4" will be
-versioned as "ABI_4_0". SONAME is kept unchanged from original.
+versioned as "ABI_4_0". SONAME and library filename are kept unchanged from
+original.
 
 2) debian/control:
 
@@ -126,7 +128,8 @@ Package: libbar5abi1
 X-Debian-ABI: 1
 
 SONAME of the library (CMake target "bar") will be changed from "libbar.so.5"
-to "libbar.so.5abi1". Symbols will be versioned as "ABI_5_1".
+to "libbar.so.5abi1". Original library filename will get ".abi1" suffix due to
+modified VERSION property. Symbols will be versioned as "ABI_5_1".
 
 3) debian/control:
 
@@ -134,8 +137,10 @@ Package: libfoobaz2abi10
 X-Debian-ABI: 10
 X-CMake-Target: foobazlib
 
-SONAME of the library (CMake target "foobazlib") will be changed from "libfoobaz.so.2"
-to "libfoobaz.so.2abi10". Symbols will be versioned as "ABI_2_10".
+SONAME of the library (CMake target "foobazlib") will be changed from
+"libfoobaz.so.2" to "libfoobaz.so.2abi10". Original library filename will get
+".abi10" suffix due to modified VERSION property. Symbols will be versioned as
+"ABI_2_10".
 
 KDE Software Compiliation 4.6
 -----------------------------
@@ -159,4 +164,4 @@ popular. So let's not do this "Breaks" stuff for first release.
 [4] http://sourceware.org/git/?p=glibc.git;a=blob;f=elf/dl-lookup.c;hb=glibc-2.13#l168
 [5] /usr/share/pkg-kde-tools/cmake/DebianABIManager.cmake
 
- -- Modestas Vainius <modax@debian.org>  Fri, 25 Mar 2011 23:47:26 +0200
+ -- Modestas Vainius <modax@debian.org>  Wed, 30 Mar 2011 16:24:17 +0300
