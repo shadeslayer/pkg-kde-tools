@@ -37,19 +37,15 @@ endif
 # Generate strict local shlibs if requested
 ifneq (,$(libpkgs_gen_strict_local_shlibs))
 
+libpkgs_gen_strict_local_shlibs: libpkgs_re = $(subst \|_ ,\|,$(patsubst %,%\|_,$(libpkgs_gen_strict_local_shlibs)))
 libpkgs_gen_strict_local_shlibs:
-	for pkg in $(libpkgs_gen_strict_local_shlibs); do \
-	    if test -e debian/$$pkg/DEBIAN/shlibs; then \
-	        echo "Generating strict local shlibs for the '$$pkg' package ..."; \
-		    sed 's/>=[^)]*/= $(libpkgs_binver)/' debian/$$pkg/DEBIAN/shlibs >> debian/shlibs.local; \
-	    fi; \
-	done
+	set -e; \
+	if [ -n "`ls debian/*.substs 2>/dev/null`" ]; then \
+	    echo "Generating strict local shlibs on packages: $(libpkgs_gen_strict_local_shlibs)"; \
+	    sed -i '/^shlibs:Depends=/{ s/\(^shlibs:Depends=[[:space:]]*\|,[[:space:]]*\)\($(libpkgs_re)\)[[:space:]]*([[:space:]]*>=[^)]\+)/\1\2 (= $(libpkgs_binver))/g }' debian/*.substs; \
+    fi
 
-libpkgs_clean_local_shlibs:
-	rm -f debian/shlibs.local
-
-$(foreach t,binary-arch binary,post_$(t)_dh_makeshlibs): libpkgs_gen_strict_local_shlibs
-post_clean: libpkgs_clean_local_shlibs
-.PHONY: libpkgs_gen_strict_local_shlibs libpkgs_clean_local_shlibs
+$(foreach t,binary-arch binary,post_$(t)_dh_shlibdeps): libpkgs_gen_strict_local_shlibs
+.PHONY: libpkgs_gen_strict_local_shlibs
 
 endif
