@@ -40,9 +40,9 @@ ifneq (,$(libpkgs_gen_strict_local_shlibs))
 libpkgs_gen_strict_local_shlibs: libpkgs_re = $(subst \|_ ,\|,$(patsubst %,%\|_,$(libpkgs_gen_strict_local_shlibs)))
 libpkgs_gen_strict_local_shlibs:
 	set -e; \
-	if [ -n "`ls debian/*.substs 2>/dev/null`" ]; then \
+	if [ -n "`ls debian/*.substvars 2>/dev/null`" ]; then \
 	    echo "Generating strict local shlibs on packages: $(libpkgs_gen_strict_local_shlibs)"; \
-	    sed -i '/^shlibs:Depends=/{ s/\(^shlibs:Depends=[[:space:]]*\|,[[:space:]]*\)\($(libpkgs_re)\)[[:space:]]*([[:space:]]*>=[^)]\+)/\1\2 (= $(libpkgs_binver))/g }' debian/*.substs; \
+	    sed -i '/^shlibs:[^=]\+=/{ s/\(^shlibs:[^=]\+=[[:space:]]*\|,[[:space:]]*\)\($(libpkgs_re)\)[[:space:]]*([[:space:]]*>=[^)]\+)/\1\2 (= $(libpkgs_binver))/g }' debian/*.substvars; \
     fi
 
 $(foreach t,binary-arch binary,post_$(t)_dh_shlibdeps): libpkgs_gen_strict_local_shlibs
