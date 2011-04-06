@@ -1,4 +1,4 @@
-pkg-kde-tools (0.12.0~pre10) UNRELEASED; urgency=low
+pkg-kde-tools (0.12.0~pre11) UNRELEASED; urgency=low
 
   * Implement and add DebianABIManager. Refer to
     /usr/share/doc/pkg-kde-tools/README.DebianABIManager for more information.
@@ -15,7 +15,7 @@ pkg-kde-tools (0.12.0~pre10) UNRELEASED; urgency=low
   * qt-kde-team/2/library-packages.mk: libpkgs_gen_strict_local_shlibs no
     longer depends on the presence of the respective DEBIAN/*/shlibs.
 
- -- Modestas Vainius <modax@debian.org>  Wed, 06 Apr 2011 10:31:45 +0300
+ -- Modestas Vainius <modax@debian.org>  Wed, 06 Apr 2011 15:00:45 +0300
 
 pkg-kde-tools (0.11.4) unstable; urgency=low
 
