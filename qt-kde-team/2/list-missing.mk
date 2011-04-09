@@ -31,7 +31,7 @@ list-missing:
 	  echo "All files were installed into debian/$(shell dh_listpackages | head -n1)."; \
 	fi
 
-post-clean:
+post_clean:
 	rm -f debian/dhmk-install-list debian/dhmk-package-list
 
 .PHONY: list-missing
