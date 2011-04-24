@@ -90,7 +90,7 @@ build-stamp: builddir/Makefile
 #!/usr/bin/make -f
 
 %:
-	dh --with kde $@
+	dh $@ --with kde $@
 ------------------------------
 
 * A more complicated KDE package using dh. Additional -DSOME_FLAG is passed to
@@ -103,5 +103,5 @@ override_dh_auto_configure:
 	dh_auto_configure --buildsystem=kde -- -DSOME_FLAG=some_value
 
 %:
-	dh --with quilt,kde $@
+	dh $@ --with quilt,kde
 ------------------------------

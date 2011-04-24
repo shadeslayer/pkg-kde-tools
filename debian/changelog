@@ -14,6 +14,7 @@ pkg-kde-tools (0.12.0~pre13) UNRELEASED; urgency=low
     detect regressions and might ease testing and development process.
   * qt-kde-team/2/library-packages.mk: libpkgs_gen_strict_local_shlibs no
     longer depends on the presence of the respective DEBIAN/*/shlibs.
+  * Fix dh examples in README.Debian to be dh compat=8 compatible.
 
  -- Modestas Vainius <modax@debian.org>  Thu, 07 Apr 2011 01:15:38 +0300
 
