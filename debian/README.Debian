@@ -90,7 +90,7 @@ build-stamp: builddir/Makefile
 #!/usr/bin/make -f
 
 %:
-	dh $@ --with kde $@
+	dh $@ --with kde
 ------------------------------
 
 * A more complicated KDE package using dh. Additional -DSOME_FLAG is passed to
