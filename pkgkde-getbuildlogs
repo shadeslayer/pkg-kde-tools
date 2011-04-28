@@ -207,7 +207,9 @@ sub download_logs {
     if (my $response = $browser->request($request)) {
 	error "unable to access log index at URL $url: ".$response->status_line
 	    unless $response->is_success();
-	my $linkextor = HTML::LinkExtor->new(undef, "https://buildd.debian.org/");
+	my $urlbase = $url;
+	$urlbase =~ s,[^/]*$,,;
+	my $linkextor = HTML::LinkExtor->new(undef, $urlbase);
 	$linkextor->parse($response->content());
 	if (my @links = grep { $_->[0] eq "a" } $linkextor->links()) {
 	    @links = map { shift @{$_}; +{ @{$_} }->{href} } @links;
@@ -218,7 +220,7 @@ sub download_logs {
 	    # Collect links we need to fetch
 	    foreach my $link (@links) {
 		# Check if it is the link we need
-		if ($link =~ m,/fetch\.cgi(\?[^/]+)$,) {
+		if ($link =~ m,/fetch\.(cgi|php)(\?[^/]+)$,) {
 		    # We might need to filter out links based on the arch and
 		    # version we need
 		    my $loguri = URI->new($link);

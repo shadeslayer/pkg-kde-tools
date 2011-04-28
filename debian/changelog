@@ -1,5 +1,6 @@
 pkg-kde-tools (0.12.1) UNRELEASED; urgency=low
 
+  * pkgkde-getbuildlogs: fix fetching of last logs.
 
  -- Modestas Vainius <modax@debian.org>  Thu, 28 Apr 2011 11:15:15 +0300
 
