@@ -1,9 +1,9 @@
-pkg-kde-tools (0.12.1) UNRELEASED; urgency=low
+pkg-kde-tools (0.12.1) unstable; urgency=low
 
   * pkgkde-getbuildlogs: fix fetching of last logs.
   * pkgkde-getbuildlogs: assume logs are in UTF-8. Fixes perl warning.
 
- -- Modestas Vainius <modax@debian.org>  Thu, 28 Apr 2011 11:15:15 +0300
+ -- Modestas Vainius <modax@debian.org>  Mon, 02 May 2011 00:36:31 +0300
 
 pkg-kde-tools (0.12.0) unstable; urgency=low
 
