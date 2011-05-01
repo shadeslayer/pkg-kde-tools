@@ -152,6 +152,7 @@ sub fetch_log {
 		}
 	    } else {
 		$ok = 1;
+		binmode($tmpfile2, ":utf8");
 	    }
 	    if ($ok) {
 		open($tmpfile1, "<:utf8", $tmpfile1->filename);
