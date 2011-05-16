@@ -1,5 +1,6 @@
 pkg-kde-tools (0.12.2) UNRELEASED; urgency=low
 
+  * pkgkde-vcs tag: allow 'stable' in the changelog distribution field.
 
  -- Modestas Vainius <modax@debian.org>  Tue, 17 May 2011 02:16:16 +0300
 
