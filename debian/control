@@ -45,3 +45,30 @@ Description: various packaging tools and scripts for KDE Applications
  NOTE: since this package is cumulative, it does not depend on the packages it
  provides helpers for. I.e. you still need to explicitly build depend on
  debhelper or cdbs in your packages.
+
+Package: libdlrestrictions1
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: library that implements library compatibility checks for dlopen()
+ This package provides a DLRestrictions library that can be used to check
+ compatibility of the external shared library (or plugin) against other
+ libraries currently loaded in the global symbol object. It might help to avoid
+ symbol clashes and provide means for graceful failure detection in advance
+ before the first dlsym() call. Otherwise, usage of incompatible library might
+ result in crashes or other unpredictable failures of the application.
+ .
+ A shared library that is protected by DLRestrictions provides a special symbol
+ which defines conditions under which the library may be safely used. At the
+ moment, the only restriction that may be imposed controls whether multiple
+ SONAMEs of the same library can safely co-exist in the same symbol space.
+ Shared library dependencies are also checked for compatibility.
+
+Package: libdlrestrictions-dev
+Architecture: any
+Depends: libdlrestrictions1 (= ${binary:Version})
+Description: development files for the DLRestrictions library
+ This package provides development files needed to build both shared libraries,
+ which specify their compatibility restrictions, and applications, which check
+ whether those restrictions are satisfied before using those libraries. The
+ package also contains a CMake module which simplifies building DLRestricted
+ shared libraries with CMake.

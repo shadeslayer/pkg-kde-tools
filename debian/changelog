@@ -2,6 +2,8 @@ pkg-kde-tools (0.13.0~pre1) UNRELEASED; urgency=low
 
   * pkgkde-vcs tag: allow 'stable' in the changelog distribution field.
   * Implement CMake based build system for the package.
+  * Add DLRestrictions library. Check descriptions of new binary packages
+    (namely libdlrestrictions1 and libdlrestrictions-dev) for more information.
 
  -- Modestas Vainius <modax@debian.org>  Tue, 17 May 2011 02:16:16 +0300
 

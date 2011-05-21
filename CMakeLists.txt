@@ -20,6 +20,7 @@ set(LIB_INSTALL_DIR lib CACHE PATH "Library installation directory")
 set(DATA_INSTALL_DIR share/${CMAKE_PROJECT_NAME} CACHE PATH "Data file installation directory")
 set(DATALIB_INSTALL_DIR "${DATA_INSTALL_DIR}/lib")
 set(MAN_INSTALL_DIR share/man CACHE PATH "Manual page installation directory")
+set(INCLUDE_INSTALL_DIR include CACHE PATH "Header file installation directory")
 option(DISABLE_TESTS "Disable ${CMAKE_PROJECT_NAME} tests" OFF)
 
 # Function for building & installing manual pages generated from PODs
@@ -81,6 +82,9 @@ install_pod_manpages(1 pkgkde-override-sc-dev-latest)
 install(DIRECTORY man1
     DESTINATION ${MAN_INSTALL_DIR}
     COMPONENT Documentation)
+
+# Build dlrestrictions
+add_subdirectory(dlrestrictions)
 
 if (NOT DISABLE_TESTS)
     enable_testing()
