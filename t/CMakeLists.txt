@@ -14,3 +14,5 @@ endfunction(add_perl_test path)
 
 # Syntax check of perl modules and scripts
 add_perl_test("${CMAKE_CURRENT_SOURCE_DIR}/perl_syntax_check.t" "${CMAKE_SOURCE_DIR}")
+
+add_subdirectory(dlrestrictions)
