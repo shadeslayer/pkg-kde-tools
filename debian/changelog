@@ -1,4 +1,4 @@
-pkg-kde-tools (0.13.1) UNRELEASED; urgency=low
+pkg-kde-tools (0.13.1) experimental; urgency=low
 
   * Fix sections libdlrestrictions1 and libdlrestrictions-dev (libs and
     libdevel respectively).
@@ -8,7 +8,7 @@ pkg-kde-tools (0.13.1) UNRELEASED; urgency=low
     qt-kde-team and some other directories. This solves unexecutable scripts
     problem.
 
- -- Modestas Vainius <modax@debian.org>  Tue, 24 May 2011 12:22:52 +0300
+ -- Modestas Vainius <modax@debian.org>  Tue, 24 May 2011 12:28:48 +0300
 
 pkg-kde-tools (0.13.0) experimental; urgency=low
 
