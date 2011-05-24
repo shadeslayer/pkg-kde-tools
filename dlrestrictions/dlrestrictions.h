@@ -20,6 +20,8 @@
 #ifndef _LIBRUNTIMERESTRICTIONS_H_
 #define _LIBRUNTIMERESTRICTIONS_H_
 
+#include <sys/types.h>
+
 #ifndef DLR_LIBRARY_NAME
 #define DLR_LIBRARY_NAME            "DLRestrictions"
 #endif
@@ -49,7 +51,11 @@ typedef struct {
 
 void dlr_set_symbol_name(const char *name);
 const char* dlr_get_symbol_name(void);
-const char* dlr_extended_error(void);
+
+/* Error functions */
+const char* dlr_error(void);
+int dlr_snprintf_pretty_error(char *str, size_t n, const char *context);
+void dlr_print_pretty_error(const char *context);
 
 void* dlr_dlopen_extended(const char *file, int mode, int print_error, int fail_on_error);
 

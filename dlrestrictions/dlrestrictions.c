@@ -32,8 +32,7 @@
 
 static int debug_level;
 static const char *symbol_name = DLR_SYMBOL_NAME;
-static char extended_error[1024];
-static unsigned char extended_error_state;
+static char dlr_error_buf[1024];
 
 typedef struct __dlr_library {
     struct link_map *link_map;
@@ -76,33 +75,34 @@ static void dlr_debug(int level, const char *format, ...)
 #define dlr_debug(level, format, ...)
 #endif
 
-void dlr_set_error(const char *format, ...)
+static void dlr_set_error(const char *format, ...)
 {
     va_list ap;
 
-    va_start(ap, format);
-    vsnprintf(extended_error, sizeof(extended_error), format, ap);
-    va_end(ap);
-    extended_error_state = 1;
-
+    if (format == NULL) {
+        /* Reset error */
+        dlr_error_buf[0] = 0;
+    } else {
+        va_start(ap, format);
+        vsnprintf(dlr_error_buf, sizeof(dlr_error_buf), format, ap);
+        va_end(ap);
+    }
 }
 
-const char* dlr_extended_error(void)
+const char* dlr_error(void)
 {
-    if (!extended_error_state)
-        return NULL;
-    extended_error_state = 0;
-    return extended_error;
+    return (dlr_error_buf[0]) ? dlr_error_buf : NULL;
 }
 
-void dlr_print_pretty_error(const char *context)
+int dlr_snprintf_pretty_error(char *str, size_t n, const char *context)
 {
-#define DLR_PRINTF_PRETTY_ERROR(format, ...) \
-    fprintf(stderr, DLR_LIBRARY_NAME " error (%s): " format "\n", context, __VA_ARGS__)
+#define DLR_SNPRINTF_PRETTY_ERROR(format, ...) \
+    snprintf(str, n, DLR_LIBRARY_NAME " error (%s): " format, context, __VA_ARGS__)
 
     const char *dlr_err, *sys_err;
+    int r;
 
-    dlr_err = dlr_extended_error();
+    dlr_err = dlr_error();
     sys_err = (errno != 0) ? strerror(errno) : NULL;
 
     if (dlr_err == NULL && sys_err == NULL)
@@ -110,13 +110,24 @@ void dlr_print_pretty_error(const char *context)
 
     if (dlr_err) {
         if (sys_err != NULL) {
-            DLR_PRINTF_PRETTY_ERROR("%s (sys=%s)", dlr_err, sys_err);
+            r = DLR_SNPRINTF_PRETTY_ERROR("%s (sys=%s)", dlr_err, sys_err);
         } else {
-            DLR_PRINTF_PRETTY_ERROR("%s", dlr_err);
+            r = DLR_SNPRINTF_PRETTY_ERROR("%s", dlr_err);
         }
     } else {
-        DLR_PRINTF_PRETTY_ERROR("%s", sys_err);
+        r = DLR_SNPRINTF_PRETTY_ERROR("%s", sys_err);
     }
+    return r;
+}
+
+void dlr_print_pretty_error(const char *context)
+{
+    char buf[2048];
+
+    strcpy(buf, "Unable to pretty print DLRestrictions error. Too long?");
+    dlr_snprintf_pretty_error(buf, 2048, context);
+    fputs(buf, stderr);
+    fprintf(stderr, "\n");
 }
 
 void dlr_set_symbol_name(const char *name)
@@ -481,7 +492,10 @@ void* dlr_dlopen_extended(const char *file, int mode, int print_error, int fail_
     void *h_global, *h_file;
     int status;
 
+    /* Reset error state */
     errno = 0;
+    dlr_set_error(NULL);
+
     h_file = dlmopen(LM_ID_NEWLM, file, RTLD_LAZY | RTLD_LOCAL);
     if (h_file == NULL) {
         return NULL;
