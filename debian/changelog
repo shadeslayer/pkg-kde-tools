@@ -4,6 +4,9 @@ pkg-kde-tools (0.13.1) UNRELEASED; urgency=low
     libdevel respectively).
   * Bump Standards-Version to 3.9.2: no changes needed.
   * Relicense DLRestrictions under less troublesome LGPLv2.1.
+  * While installing, preserve source permissions of files in cmake, makefiles,
+    qt-kde-team and some other directories. This solves unexecutable scripts
+    problem.
 
  -- Modestas Vainius <modax@debian.org>  Tue, 24 May 2011 12:22:52 +0300
 

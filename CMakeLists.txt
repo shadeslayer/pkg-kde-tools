@@ -41,14 +41,17 @@ endfunction(install_pod_manpages section)
 # Install data & arch-indep library bundles
 install(DIRECTORY cmake makefiles qt-kde-team
         DESTINATION ${DATA_INSTALL_DIR}
+        USE_SOURCE_PERMISSIONS
         COMPONENT Programs)
 
 install(DIRECTORY vcslib/
     DESTINATION ${DATA_INSTALL_DIR}/vcs
+    USE_SOURCE_PERMISSIONS
     COMPONENT Programs)
 
 install(DIRECTORY datalib/
     DESTINATION ${DATALIB_INSTALL_DIR}
+    USE_SOURCE_PERMISSIONS
     COMPONENT Programs)
 
 install(DIRECTORY perllib/
