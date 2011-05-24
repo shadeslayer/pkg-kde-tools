@@ -399,7 +399,7 @@ static int dlr_are_libraries_compatible(dlr_library_t *base, dlr_library_t *agai
     return is_compat;
 }
 
-int dlr_are_symbol_objects_compatible(void *h_base, void *h_against)
+static int dlr_are_symbol_objects_compatible(void *h_base, void *h_against)
 {
     dlr_library_t *libs_base, *libs_against;
     dlr_library_t *base, *against;

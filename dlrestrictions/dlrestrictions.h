@@ -51,7 +51,6 @@ void dlr_set_symbol_name(const char *name);
 const char* dlr_get_symbol_name(void);
 const char* dlr_extended_error(void);
 
-int dlr_are_symbol_objects_compatible(void *h_base, void *h_against);
 void* dlr_dlopen_extended(const char *file, int mode, int print_error, int fail_on_error);
 
 #endif
