@@ -275,7 +275,7 @@ sub new {
 
 sub _expand {
     my ($self, $arch) = @_;
-    return ($arch =~ /arm/) ? 'f' : 'd';
+    return ($arch =~ /(arm|sh4)/) ? 'f' : 'd';
 }
 
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst;
