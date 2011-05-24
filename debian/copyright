@@ -12,7 +12,7 @@ Upstream Authors:
 Copyright:
 
     Copyright © 2007-2008 Sune Vuorela <debian@pusling.com>
-    Copyright © 2007-2010 Modestas Vainius <modax@debian.org>
+    Copyright © 2007-2011 Modestas Vainius <modax@debian.org>
     Copyright © 2007-2008 Fathi Boudra <fabo@debian.org>
     Copyright © 2007-2008 Ana Beatriz Guerrero Lopez <ana@debian.org>
     Copyright © 2007-2008 Armin Berres <trigger+debian@space-based.de>
@@ -125,6 +125,6 @@ The follwing license applies to:
 The Debian packaging is:
 
  Copyright © 2008 Sune Vuorela <debian@pusling.com>,
- Copyright © 2008-2010 Modestas Vainius <modax@debian.org>
+ Copyright © 2008-2011 Modestas Vainius <modax@debian.org>
 
 It is licensed under any license, including the GPL, see above.

@@ -8,6 +8,7 @@ pkg-kde-tools (0.13.0~pre1) UNRELEASED; urgency=low
     do not work yet though.
   * Ship verbatim texts of the GPL-3 (COPYING.GPL-3), GPL-2 (COPYING.GPL-2) and
     LGPL-3 (COPYING.LGPL-3) licenses in the source package.
+  * Bump packaging copyright years in debian/copyright.
 
  -- Modestas Vainius <modax@debian.org>  Tue, 17 May 2011 02:16:16 +0300
 
