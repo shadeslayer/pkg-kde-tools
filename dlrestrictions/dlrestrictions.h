@@ -27,7 +27,7 @@
 #define DLR_STRINGIFY(s)            #s
 #define DLR_STRINGIFY2(s)           DLR_STRINGIFY(s)
 
-#define DLR_SYMBOL                  debian_dlrestrictions
+#define DLR_SYMBOL                  dlrestrictions_data
 #define DLR_SYMBOL_NAME             DLR_STRINGIFY2(DLR_SYMBOL)
 #define DLR_SYMBOL_MAGIC             "DLR_SYMBOL_V1:"
 #define MAX_DLR_EXPRESSION_LENGTH    4096

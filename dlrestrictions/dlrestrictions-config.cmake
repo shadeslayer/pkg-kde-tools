@@ -1,38 +1,40 @@
-set(DEBIAN_DLRESTRICTIONS "" CACHE STRING
+set(DEFAULT_DLRESTRICTIONS "" CACHE STRING
     "Enable generation of the DLRestrictions symbol with such a value by default.")
-define_property(TARGET PROPERTY DEBIAN_DLRESTRICTIONS
+define_property(TARGET PROPERTY DLRESTRICTIONS
     BRIEF_DOCS "Value of the DLRestrictions symbol for this target."
     FULL_DOCS "Define DLRestrictions symbol for this target with a value of this property.
-    Overrides global DEBIAN_DLRESTRICTIONS. Set to empty string in order to turn off
-    symbol generation for the target.")
+    Overrides global DEFAULT_DLRESTRICTIONS. Set to empty string in order to turn
+    off symbol generation for the target.")
 
-set(DLRESTRICTIONS_SYMBOL_C "${DLRestrictions_DIR}/dlrestrictions-symbol.c.cmake")
-set(DLRESTRICTIONS_EXPORT_FILE ${DLRestrictions_DIR}/dlrestrictions-export.cmake)
+set(DLRESTRICTIONS_SYMBOL_SOURCE_FILE "${DLRestrictions_DIR}/dlrestrictions-symbol.c.cmake")
+set(DLRESTRICTIONS_EXPORT_FILE "${DLRestrictions_DIR}/dlrestrictions-export.cmake")
 
+# Export file might not exist if DLRestrictions is referred from the unit tests
 if (EXISTS "${DLRESTRICTIONS_EXPORT_FILE}")
     # Include export file
     include(${DLRESTRICTIONS_EXPORT_FILE})
 endif (EXISTS "${DLRESTRICTIONS_EXPORT_FILE}")
 
-function(DEBIAN_ADD_DLRESTRICTIONS_SYMBOL)
+function(DLRESTRICTIONS_PROCESS_TARGETS)
     foreach(target ${ARGN})
-        get_target_property(value "${target}" DEBIAN_DLRESTRICTIONS)
-        if (value MATCHES "NOTFOUND$" AND DEBIAN_DLRESTRICTIONS)
-            set(value "${DEBIAN_DLRESTRICTIONS}")
-        endif (value MATCHES "NOTFOUND$" AND DEBIAN_DLRESTRICTIONS)
+        get_target_property(dlr_expression "${target}" DLRESTRICTIONS)
+        if (dlr_expression MATCHES "NOTFOUND$" AND DEFAULT_DLRESTRICTIONS)
+            set(dlr_expression "${DEFAULT_DLRESTRICTIONS}")
+        endif (dlr_expression MATCHES "NOTFOUND$" AND DEFAULT_DLRESTRICTIONS)
 
-        if (value)
+        if (dlr_expression)
             # Add symbol to the library
-            set(sc_target "dlrestrictions_${target}")
-            set(sc_source_file "${CMAKE_CURRENT_BINARY_DIR}/${sc_target}.c")
-            configure_file("${DLRESTRICTIONS_SYMBOL_C}" "${sc_source_file}" @ONLY)
-            add_library(${sc_target} STATIC "${sc_source_file}")
-            get_property(target_type TARGET ${target} PROPERTY TYPE)
-            if (${target_type} STREQUAL "SHARED_LIBRARY")
-                set_property(SOURCE ${sc_target} PROPERTY COMPILE_FLAGS "${CMAKE_SHARED_LIBRARY_C_FLAGS}" APPEND)
-            endif (${target_type} STREQUAL "SHARED_LIBRARY")
-            set_property(TARGET ${sc_target} PROPERTY EchoString "Adding DLRestrictions symbol (=${value}) for ${target}")
-            target_link_libraries(${target} -Wl,--whole-archive ${sc_target} -Wl,--no-whole-archive)
-        endif (value)
+            set(dlr_target "dlrestrictions_${target}")
+            set(dlr_target_file "${CMAKE_CURRENT_BINARY_DIR}/${dlr_target}.c")
+            configure_file("${DLRESTRICTIONS_SYMBOL_SOURCE_FILE}" "${dlr_target_file}" @ONLY)
+            add_library(${dlr_target} STATIC "${dlr_target_file}")
+            get_property(dlr_target_type TARGET ${target} PROPERTY TYPE)
+            if (${dlr_target_type} STREQUAL "SHARED_LIBRARY")
+                set_property(TARGET ${dlr_target} PROPERTY COMPILE_FLAGS "${CMAKE_SHARED_LIBRARY_C_FLAGS}" APPEND)
+            endif (${dlr_target_type} STREQUAL "SHARED_LIBRARY")
+            set_property(TARGET ${dlr_target} PROPERTY EchoString "Adding DLRestrictions (=${dlr_expression}) for ${target}")
+            # FIXME: not portable
+            target_link_libraries(${target} "-Wl,--whole-archive" ${dlr_target} "-Wl,--no-whole-archive")
+        endif (dlr_expression)
     endforeach(target ${ARGN})
-endfunction(DEBIAN_ADD_DLRESTRICTIONS_SYMBOL)
+endfunction(DLRESTRICTIONS_PROCESS_TARGETS)

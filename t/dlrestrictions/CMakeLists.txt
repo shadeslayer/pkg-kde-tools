@@ -18,10 +18,10 @@ set_target_properties(testdlr_lib1 PROPERTIES
     OUTPUT_NAME "testdlr_lib"
     SOVERSION 1
     VERSION 1.0.0
-    DEBIAN_DLRESTRICTIONS "REJECT:OTHERSOVERSION"
+    DLRESTRICTIONS "REJECT:OTHERSOVERSION"
 )
 target_link_libraries(testdlr_lib1 testdlr_deeplib1)
-debian_add_dlrestrictions_symbol(testdlr_lib1)
+dlrestrictions_process_targets(testdlr_lib1)
 
 add_library(testdlr_deeplib2 SHARED testdlr_deeplib2.c)
 set_target_properties(testdlr_deeplib2 PROPERTIES
