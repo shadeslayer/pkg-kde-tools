@@ -48,6 +48,7 @@ Description: various packaging tools and scripts for KDE Applications
 
 Package: libdlrestrictions1
 Architecture: any
+Section: libs
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: library that implements library compatibility checks for dlopen()
  This package provides a DLRestrictions library that can be used to check
@@ -65,6 +66,7 @@ Description: library that implements library compatibility checks for dlopen()
 
 Package: libdlrestrictions-dev
 Architecture: any
+Section: libdevel
 Depends: libdlrestrictions1 (= ${binary:Version})
 Description: development files for the DLRestrictions library
  This package provides development files needed to build both shared libraries,
