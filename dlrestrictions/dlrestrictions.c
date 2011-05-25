@@ -493,8 +493,7 @@ static int dlr_are_symbol_objects_compatible(void *h_base, void *h_against)
     return status;
 }
 
-/* An extended wrapper around dlopen() with runtime restriction checking */
-void* dlr_dlopen_extended(const char *file, int mode, int print_error, int fail_on_error)
+int dlr_check_file_compatibility(const char *file)
 {
     void *h_global, *h_file;
     int status;
@@ -505,44 +504,50 @@ void* dlr_dlopen_extended(const char *file, int mode, int print_error, int fail_
 
     h_file = dlmopen(LM_ID_NEWLM, file, RTLD_LAZY | RTLD_LOCAL);
     if (h_file == NULL) {
-        return NULL;
+        return -ENOENT;
     }
 
     h_global = dlopen(0, RTLD_LAZY | RTLD_LOCAL);
     if (h_global == NULL) {
         dlr_set_error("unable to dlopen() global symbol object");
+        dlclose(h_file);
+        return -ENOTDIR;
+    }
+
+    status = dlr_are_symbol_objects_compatible(h_global, h_file);
+    if (status < 0) {
+        status = -EPROTO;
+    }
+
+    dlclose(h_global);
+    dlclose(h_file);
+
+    return status;
+}
+
+void* dlr_dlopen_extended(const char *file, int mode, int print_error, int fail_on_error)
+{
+    int status;
+
+    status = dlr_check_file_compatibility(file);
+    if (status == -ENOENT) { /* file cannot be loaded (does not exist) */
+        return NULL;
+    } else if (status < 0) { /* other error while checking compatibility */
         if (print_error) {
             dlr_print_pretty_error(file);
         }
         if (fail_on_error) {
-            dlclose(h_file);
             return NULL;
         }
-    }
-
-    if (h_global != NULL) {
-        status = dlr_are_symbol_objects_compatible(h_global, h_file);
-        if (status < 0 && print_error) {
+    } else if (status == 0) { /* library is not compatible */
+        if (print_error) {
             dlr_print_pretty_error(file);
         }
-        /* Check for failure */
-        if (status == 0 || (status < 0 && fail_on_error)) {
-            if (status == 0 && print_error) {
-                dlr_print_pretty_error(file);
-            }
-            dlclose(h_file);
-            h_file = NULL;
-        }
+        return NULL;
     }
 
-    if (h_global != NULL)
-        dlclose(h_global);
-
-    if (h_file != NULL) {
-        /* Reopen the file with base link map */
-        dlclose(h_file);
-        h_file = dlopen(file, mode);
-    }
-
-    return h_file;
+    /* Else either library is compatible or fail_on_error is disabled
+       Just dlopen() the library.
+    */
+    return dlopen(file, mode);
 }

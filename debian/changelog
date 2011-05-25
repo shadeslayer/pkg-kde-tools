@@ -5,6 +5,8 @@ pkg-kde-tools (0.14.0~pre1) UNRELEASED; urgency=low
   * pkgkde-symbolshelper: expand qreal subst to float on sh4. (Closes: #627486)
   * DLRestrictions: hide dlr_are_symbol_objects_compatible() symbol.
   * DLRestrictions: rework and cleanup error functions. Export new APIs.
+  * DLRestrictions: improve library compatibility checking APIs and export more
+    functions.
 
  -- Modestas Vainius <modax@debian.org>  Tue, 24 May 2011 21:47:52 +0300
 

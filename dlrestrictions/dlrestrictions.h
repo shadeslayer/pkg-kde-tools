@@ -58,7 +58,35 @@ const char* dlr_error(void);
 int dlr_snprintf_pretty_error(char *str, size_t n, const char *context);
 void dlr_print_pretty_error(const char *context);
 
-/* Library verification functions and dlopen() wrappers */
+/* Library compatibility checking functions */
+
+/*
+   Public function for verification of the given library file against global
+   symbol object.
+
+   * file - same as to dlopen();
+   * Return value:
+      < 0 - error occured while checking compatibility:
+          * -ENOENT - unable to open file;
+          * -ENOTDIR - unable to dlopen() global symbol object;
+          * -EPROTO - syntax or other fatal error while checking compatibility;
+     == 0 - library and its dependencies are NOT compatible with global object;
+      > 0 - library and its dependencies are compatible with global object;
+*/
+int dlr_check_file_compatibility(const char *file);
+
+/*
+   An extended wrapper around dlopen() with integrated file compatibility checking.
+
+   * file - same as to dlopen();
+   * mode - same as to dlopen();
+   * printerror - if enabled, a pretty DLRestrctions error will be printed to stderr
+     when one occurs or if the file is NOT compatible.
+   * fail_on_error - if enabled, NULL will be returned if DLRestrictions specific
+     error occurs. Please note that successful compatibility checking regardless
+     of the outcome is NOT an error.
+   * Return value - a valid dlopen() handle if successful, NULL otherwise.
+*/
 void* dlr_dlopen_extended(const char *file, int mode, int print_error, int fail_on_error);
 
 #endif
