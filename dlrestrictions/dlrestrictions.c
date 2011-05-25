@@ -105,8 +105,9 @@ int dlr_snprintf_pretty_error(char *str, size_t n, const char *context)
     dlr_err = dlr_error();
     sys_err = (errno != 0) ? strerror(errno) : NULL;
 
-    if (dlr_err == NULL && sys_err == NULL)
-        return;
+    if (dlr_err == NULL && sys_err == NULL) {
+        return 0;
+    }
 
     if (dlr_err) {
         if (sys_err != NULL) {
@@ -123,9 +124,15 @@ int dlr_snprintf_pretty_error(char *str, size_t n, const char *context)
 void dlr_print_pretty_error(const char *context)
 {
     char buf[2048];
+    int r;
 
-    strcpy(buf, "Unable to pretty print DLRestrictions error. Too long?");
-    dlr_snprintf_pretty_error(buf, 2048, context);
+    r = dlr_snprintf_pretty_error(buf, 2048, context);
+    if (r == 0) {
+        return;
+    } else if (r < 0) {
+        strcpy(buf, "Unable to pretty print DLRestrictions error.");
+    }
+
     fputs(buf, stderr);
     fprintf(stderr, "\n");
 }
