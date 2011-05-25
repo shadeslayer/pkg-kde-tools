@@ -34,9 +34,14 @@ function(DLRESTRICTIONS_PROCESS_TARGETS)
             if (${dlr_target_type} MATCHES "^(SHARED|MODULE)_LIBRARY$")
                 set_property(TARGET ${dlr_target} PROPERTY COMPILE_FLAGS "${CMAKE_SHARED_LIBRARY_C_FLAGS}" APPEND)
             endif (${dlr_target_type} MATCHES "^(SHARED|MODULE)_LIBRARY$")
+            add_dependencies(${target} ${dlr_target})
             set_property(TARGET ${dlr_target} PROPERTY EchoString "Adding DLRestrictions (=${dlr_expression}) for ${target}")
+            get_property(dlr_target_location TARGET ${dlr_target} PROPERTY LOCATION)
+            get_property(target_link_flags TARGET ${target} PROPERTY LINK_FLAGS)
             # FIXME: not portable
-            target_link_libraries(${target} "-Wl,--whole-archive" ${dlr_target} "-Wl,--no-whole-archive")
+            # NOTE: target_link_libraries() can't be used outside a directory the target is defined in
+            set_property(TARGET ${target} PROPERTY LINK_FLAGS
+                "${target_link_flags} -Wl,--whole-archive '${dlr_target_location}' -Wl,--no-whole-archive")
         endif (dlr_expression)
     endforeach(target ${ARGN})
 endfunction(DLRESTRICTIONS_PROCESS_TARGETS)
