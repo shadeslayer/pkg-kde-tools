@@ -431,23 +431,37 @@ static int dlr_are_symbol_objects_compatible(void *h_base, void *h_against)
     Lmid_t lmid_against;
     int status;
 
-    dlr_debug(2, "Entering dlr_are_symbol_objects_compatible() ...");
+    dlr_debug(2, "Loading link map of the external (typically a library being dlopen()'ed) symbol object ...");
+    errno = 0;
+    libs_against = dlr_libraries_from_handle(h_against);
+    if (libs_against == NULL) {
+        // Either error or nothing to compare against (i.e. compat)
+        if (errno == 0) {
+            dlr_debug(1, "ACCEPT: no libraries found in the external object");
+            return 1;
+        } else {
+            dlr_set_error("no valid libraries in the external object (due to error)");
+            return -1;
+        }
+    }
 
     /* Create dlr_library structures for libraries in the link map */
     dlr_debug(2, "Loading link map of the base (typically global) symbol object ...");
     errno = 0;
     libs_base = dlr_libraries_from_handle(h_base);
-    if (libs_base == NULL && errno != 0) {
-        return -1;
+    if (libs_base == NULL) {
+        dlr_free_libraries(libs_against);
+        // Either error or nothing to compare against (i.e. compat)
+        if (errno == 0) {
+            dlr_debug(1, "ACCEPT: no libraries found in the base (global) object");
+            return 1;
+        } else {
+            dlr_set_error("no valid libraries in the base (global) object (due to error)");
+            return -1;
+        }
     }
 
-    dlr_debug(2, "Loading link map of the external (typically a library being dlopen()'ed) symbol object ...");
-    errno = 0;
-    libs_against = dlr_libraries_from_handle(h_against);
-    if (libs_against == NULL && errno != 0) {
-        dlr_free_libraries(libs_base);
-        return -1;
-    }
+
     if (dlr_lmid_from_handle(h_against, &lmid_against) < 0) {
         dlr_free_libraries(libs_base);
         dlr_free_libraries(libs_against);
