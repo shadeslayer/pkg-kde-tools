@@ -55,3 +55,6 @@ target_link_libraries(testdlr_plugin2 testdlr_lib1)
 add_executable(testdlr_loader testdlr_loader.c)
 target_link_libraries(testdlr_loader testdlr_lib2 ${CMAKE_DL_LIBS} dlrestrictions)
 
+# Add DLR tests
+add_test(testdlr_loader testdlr_loader)
+set_tests_properties(testdlr_loader PROPERTIES PASS_REGULAR_EXPRESSION "FAILED dlr_dlopen_extended")

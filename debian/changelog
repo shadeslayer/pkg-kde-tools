@@ -9,6 +9,7 @@ pkg-kde-tools (0.14.0~pre2) UNRELEASED; urgency=low
     functions.
   * Add symbol file for libdlrestrictions1.
   * Version libdlrestrictions.so.1 symbols (--default-symver).
+  * Do a basic DLRestrictions test at build time.
 
  -- Modestas Vainius <modax@debian.org>  Tue, 24 May 2011 21:47:52 +0300
 
