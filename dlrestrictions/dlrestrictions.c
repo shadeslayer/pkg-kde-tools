@@ -512,7 +512,7 @@ static int dlr_are_symbol_objects_compatible(void *h_base, void *h_against)
     return status;
 }
 
-int dlr_check_file_compatibility(const char *file)
+int dlr_check_file_compatibility(const char *file, void **handle)
 {
     void *h_global, *h_file;
     int status;
@@ -521,15 +521,31 @@ int dlr_check_file_compatibility(const char *file)
     errno = 0;
     dlr_set_error(NULL);
 
-    h_file = dlmopen(LM_ID_NEWLM, file, RTLD_LAZY | RTLD_LOCAL);
-    if (h_file == NULL) {
-        return -ENOENT;
+    dlr_debug(2, "Entering dlr_check_file_compatbility(\"%s\") ...", file);
+
+    /* Open a file or use a handle */
+    if (file != NULL) {
+        h_file = dlopen(file, RTLD_LAZY | RTLD_LOCAL);
+        if (handle != NULL) {
+            *handle = h_file;
+        }
+        if (h_file == NULL) {
+            dlr_set_error(dlerror());
+            return -ENOENT;
+        }
+    } else if (handle != NULL) {
+        h_file = *handle;
+    } else {
+        dlr_set_error("dlr_check_file_compatibility(): %s", strerror(EINVAL));
+        return -EINVAL;
     }
 
     h_global = dlopen(0, RTLD_LAZY | RTLD_LOCAL);
     if (h_global == NULL) {
         dlr_set_error("unable to dlopen() global symbol object");
-        dlclose(h_file);
+        if (handle == NULL) {
+            dlclose(h_file);
+        }
         return -ENOTDIR;
     }
 
@@ -539,7 +555,9 @@ int dlr_check_file_compatibility(const char *file)
     }
 
     dlclose(h_global);
-    dlclose(h_file);
+    if (handle == NULL) {
+        dlclose(h_file);
+    }
 
     return status;
 }
@@ -547,8 +565,9 @@ int dlr_check_file_compatibility(const char *file)
 void* dlr_dlopen_extended(const char *file, int mode, int print_error, int fail_on_error)
 {
     int status;
+    void *handle;
 
-    status = dlr_check_file_compatibility(file);
+    status = dlr_check_file_compatibility(file, &handle);
     if (status == -ENOENT) { /* file cannot be loaded (does not exist) */
         return NULL;
     } else if (status < 0) { /* other error while checking compatibility */
@@ -556,17 +575,24 @@ void* dlr_dlopen_extended(const char *file, int mode, int print_error, int fail_
             dlr_print_pretty_error(file);
         }
         if (fail_on_error) {
+            if (handle != NULL) {
+                dlclose(handle);
+            }
             return NULL;
         }
     } else if (status == 0) { /* library is not compatible */
         if (print_error) {
             dlr_print_pretty_error(file);
         }
+        dlclose(handle);
         return NULL;
     }
 
     /* Else either library is compatible or fail_on_error is disabled
-       Just dlopen() the library.
+       Just (re)dlopen() the library if needed.
     */
-    return dlopen(file, mode);
+    if (mode != (RTLD_LAZY | RTLD_LOCAL)) {
+        handle = dlopen(file, mode);
+    }
+    return handle;
 }

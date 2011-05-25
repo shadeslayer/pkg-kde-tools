@@ -64,7 +64,11 @@ void dlr_print_pretty_error(const char *context);
    Public function for verification of the given library file against global
    symbol object.
 
-   * file - same as to dlopen();
+   * file - if present, the file to dlopen(); if omitted, the handle parameter
+            will be used.
+   * handle - if not NULL, the handle of the dlopen()'ed file will be stored here
+              (and the object won't be dlclose()'ed). If file is NULL, handle must
+              be non-NULL and point to the already open shared object.
    * Return value:
       < 0 - error occured while checking compatibility:
           * -ENOENT - unable to open file;
@@ -73,7 +77,7 @@ void dlr_print_pretty_error(const char *context);
      == 0 - library and its dependencies are NOT compatible with global object;
       > 0 - library and its dependencies are compatible with global object;
 */
-int dlr_check_file_compatibility(const char *file);
+int dlr_check_file_compatibility(const char *file, void **handle);
 
 /*
    An extended wrapper around dlopen() with integrated file compatibility checking.
