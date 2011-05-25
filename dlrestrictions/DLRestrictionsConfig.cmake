@@ -1,3 +1,5 @@
+set(DLRESTRICTIONS_FOUND 1)
+
 set(DEFAULT_DLRESTRICTIONS "" CACHE STRING
     "Enable generation of the DLRestrictions symbol with such a value by default.")
 define_property(TARGET PROPERTY DLRESTRICTIONS
