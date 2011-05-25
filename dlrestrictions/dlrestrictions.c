@@ -251,6 +251,11 @@ static dlr_library_t* dlr_libraries_from_handle(void *handle)
             }
         }
     }
+    /* Ignore dlr_parse_link_map errors */
+    if (errno == EINVAL || errno == ENOENT) {
+        errno = 0;
+        dlr_set_error(NULL);
+    }
 
     return first;
 }
