@@ -1,4 +1,4 @@
-pkg-kde-tools (0.14.0~pre1) UNRELEASED; urgency=low
+pkg-kde-tools (0.14.0~pre2) UNRELEASED; urgency=low
 
   * Do not use Debian "branded" names in DLRestrictions (like e.g.
     debian_dlrestrictions special symbol).
