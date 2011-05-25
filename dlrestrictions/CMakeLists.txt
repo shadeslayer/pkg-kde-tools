@@ -14,7 +14,7 @@ install(TARGETS dlrestrictions
 install(FILES dlrestrictions.h
     DESTINATION ${INCLUDE_INSTALL_DIR}
     COMPONENT DLRestrictions)
-install(FILES dlrestrictions-config.cmake dlrestrictions-symbol.c.cmake
+install(FILES DLRestrictionsConfig.cmake dlrestrictions-symbol.c.cmake
     DESTINATION ${LIB_INSTALL_DIR}/cmake/DLRestrictions)
 install(EXPORT dlrestrictions FILE dlrestrictions-export.cmake
     DESTINATION ${LIB_INSTALL_DIR}/cmake/DLRestrictions)
