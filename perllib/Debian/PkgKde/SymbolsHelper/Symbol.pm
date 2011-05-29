@@ -86,36 +86,6 @@ sub initialize {
 	}
     }
 
-    # NOTE: backwards compatibility with pkgkde-symbolshelper (<< 0.6)
-    # symbol files.
-    if ($self->get_symbolname() =~ /\{.+\}/) {
-	$self->{symbol} =~ s/\{vt:/{vt=/g;
-	if (defined $self->{symbol_templ}) {
-	    $self->{symbol_templ} =~ s/\{vt:/{vt=/g;
-	} else {
-	    $self->{symbol_templ} = $self->{symbol};
-	}
-	my @substs = $self->expand_substitutions(%opts);
-
-	my $templ = $self->get_symboltempl();
-	my $vt = 0;
-	foreach my $subst (@substs) {
-	    # Drop obsolete vt subst completely
-	    if ($subst =~ /^vt=/) {
-		$templ =~ s/\Q{$subst}\E/$self->{substs}{$subst}/g;
-		$vt++;
-	    }
-	}
-	$self->set_symbolname(undef, $templ) if $vt > 0;
-	if ($vt < scalar(@substs)) {
-	    if ($vt) {
-		$self->add_tag('subst', 'compat-no-vt');
-	    } else {
-		$self->add_tag('subst', 'compat');
-	    }
-	}
-    }
-
     return $self->SUPER::initialize(%opts);
 }
 
