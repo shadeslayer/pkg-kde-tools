@@ -40,9 +40,6 @@ butfirstword = $(patsubst $(firstword $(subst $2, ,$1))$2%,%,$1)
 # Use this to retrieve full command line to the overridden command in the
 # override_% targets
 overridden_command = $($(DHMK_TARGET)_$(call butfirstword,$@,_)) $(DHMK_OPTIONS)
-# Keep $(overriden_command) alias to preserve compatibility with debian/rules which
-# were written for pkg-kde-tools << 0.12.
-overriden_command = $(overridden_command)
 
 # This makefile is not parallel compatible by design (e.g. command chains
 # below)

@@ -3,6 +3,8 @@ pkg-kde-tools (0.14.1) UNRELEASED; urgency=low
   * pkgkde-symbolshelper: no longer replace substs in the symbol name unless
     the symbol is tagged with a 'subst' tag. This was kept for compatibility
     with << 0.6 symbol files.
+  * Drop overriden_command alias from dhmk.mk. Most packages should have
+    already been transitioned to correct spelling.
 
  -- Modestas Vainius <modax@debian.org>  Sun, 29 May 2011 23:57:00 +0300
 
