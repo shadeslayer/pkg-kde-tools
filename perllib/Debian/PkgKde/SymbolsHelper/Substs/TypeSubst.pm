@@ -21,7 +21,7 @@ BEGIN {
     $INC{'Debian/PkgKde/SymbolsHelper/Substs/TypeSubst.pm'} ||= __FILE__;
 }
 
-# Operates on %l% etc. same length types that cannot be present in demanged
+# Operates on %l% etc. same length types that cannot be presented in demangled
 # symbols. Used by ::Cpp wrapper.
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::CppPrivate;
 
