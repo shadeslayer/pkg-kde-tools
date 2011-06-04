@@ -17,7 +17,6 @@ package Debian::PkgKde::SymbolsHelper::Substs;
 
 use strict;
 use warnings;
-use Debian::PkgKde::SymbolsHelper::Substs::VirtTable;
 use Debian::PkgKde::SymbolsHelper::Substs::TypeSubst;
 use base 'Exporter';
 
@@ -26,7 +25,6 @@ our @EXPORT = qw(%SUBSTS @SUBSTS @STANDALONE_SUBSTS @TYPE_SUBSTS @CPP_TYPE_SUBST
 my $NS = 'Debian::PkgKde::SymbolsHelper::Substs';
 
 our @STANDALONE_SUBSTS = (
-    "${NS}::VirtTable"->new(),
 );
 
 our @TYPE_SUBSTS = (

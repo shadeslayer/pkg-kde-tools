@@ -5,6 +5,7 @@ pkg-kde-tools (0.14.1) UNRELEASED; urgency=low
     with << 0.6 symbol files.
   * Drop overriden_command alias from dhmk.mk. Most packages should have
     already been transitioned to correct spelling.
+  * pkgkde-symbolshelper: drop VirtTable subst which was deprecated long ago.
 
  -- Modestas Vainius <modax@debian.org>  Sun, 29 May 2011 23:57:00 +0300
 
