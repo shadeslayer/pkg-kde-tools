@@ -1,4 +1,4 @@
-pkg-kde-tools (0.14.1) UNRELEASED; urgency=low
+pkg-kde-tools (0.14.1) unstable; urgency=low
 
   * pkgkde-symbolshelper: no longer replace substs in the symbol name unless
     the symbol is tagged with a 'subst' tag. This was kept for compatibility
@@ -7,7 +7,7 @@ pkg-kde-tools (0.14.1) UNRELEASED; urgency=low
     already been transitioned to correct spelling.
   * pkgkde-symbolshelper: drop VirtTable subst which was deprecated long ago.
 
- -- Modestas Vainius <modax@debian.org>  Sun, 29 May 2011 23:57:00 +0300
+ -- Modestas Vainius <modax@debian.org>  Thu, 23 Jun 2011 11:17:39 +0300
 
 pkg-kde-tools (0.14.0) unstable; urgency=low
 
