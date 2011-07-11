@@ -22,6 +22,7 @@ dhmk_dynamic_targets = install-indep install-arch install binary-indep binary-ar
 dhmk_standard_targets = $(dhmk_stamped_targets) $(dhmk_dynamic_targets)
 dhmk_indeparch_targets = build install binary
 dhmk_rules_mk = debian/dhmk_rules.mk
+dhmk_env_mk = debian/dhmk_env.mk
 dhmk_dhmk_pl := $(dir $(dhmk_this_makefile))dhmk.pl
 
 # Variables holding all (incl. -indep, -arch) targets for each action
@@ -40,6 +41,9 @@ butfirstword = $(patsubst $(firstword $(subst $2, ,$1))$2%,%,$1)
 # Use this to retrieve full command line to the overridden command in the
 # override_% targets
 overridden_command = $($(DHMK_TARGET)_$(call butfirstword,$@,_)) $(DHMK_OPTIONS)
+
+# Create an out-of-date temporary mk file if it does not exist. Avoids make warning
+dhmk_include_cmd = $(shell test ! -f $1 && touch -t 197001030000 $1; echo $1)
 
 # This makefile is not parallel compatible by design (e.g. command chains
 # below)
@@ -62,8 +66,12 @@ else
 $(dhmk_rules_mk): $(MAKEFILE_LIST) $(dhmk_dhmk_pl)
 	$(dhmk_dhmk_pl) $(dh)
 
-# Create an out-of-date rules file if it does not exist. Avoids make warning
-include $(shell test ! -f $(dhmk_rules_mk) && touch -t 197001030000 $(dhmk_rules_mk); echo $(dhmk_rules_mk))
+# Export build flags
+$(dhmk_env_mk): $(MAKEFILE_LIST)
+	dpkg-buildflags --export=make > $@
+
+include $(call dhmk_include_cmd,$(dhmk_env_mk))
+include $(call dhmk_include_cmd,$(dhmk_rules_mk))
 
 # Routine used to run an override target if there is one ($1 should be
 # override_{command})
@@ -95,7 +103,7 @@ $(foreach t,$(dhmk_indeparch_targets),debian/dhmk_$(t)-arch):  export DH_INTERNA
 $(foreach t,$(dhmk_standard_targets),debian/dhmk_$(t)): debian/dhmk_%:
 	$(MAKE) -f $(dhmk_top_makefile) dhmk_run_$*_commands DHMK_TARGET="$*"
 	$(if $(filter $*,$(dhmk_stamped_targets)),touch $@)
-	$(if $(filter clean,$*),rm -f $(dhmk_rules_mk)\
+	$(if $(filter clean,$*),rm -f $(dhmk_rules_mk) $(dhmk_env_mk)\
 	    $(foreach t,$(dhmk_stamped_targets),debian/dhmk_$(t)))
 	# "$*" target is done
 
