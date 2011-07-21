@@ -18,7 +18,6 @@ package Debian::PkgKde::SymbolsHelper::SymbolFileCollection;
 use strict;
 use warnings;
 
-use Dpkg::Arch qw(debarch_is);
 use Dpkg::ErrorHandling;
 use Dpkg::Version;
 use Debian::PkgKde::SymbolsHelper::Substs;
@@ -382,6 +381,8 @@ sub create_template {
 }
 
 package Debian::PkgKde::SymbolsHelper::SymbolFileCollection::Group;
+
+use Dpkg::Arch qw(debarch_is);
 
 sub new {
     my ($class, $substs) = @_;
