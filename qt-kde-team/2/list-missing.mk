@@ -31,9 +31,17 @@ list-missing:
 	  echo "All files were installed into debian/$(shell dh_listpackages | head -n1)."; \
 	fi
 
+check-not-installed:
+	@test -e debian/not-installed && \
+	(for i in $(shell grep -v '^#' debian/not-installed); do \
+		test -e debian/tmp/$$i || printf "File $$i not found in debian/tmp \n"; \
+	done;) \
+	|| printf "ERROR: debian/not-installed not found.\n"
+
+
 post_clean:
 	rm -f debian/dhmk-install-list debian/dhmk-package-list
 
-.PHONY: list-missing
+.PHONY: list-missing check-not-installed
 
 endif
