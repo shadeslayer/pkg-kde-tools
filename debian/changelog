@@ -6,6 +6,9 @@ pkg-kde-tools (0.14.3) UNRELEASED; urgency=low
   [ José Manuel Santamaría Lema ]
   * Add check-not-installed target.
 
+  [ Pino Toscano ]
+  * pkgkde-symbolshelper: fix the int64_t and uint64_t expansions on s390x.
+
  -- Modestas Vainius <modax@debian.org>  Thu, 21 Jul 2011 16:16:36 +0300
 
 pkg-kde-tools (0.14.2) unstable; urgency=low

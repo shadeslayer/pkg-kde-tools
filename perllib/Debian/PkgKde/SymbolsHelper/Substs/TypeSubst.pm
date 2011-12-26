@@ -199,7 +199,7 @@ sub new {
 
 sub _expand {
     my ($self, $arch) = @_;
-    return ($arch =~ /amd64|ia64|alpha/) ? 'l' : 'x';
+    return ($arch =~ /amd64|ia64|alpha|s390x/) ? 'l' : 'x';
 }
 
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::uint64_t;
@@ -218,7 +218,7 @@ sub new {
 
 sub _expand {
     my ($self, $arch) = @_;
-    return ($arch =~ /amd64|ia64|alpha/) ? 'm' : 'y';
+    return ($arch =~ /amd64|ia64|alpha|s390x/) ? 'm' : 'y';
 }
 
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::qptrdiff;
