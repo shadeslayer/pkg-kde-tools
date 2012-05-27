@@ -1,4 +1,4 @@
-pkg-kde-tools (0.14.5~pre1) UNRELEASED; urgency=low
+pkg-kde-tools (0.15.0~pre1) UNRELEASED; urgency=low
 
   * Bump Standards-Version to 3.9.3: no changes needed.
   * Install pkgkde-git as an alias for pkgkde-vcs with VCS type forced to git.
