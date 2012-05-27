@@ -68,9 +68,9 @@ builddir/Makefile:
 	mkdir -p builddir
 	cd builddir && cmake .. \
 		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_C_FLAGS="$(CFLAGS)" \
-		-DCMAKE_LD_FLAGS="-Wl,-z,defs" \
-		-DCMAKE_CXX_FLAGS="$(CXXFLAGS)" \
+		-DCMAKE_C_FLAGS="$(CPPFLAGS) $(CFLAGS)" \
+		-DCMAKE_LD_FLAGS="$(LDFLAGS) -Wl,-z,defs" \
+		-DCMAKE_CXX_FLAGS="$(CPPFLAGS) $(CXXFLAGS)" \
 		-DCMAKE_SKIP_RPATH=ON \
 		-DCMAKE_VERBOSE_MAKEFILE=ON \
 		$(DEB_CMAKE_KDE4_FLAGS)
