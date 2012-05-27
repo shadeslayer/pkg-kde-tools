@@ -159,6 +159,22 @@ is_distribution_valid()
     return 1
 }
 
+opt_till_double_dash() {
+    local name
+    # Parse out remaining -- if needed
+    while getopts ":" name; do
+        case "$name" in
+            ?)  if [ -n "$OPTARG" ]; then OPTIND=$(($OPTIND-1)); fi; break;;
+            :)  die "$OPTARG option is missing a required argument" ;;
+        esac
+    done
+    if [ "$OPTIND" -gt 1 ]; then
+        echo "$(($OPTIND-1))"
+    else
+        echo "0"
+    fi
+}
+
 # Parse common options
 OPT_VERBOSE=
 OPT_PROMPT='prompt'

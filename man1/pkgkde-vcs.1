@@ -68,8 +68,33 @@ specific \fIsubcommand\fR for more details.
 .SH SUPPORTED VERSION CONTROL SYSTEMS AND SUBCOMMANDS
 .SS Git
 In order to use \fBpkgkde\-vcs\fR with Git, \fIgit(1)\fR must be available in \fIPATH\fR.
-Bare Git repositories are not supported and Git repository should be in fully checked out
-state. The following subcommands for Git repositories are supported at the moment:
+Bare Git repositories are not supported and Git repository should be in the fully checked
+out state (except \fBclone\fR). The following subcommands for Git repositories are supported
+at the moment:
+
+.TP
+.B clone
+Clone the specified pkg\-kde git repository. This subcommand should be specified
+by forcing VCS to git, i.e. by running \fIpkgkde\-git\fR command rather than
+\fIpkgkde-vcs\fR.
+
+Repository should be specified relatively to the root of the official pkg-kde
+repository tree. Once operation is complete, the cloned repository will be put
+at the same relative location on the local filesystem and \fBupdate\-config\fR
+(see below) will be executed on it.
+
+For example, in order to clone kde4libs repository from \fIkde\-sc\fR,
+akonadi repository from \fIkde\-req\fR and pkg\-kde\-tools repository from the
+root tree, execute:
+.P
+.RS
+$ pkgkde\-git clone kde\-sc/kde4libs
+.P
+$ pkgkde\-git clone kde\-req/akonadi
+.P
+$ pkgkde\-git clone pkg\-kde\-tools
+.RE
+
 .TP
 .B tag
 Tag current packaging state (HEAD) as upload to Debian archive. Repository
@@ -102,6 +127,24 @@ the hood (assuming version is 1:2.3.4-5 and distribution is experimental):
 .RS
 $ git tag debian/2.3.4-5 \-m "1:2.3.4-5/experimental"
 .RE
+.RE
+
+.TP
+.B update\-config
+Do some common configuration on the checked out packaging repository. At the
+moment, the subcommand performs the following:
+.RS
+.IP \(bu
+Set up master branch and debian tags for pushing. \fB\-f\fR option may be
+specified to force update of the pushing configuration even if some pushing
+configuration already exists.
+.IP \(bu
+Set repository user name and email address to the values of the
+\fBDEBFULLNAME\fR and \fBDEBEMAIL\fR environment variables respectively.
+\fB\-f\fR option may be specified to override the values even if the repository
+has some specified already.
+.RE
+
 .SH LICENSE
 .P
 This program is free software: you can redistribute it and/or modify
