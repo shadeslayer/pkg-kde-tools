@@ -1,9 +1,12 @@
-.TH PKGKDE\-VCS 1 "2009-10-16" "0.1" "Debian KDE packaging VCS helper"
+.TH PKGKDE\-VCS 1 "2012-05-27" "0.15" "Debian KDE packaging VCS helper"
 .SH NAME
 .B pkgkde\-vcs
 \- a helper tool for Debian pkg-kde VCS repositories.
 .SH SYNOPSIS
 .B pkgkde\-vcs
+[\fB\-vy\fR] \fIsubcommand\fR [ \fISUBCOMMAND OPTIONS\fR ] [ -- \fIEXTERNAL TOOL OPTIONS\fR ]
+.P
+.B pkgkde\-git
 [\fB\-vy\fR] \fIsubcommand\fR [ \fISUBCOMMAND OPTIONS\fR ] [ -- \fIEXTERNAL TOOL OPTIONS\fR ]
 .SH DESCRIPTION
 .B pkgkde\-vcs
@@ -15,12 +18,15 @@ interface. Please note that this helper enforces the best practises and
 packaging conventions adopted by Debian Qt/KDE maintainer groups and therefore
 it should not be considered as a general purpose packaging helper.
 
-.B pkgkde\-cvs
+.B pkgkde\-vcs
 should be run from the fully checked out packaging repository of the package it
 is supposed to act upon. Firstly, it attempts to detect a VCS in use for
 the particular packaging in the working directory. Please note, that the
-detection might fail if underlying VCS utilities are not installed. If
-detection is successful, \fBpkgkde\-vcs\fR will perform tasks as defined for
+detection might fail if underlying VCS utilities are not installed. If you want
+or have to force a specific VCS type, run the command as \fIpkgkde\-$vcs\fR,
+for example \fBpkgkde-git\fR.
+
+If detection is successful, \fBpkgkde\-vcs\fR will perform tasks as defined for
 the specified \fIsubcommand\fR (e.g. tag). Different set of subcommands might
 be defined for each VCS and each of them might accept a different set of \fISUBCOMMAND
 OPTIONS\fR (see below). All locally unrecognized subcommand options (or the

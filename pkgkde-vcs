@@ -32,11 +32,29 @@ die()
 # Supports Git at the moment
 determine_vcs()
 {
-    if which git > /dev/null && git rev-parse --git-dir >/dev/null 2>/dev/null; then
-        echo git
-        return 0
-    fi
-    return 1
+    # VCS might have been requested via program name
+    local vcs
+    vcs="`basename "$0"`"
+    vcs="${vcs##pkgkde-}"
+    case "$vcs" in
+        vcs)
+            if which git > /dev/null && git rev-parse --git-dir >/dev/null 2>/dev/null; then
+                echo git
+                return 0
+            fi
+            return 1
+            ;;
+        git)
+            if which git > /dev/null; then
+                echo "$vcs"
+                return 0
+            fi
+            return 1
+            ;;
+        *)
+            return 1
+            ;;
+    esac
 }
 
 # Determine LIBDIR. Supports both running in-source and installed

@@ -77,6 +77,7 @@ install(PROGRAMS
     pkgkde-override-sc-dev-latest
     pkgkde-symbolshelper
     pkgkde-vcs
+    pkgkde-git
     DESTINATION ${BIN_INSTALL_DIR}
     COMPONENT Programs)
 install_pod_manpages(1 pkgkde-override-sc-dev-latest)
