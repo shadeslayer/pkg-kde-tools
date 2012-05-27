@@ -84,11 +84,14 @@ runcmd()
         echo "$" "$*" >&2
     fi
     if [ "$OPT_PROMPT" = "prompt" ]; then
-        echo -n "Run the command above? [Y/n]: "
+        echo -n "Run this command above and all others? (p = prompt next time) [Y/n/p]: "
         while true; do
             read ans
             if [ "$ans" = "Y" ] || [ "$ans" = "y" ] || [ -z "$ans" ]; then
+                OPT_PROMPT="y"
                 break
+            elif [ "$ans" = "p" ] || [ "$ans" = "P" ]; then
+                break;
             elif [ "$ans" = "N" ] || [ "$ans" = "n" ]; then
                 info "Cancelled by user." >&2
                 exit 2
