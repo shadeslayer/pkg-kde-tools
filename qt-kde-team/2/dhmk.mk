@@ -73,6 +73,11 @@ $(dhmk_env_mk): $(MAKEFILE_LIST)
 include $(call dhmk_include_cmd,$(dhmk_env_mk))
 include $(call dhmk_include_cmd,$(dhmk_rules_mk))
 
+# Add CPPFLAGS to CXXFLAGS, this is a workaround for a cmake bug,
+# which ignores CPPFLAGS, see:
+#  http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=653916
+export CXXFLAGS += $(CPPFLAGS)
+
 # Routine used to run an override target if there is one ($1 should be
 # override_{command})
 define dhmk_override_cmd

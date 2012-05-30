@@ -1,10 +1,15 @@
 pkg-kde-tools (0.15.0~pre1) UNRELEASED; urgency=low
 
+  [ Modestas Vainius ]
   * Bump Standards-Version to 3.9.3: no changes needed.
   * Install pkgkde-git as an alias for pkgkde-vcs with VCS type forced to git.
   * Implement pkgkde-git clone and update-config subcommands.
   * Make variables.mk respect LDFLAGS from environment. Thanks to Simon
     Ruderich for the patch. (Closes: #669183)
+
+  [ José Manuel Santamaría Lema ]
+  * Add a workaround for cmake bug #653916 (cmake ignores CPPFLAGS) in
+    qt-kde-team/2/dhmk.mk.
 
  -- Modestas Vainius <modax@debian.org>  Mon, 21 May 2012 19:42:46 +0300
 
