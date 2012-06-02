@@ -84,7 +84,7 @@ runcmd()
         echo "$" "$*" >&2
     fi
     if [ "$OPT_PROMPT" = "prompt" ]; then
-        echo -n "Run this command above and all others? (p = prompt next time) [Y/n/p]: "
+        echo -n "Run the command above and all others? (p = prompt next time) [Y/n/p]: "
         while true; do
             read ans
             if [ "$ans" = "Y" ] || [ "$ans" = "y" ] || [ -z "$ans" ]; then
