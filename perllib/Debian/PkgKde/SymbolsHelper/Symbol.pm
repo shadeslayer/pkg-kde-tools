@@ -305,6 +305,11 @@ sub convert_templ_to_cpp_alias {
 
 sub upgrade_virtual_table_symbol {
     my ($self, $arch) = @_;
+    # Based on: binutils/libiberty/cp-demangle.c:d_special_name()
+    # c - DEMANGLE_COMPONENT_COVARIANT_THUNK: covariant return thunk to
+    # C - DEMANGLE_COMPONENT_CONSTRUCTION_VTABLE: construction vtable for
+    # h - DEMANGLE_COMPONENT_THUNK: non-virtual thunk to
+    # v - DEMANGLE_COMPONENT_VIRTUAL_THUNK: virtual thunk to
     if ($self->get_symboltempl() =~ /^_ZT[Cchv]/) {
 	my $newtempl = $self->convert_templ_to_cpp_alias();
 	if (defined $newtempl) {
