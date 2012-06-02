@@ -1,4 +1,6 @@
-pkg-kde-tools (0.15.0~pre2) UNRELEASED; urgency=low
+pkg-kde-tools (0.15.0) unstable; urgency=low
+
+  * Team upload.
 
   [ Modestas Vainius ]
   * Bump Standards-Version to 3.9.3: no changes needed.
@@ -13,7 +15,7 @@ pkg-kde-tools (0.15.0~pre2) UNRELEASED; urgency=low
   * Add a workaround for cmake bug #653916 (cmake ignores CPPFLAGS) in
     qt-kde-team/2/dhmk.mk.
 
- -- Modestas Vainius <modax@debian.org>  Mon, 21 May 2012 19:42:46 +0300
+ -- Modestas Vainius <modax@debian.org>  Sat, 02 Jun 2012 21:45:25 +0300
 
 pkg-kde-tools (0.14.4) unstable; urgency=low
 
