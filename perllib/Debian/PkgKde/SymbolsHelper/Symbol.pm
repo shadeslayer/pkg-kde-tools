@@ -69,8 +69,15 @@ sub get_substs {
     return $self->{substs};
 }
 
-sub is_vtt {
-    return shift()->get_symbolname() =~ /^_ZT[VT]/;
+sub is_trunk_symbol {
+    my $self = shift;
+    my $name = shift || $self->get_symbolname();
+    # Based on: binutils/libiberty/cp-demangle.c:d_special_name()
+    # c - DEMANGLE_COMPONENT_COVARIANT_THUNK: covariant return thunk to
+    # C - DEMANGLE_COMPONENT_CONSTRUCTION_VTABLE: construction vtable for
+    # h - DEMANGLE_COMPONENT_THUNK: non-virtual thunk to
+    # v - DEMANGLE_COMPONENT_VIRTUAL_THUNK: virtual thunk to
+    return $name =~ /^_ZT[Cchv]/;
 }
 
 sub initialize {
@@ -305,12 +312,7 @@ sub convert_templ_to_cpp_alias {
 
 sub upgrade_virtual_table_symbol {
     my ($self, $arch) = @_;
-    # Based on: binutils/libiberty/cp-demangle.c:d_special_name()
-    # c - DEMANGLE_COMPONENT_COVARIANT_THUNK: covariant return thunk to
-    # C - DEMANGLE_COMPONENT_CONSTRUCTION_VTABLE: construction vtable for
-    # h - DEMANGLE_COMPONENT_THUNK: non-virtual thunk to
-    # v - DEMANGLE_COMPONENT_VIRTUAL_THUNK: virtual thunk to
-    if ($self->get_symboltempl() =~ /^_ZT[Cchv]/) {
+    if ($self->is_trunk_symbol($self->get_symboltempl())) {
 	my $newtempl = $self->convert_templ_to_cpp_alias();
 	if (defined $newtempl) {
 	    $self->set_symbolname($newtempl, $newtempl);
