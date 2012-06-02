@@ -6,6 +6,8 @@ pkg-kde-tools (0.15.0~pre2) UNRELEASED; urgency=low
   * Implement pkgkde-git clone and update-config subcommands.
   * Make variables.mk respect LDFLAGS from environment. Thanks to Simon
     Ruderich for the patch. (Closes: #669183)
+  * pkgkde-symbolshelper: output covariant return trunks with c++ tag since the
+    symbol name contains an arch-specific offset. (Closes: #657806)
 
   [ José Manuel Santamaría Lema ]
   * Add a workaround for cmake bug #653916 (cmake ignores CPPFLAGS) in

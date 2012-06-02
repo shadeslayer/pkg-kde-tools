@@ -305,7 +305,7 @@ sub convert_templ_to_cpp_alias {
 
 sub upgrade_virtual_table_symbol {
     my ($self, $arch) = @_;
-    if ($self->get_symboltempl() =~ /^_ZT[Chv]/) {
+    if ($self->get_symboltempl() =~ /^_ZT[Cchv]/) {
 	my $newtempl = $self->convert_templ_to_cpp_alias();
 	if (defined $newtempl) {
 	    $self->set_symbolname($newtempl, $newtempl);
