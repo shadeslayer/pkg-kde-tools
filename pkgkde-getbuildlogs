@@ -157,8 +157,6 @@ sub fetch_log {
 			open($tmpfile2, ">:utf8", $tmpfile2->filename) or
 			    syserr "unable to reopen temporary file";
 			$ok = 1;
-		    } else {
-			unlink $filename;
 		    }
 		}
 	    } else {
