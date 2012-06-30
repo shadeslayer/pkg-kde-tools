@@ -139,7 +139,7 @@ sub fetch_log {
 	if ($response->is_success()) {
 	    # Inflate/gunzip contents if needed
 	    my $content_encoding = $response->header("Content-Encoding");
-	    if (defined $content_encoding) {
+	    if (defined $content_encoding && $content_encoding ne "identity") {
 		my $uncompress_func;
 		if ($content_encoding eq "deflate") {
 		    push @status, "deflate";
@@ -162,6 +162,7 @@ sub fetch_log {
 		    }
 		}
 	    } else {
+		# Identity encoding (no compression)
 		$ok = 1;
 		binmode($tmpfile2, ":utf8");
 	    }
