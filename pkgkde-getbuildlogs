@@ -142,10 +142,10 @@ sub fetch_log {
 	    if (defined $content_encoding && $content_encoding ne "identity") {
 		my $uncompress_func;
 		if ($content_encoding eq "deflate") {
-		    push @status, "deflate";
+		    push @status, "decoded:deflate";
 		    $uncompress_func = \&inflate;
 		} elsif ($content_encoding eq "gzip") {
-		    push @status, "gzip";
+		    push @status, "decoded:gzip";
 		    $uncompress_func = \&gunzip;
 		} else {
 		    push @status, "unsupported content encoding: $content_encoding";
