@@ -24,6 +24,7 @@ use File::Copy qw();
 use File::Temp qw();
 use File::Spec;
 use IO::Uncompress::Inflate qw(inflate);
+use IO::Uncompress::Gunzip qw(gunzip);
 
 # Load extra modules (from libwww-perl and its dependencies)
 INIT {
@@ -131,24 +132,34 @@ sub fetch_log {
 
 	info "Fetching build log to $filename ...";
 	my $request = HTTP::Request->new(GET => $uri);
-	$request->header("Accept-Encoding" => "deflate, identity");
+	$request->header("Accept-Encoding" => "gzip, deflate, identity");
 	$browser->show_progress(1);
 	$tmpfile1->close();
 	my $response = $browser->request($request, $tmpfile1->filename);
 	if ($response->is_success()) {
-	    my $is_deflated = $response->header("Content-Encoding");
-	    $is_deflated = defined $is_deflated && $is_deflated eq "deflate";
-	    # Inflate contents if needed
-	    if ($is_deflated) {
-		push @status, "deflate";
-		if (inflate($tmpfile1->filename => $tmpfile2, BinModeOut => 1)) {
-		    $tmpfile2->close();
-		    ($tmpfile1, $tmpfile2) = ($tmpfile2, $tmpfile1);
-		    open($tmpfile2, ">:utf8", $tmpfile2->filename) or
-			syserr "unable to reopen temporary file";
-		    $ok = 1;
+	    # Inflate/gunzip contents if needed
+	    my $content_encoding = $response->header("Content-Encoding");
+	    if (defined $content_encoding) {
+		my $uncompress_func;
+		if ($content_encoding eq "deflate") {
+		    push @status, "deflate";
+		    $uncompress_func = \&inflate;
+		} elsif ($content_encoding eq "gzip") {
+		    push @status, "gzip";
+		    $uncompress_func = \&gunzip;
 		} else {
-		    unlink $filename;
+		    push @status, "unsupported content encoding: $content_encoding";
+		}
+		if (defined $uncompress_func) {
+		    if (&$uncompress_func($tmpfile1->filename => $tmpfile2, BinModeOut => 1)) {
+			$tmpfile2->close();
+			($tmpfile1, $tmpfile2) = ($tmpfile2, $tmpfile1);
+			open($tmpfile2, ">:utf8", $tmpfile2->filename) or
+			    syserr "unable to reopen temporary file";
+			$ok = 1;
+		    } else {
+			unlink $filename;
+		    }
 		}
 	    } else {
 		$ok = 1;

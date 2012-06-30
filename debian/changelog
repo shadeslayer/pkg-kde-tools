@@ -3,6 +3,9 @@ pkg-kde-tools (0.15.1~pre1) UNRELEASED; urgency=low
   [ Pino Toscano ]
   * Extend the workaround for cmake bug #653916 also to CFLAGS.
 
+  [ Modestas Vainius ]
+  * pkgkde-getbuildlogs: support gzip Content-Encoding.
+
  -- Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>  Sat, 16 Jun 2012 13:21:40 +0200
 
 pkg-kde-tools (0.15.0) unstable; urgency=low
