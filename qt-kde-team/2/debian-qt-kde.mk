@@ -27,6 +27,9 @@ include $(dqk_dir)list-missing.mk
 # KDE packages are parallel safe. Add --parallel to dh_auto_% commands
 $(call set_command_options,dh_auto_%, += --parallel)
 
+# Use xz compression by default
+$(call set_command_options,dh_builddeb, += -u-Zxz)
+
 # Link with --as-needed by default
 # (subject to be moved to kde dh addon/debhelper buildsystem)
 dqk_link_with_as_needed ?= yes
