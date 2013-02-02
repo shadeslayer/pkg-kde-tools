@@ -75,6 +75,7 @@ install(PROGRAMS
     pkgkde-gensymbols
     pkgkde-getbuildlogs
     pkgkde-override-sc-dev-latest
+    pkgkde-sortinstall
     pkgkde-symbolshelper
     pkgkde-vcs
     pkgkde-git
