@@ -3,7 +3,7 @@ libpkgs_arch_pkgs := $(shell dh_listpackages -a)
 libpkgs_subst_hooks := $(foreach t,binary-arch binary,pre_$(t)_dh_gencontrol)
 
 # All library packages
-libpkgs_all_packages := $(filter-out %-dev,$(filter lib%,$(libpkgs_arch_pkgs)))
+libpkgs_all_packages := $(filter-out %-dev %-dbg, $(filter lib%,$(libpkgs_arch_pkgs)))
 
 ifneq (,$(libpkgs_addsubst_allLibraries))
 
