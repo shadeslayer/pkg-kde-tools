@@ -1,4 +1,4 @@
-pkg-kde-tools (0.15.4~pre2) UNRELEASED; urgency=low
+pkg-kde-tools (0.15.4~pre3) UNRELEASED; urgency=low
 
   * Add makefiles/1/list-missing.mk; this file is meant to provide the useful
     list-missing and check-not-installed targets for kde-extras packages which
