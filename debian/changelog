@@ -1,8 +1,5 @@
 pkg-kde-tools (0.15.4~pre3) UNRELEASED; urgency=low
 
-  * Add makefiles/1/list-missing.mk; this file is meant to provide the useful
-    list-missing and check-not-installed targets for kde-extras packages which
-    are using dh.
   * Add pkgkde-sortinstall script, it's meant to help sorting debian/*.install
     files.
   * Filter out -dbg packages from ${allLibraries} variables.
