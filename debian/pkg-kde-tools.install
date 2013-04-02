@@ -6,7 +6,6 @@ usr/bin/pkgkde-gensymbols
 usr/bin/pkgkde-getbuildlogs
 usr/bin/pkgkde-git
 usr/bin/pkgkde-override-sc-dev-latest
-usr/bin/pkgkde-sortinstall
 usr/bin/pkgkde-symbolshelper
 usr/bin/pkgkde-vcs
 usr/share/man/man1/dh_movelibkdeinit.1

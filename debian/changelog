@@ -1,7 +1,5 @@
-pkg-kde-tools (0.15.4~pre3) UNRELEASED; urgency=low
+pkg-kde-tools (0.15.4) UNRELEASED; urgency=low
 
-  * Add pkgkde-sortinstall script, it's meant to help sorting debian/*.install
-    files.
   * Filter out -dbg packages from ${allLibraries} variables.
 
  -- José Manuel Santamaría Lema <panfaust@gmail.com>  Mon, 10 Sep 2012 10:09:02 +0200
