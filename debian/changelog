@@ -1,8 +1,12 @@
 pkg-kde-tools (0.15.4) UNRELEASED; urgency=low
 
+  [ José Manuel Santamaría Lema ]
   * Filter out -dbg packages from ${allLibraries} variables.
 
- -- José Manuel Santamaría Lema <panfaust@gmail.com>  Mon, 10 Sep 2012 10:09:02 +0200
+  [ Sune Vuorela ]
+  * Update my email address
+
+ -- Sune Vuorela <sune@debian.org>  Tue, 02 Apr 2013 21:58:46 +0000
 
 pkg-kde-tools (0.15.3) unstable; urgency=low
 
