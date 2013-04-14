@@ -52,7 +52,8 @@ name and I<dependency type> (either Depends or Recommends etc.) are determined.
 =item *
 
 All dependencies of the requested I<type> are collected for the I<dependency
-package> based on the I<dpkg-query --status> output.
+package> based on the I<dpkg-query --status> output. If a multi-arch aware dpkg
+is detected, this query is architecture-qualified as needed.
 
 =item *
 
@@ -157,6 +158,7 @@ use Dpkg::Control::Info;
 use Dpkg::Substvars;
 use Dpkg::ErrorHandling ();
 use File::Copy;
+use POSIX ":sys_wait_h";
 
 use Debian::Debhelper::Dh_Lib;
 
@@ -170,6 +172,8 @@ my $re_splitsubstvar = qr/^($re_pkgname)(?::($re_pkgname))?(?:-($re_fields))?$/;
 # Global substvars file
 my $g_substvars = new Dpkg::Substvars;
 $g_substvars->load("debian/substvars") if (-r "debian/substvars");
+
+my $MULTIARCH_ARCH;
 
 sub extract_package_names {
     my $val = shift;
@@ -239,17 +243,38 @@ sub Shlibsvars::get_dep_package_names {
     return extract_package_names($val);
 }
 
-sub get_package_dpkg_status {
+sub supports_multiarch {
+    if (!defined $MULTIARCH_ARCH) {
+        my $multiarch_assert = system('dpkg', '--assert-multi-arch');
+        if ($multiarch_assert == 0) {
+            $MULTIARCH_ARCH = dpkg_architecture_value('DEB_HOST_ARCH');
+        } else {
+            $MULTIARCH_ARCH = ""; # empty indicates no multiarch support
+        }
+    }
+    return $MULTIARCH_ARCH ne "";
+}
+
+sub arch_qualify {
+    if (supports_multiarch()) {
+        return map { "$_:$MULTIARCH_ARCH" } @_;
+    } else {
+        return @_;
+    }
+}
+
+sub execute_dpkg_status {
     my $binpkgs = shift;
     my $fields = shift;
     $fields = [ "Source", "Version" ] unless defined $fields;
+    my $status = shift;
+
     my $regexp_fields = join("|", @$fields);
-    my %status;
 
     my $pid = open(DPKG, "-|");
     error("cannot fork for dpkg-query --status") unless defined($pid);
     if (!$pid) {
-        # Child process running dpkg --search and discarding errors
+        # Child process running dpkg-query --status and discarding errors
         close STDERR;
         open STDERR, ">", "/dev/null";
         $ENV{LC_ALL} = "C";
@@ -259,18 +284,43 @@ sub get_package_dpkg_status {
     while (defined($_ = <DPKG>)) {
         if (m/^Package:\s*(.*)$/) {
             $curpkg = $1;
-            $status{$curpkg} = {};
+            $status->{$curpkg} = {};
         } elsif (defined($curpkg)) {
             if (m/^($regexp_fields):\s*(.*)$/) {
                 my $field = $1;
                 error("dublicate field $field for the $curpkg package in the dpkg status file")
-                    if (exists $status{$curpkg}{$field});
-                $status{$curpkg}{$field} = $2;
+                    if (exists $status->{$curpkg}{$field});
+                $status->{$curpkg}{$field} = $2;
             }
         }
     }
     close(DPKG);
 
+    my $exit_code = $?;
+    if (WIFEXITED($exit_code)) {
+        return WEXITSTATUS($exit_code);
+    } else {
+        error("failed to terminate dpkg --status process PID $pid");
+    }
+}
+
+sub get_package_dpkg_status {
+    my $binpkgs = shift;
+    my $fields = shift;
+    my %status;
+
+    my $exit_code = execute_dpkg_status($binpkgs, $fields, \%status);
+    if ($exit_code == 2 && supports_multiarch()) {
+        # Most likely dpkg-query --status failed due to some of package names
+        # being ambiguous on this system. So just requery them using
+        # arch-qualified syntax.
+        # NOTE: we have to query twice since arch-qualified syntax won't find
+        # arch:all packages.
+        my @ambiguous_pkgs = arch_qualify(grep { ! exists $status{$_} } @$binpkgs);
+        if (@ambiguous_pkgs) {
+            execute_dpkg_status(\@ambiguous_pkgs, $fields, \%status);
+        }
+    }
     return \%status;
 }
 

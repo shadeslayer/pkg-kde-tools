@@ -1,5 +1,8 @@
 pkg-kde-tools (0.15.5) UNRELEASED; urgency=low
 
+  * dh_sameversiondep: do not fail on dependencies which have versions from
+    multiple architectures installed. Thanks to Cyril Brulebois for the initial
+    patch. (Closes: #676833)
 
  -- Modestas Vainius <modax@debian.org>  Sun, 14 Apr 2013 14:45:39 +0300
 
