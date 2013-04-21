@@ -147,22 +147,22 @@ fi
 # Do some envinronment sanity checks first
 git_is_bare="$(git rev-parse --is-bare-repository 2>/dev/null)"
 if [ "$?" -eq 0 ]; then
-    if [ -z "$subcmd_needs_package_root" ]; then
-        is_valid_package_root "$PACKAGE_ROOT" ||
-            die "$subcmd should not be executed inside a valid debian packaging repository"
-    fi
-
     if [ "$git_is_bare" = "true" ]; then
         die "bare Git repositories are not supported."
     fi
 
     PACKAGE_ROOT="$(readlink -f "$(git rev-parse --git-dir)/..")"
 
-    is_valid_package_root "$PACKAGE_ROOT" ||
-        die "$PACKAGE_ROOT does NOT appear to be a valid debian packaging repository"
+    if [ -z "$subcmd_needs_package_root" ]; then
+        is_valid_package_root "$PACKAGE_ROOT" &&
+            die "$subcmd should not be executed inside a valid debian packaging repository"
+    else
+        is_valid_package_root "$PACKAGE_ROOT" ||
+            die "$PACKAGE_ROOT does NOT appear to be a valid debian packaging repository"
 
-    # Get info about debian package
-    get_debian_package_info "$PACKAGE_ROOT"
+        # Get info about debian package
+        get_debian_package_info "$PACKAGE_ROOT"
+    fi
 else
     if [ -n "$subcmd_needs_package_root" ]; then
         die "$subcmd should be executed inside a valid debian packaging git repository"
