@@ -1,8 +1,8 @@
-pkg-kde-tools (0.15.6) UNRELEASED; urgency=low
+pkg-kde-tools (0.15.6) unstable; urgency=low
 
   * pkgkde-git: Update sanity check, allow git clones inside gited homes.
 
- -- Maximiliano Curia <maxy@debian.org>  Sun, 21 Apr 2013 22:58:09 +0200
+ -- Maximiliano Curia <maxy@debian.org>  Fri, 10 May 2013 17:57:04 +0200
 
 pkg-kde-tools (0.15.5) experimental; urgency=low
 
