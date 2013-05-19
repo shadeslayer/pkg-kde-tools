@@ -153,7 +153,7 @@ is_distribution_valid()
 {
     local distro
     test -n "$1" || distro="$DEB_DISTRIBUTION"
-    if [ "$(expr match "$distro" '^\(\(stable\|testing\)\(-security\|-proposed-updates\)\|\(lenny\|squeeze\)-backports\|stable\|unstable\|experimental\)$')" = "$distro" ]; then
+    if [ "$(expr match "$distro" '^\(\(stable\|testing\)\(-security\|-proposed-updates\)\|\(squeeze\|wheezy\)-backports\|stable\|unstable\|experimental\)$')" = "$distro" ]; then
         return 0
     fi
     return 1
