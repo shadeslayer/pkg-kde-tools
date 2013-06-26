@@ -259,6 +259,25 @@ sub _expand {
     return ($arch =~ /amd64|ia64|alpha|sparc64|ppc64/) ? 'y' : 'j';
 }
 
+package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::intptr_t;
+
+use strict;
+use warnings;
+use base 'Debian::PkgKde::SymbolsHelper::Substs::TypeSubst';
+
+sub new {
+    my $class = shift;
+    my $self = $class->SUPER::new(@_);
+    $self->{substvar} = "{intptr_t}";
+    $self->{types} = [ qw(l i) ]; # long / int
+    return $self;
+}
+
+sub _expand {
+    my ($self, $arch) = @_;
+    return ($arch =~ /amd64|ia64|alpha|s390x|sparc64|ppc64/) ? 'l' : 'i';
+}
+
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::qreal;
 
 use strict;
