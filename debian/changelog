@@ -3,6 +3,9 @@ pkg-kde-tools (0.15.8) UNRELEASED; urgency=low
   [ Felix Geyer ]
   * pkgkde-symbolshelper: Add intptr_t type substitution.
 
+  [ Pino Toscano ]
+  * Fix Vcs-* headers.
+
  -- Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>  Wed, 26 Jun 2013 18:01:25 +0200
 
 pkg-kde-tools (0.15.7) unstable; urgency=low
