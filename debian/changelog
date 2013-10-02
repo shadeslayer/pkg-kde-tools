@@ -1,3 +1,7 @@
+pkg-kde-tools (0.15.10) UNRELEASED; urgency=low
+
+ -- Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>  Wed, 02 Oct 2013 17:57:25 -0300
+
 pkg-kde-tools (0.15.9) unstable; urgency=low
 
   * Add s390 and s390x to the list of archs that use 'y' (unsigned long long)
