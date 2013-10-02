@@ -1,11 +1,10 @@
-pkg-kde-tools (0.15.9) UNRELEASED; urgency=low
+pkg-kde-tools (0.15.9) unstable; urgency=low
 
-  [ Lisandro Damián Nicanor Pérez Meyer ]
   * Add s390 and s390x to the list of archs that use 'y' (unsigned long long)
     as replacement for quintptr (Closes: #725023).
   * Add myself to Uploaders.
 
- -- Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>  Mon, 30 Sep 2013 22:48:50 -0300
+ -- Lisandro Damián Nicanor Pérez Meyer <lisandro@debian.org>  Wed, 02 Oct 2013 17:34:04 -0300
 
 pkg-kde-tools (0.15.8) unstable; urgency=low
 
