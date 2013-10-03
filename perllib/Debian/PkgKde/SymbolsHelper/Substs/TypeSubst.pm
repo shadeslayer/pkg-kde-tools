@@ -256,7 +256,7 @@ sub new {
 
 sub _expand {
     my ($self, $arch) = @_;
-    return ($arch =~ /amd64|ia64|alpha|s390|s390x|sparc64|ppc64/) ? 'y' : 'j';
+    return ($arch =~ /amd64|ia64|alpha|s390x|sparc64|ppc64/) ? 'y' : 'j';
 }
 
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::intptr_t;
