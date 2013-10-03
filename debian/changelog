@@ -1,9 +1,8 @@
-pkg-kde-tools (0.15.10) UNRELEASED; urgency=low
+pkg-kde-tools (0.15.10) unstable; urgency=low
 
-  [ Lisandro Damián Nicanor Pérez Meyer ]
   * Actually s390 uses 'j' (unsigned int) for quintptr (Closes: #725300).
 
- -- Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>  Wed, 02 Oct 2013 17:57:25 -0300
+ -- Lisandro Damián Nicanor Pérez Meyer <lisandro@debian.org>  Thu, 03 Oct 2013 19:02:46 -0300
 
 pkg-kde-tools (0.15.9) unstable; urgency=low
 
