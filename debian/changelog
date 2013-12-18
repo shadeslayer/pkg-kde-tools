@@ -1,5 +1,7 @@
 pkg-kde-tools (0.15.12) unstable; urgency=low
 
+  [ Dmitry Shachnev ]
+  * pkgkde-symbolshelper: fix qptrdiff expansion for s390x.
 
  -- Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>  Wed, 18 Dec 2013 16:07:44 +0400
 
