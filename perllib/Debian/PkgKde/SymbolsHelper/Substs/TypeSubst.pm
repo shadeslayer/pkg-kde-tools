@@ -237,7 +237,7 @@ sub new {
 
 sub _expand {
     my ($self, $arch) = @_;
-    return ($arch =~ /amd64|ia64|alpha|sparc64|ppc64/) ? 'x' : 'i';
+    return ($arch =~ /amd64|ia64|alpha|s390x|sparc64|ppc64/) ? 'x' : 'i';
 }
 
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::quintptr;
