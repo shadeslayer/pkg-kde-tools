@@ -1,6 +1,6 @@
 pkg-kde-tools (0.15.13) UNRELEASED; urgency=medium
 
-  * 
+  * Fix "Useless use of \E at" warning in dhmk.pl.
 
  -- Maximiliano Curia <maxy@debian.org>  Tue, 14 Jan 2014 12:49:44 -0300
 

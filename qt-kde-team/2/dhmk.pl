@@ -111,7 +111,7 @@ sub remove_command_options {
         if (!@opts) {
             delete $extra_cmd_opts{$command};
         } else {
-            my $re = "(\Q" . join("\E|\Q", @opts) . "\E)";
+            my $re = "(" . join("|", map {"\Q$_\E"} @opts) . ")";
             $extra_cmd_opts{$command} = [ grep { !/^$re$/ } @{$extra_cmd_opts{$command}} ];
         }
     }
