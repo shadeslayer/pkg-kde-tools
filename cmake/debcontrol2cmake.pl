@@ -20,6 +20,20 @@ use warnings;
 
 use Dpkg::Control::Info;
 use Dpkg::Control;
+use Dpkg::Arch;
+
+sub samearch {
+    my $arch = shift;
+    my @archlist = split(/\s+/, shift);
+
+    foreach my $a (@archlist) {
+        if (system("dpkg-architecture", "-a$arch", "-i$a") == 0) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
 
 # Parse command line arguments
 my @fields;
@@ -36,11 +50,14 @@ for (my $i = 0; $i < @ARGV; $i++) {
     }
 }
 
+my $arch = Dpkg::Arch::get_build_arch();
+
 # Retrieve requested fields and generate set statements
 my $control = Dpkg::Control::Info->new("debian/control");
 foreach my $pkg ($control->{source}, @{$control->{packages}}) {
     my $pkgok;
     my $pkgname = ($pkg->get_type() ==  CTRL_INFO_SRC) ? "Source" : $pkg->{Package};
+    next if $pkg->get_type() == CTRL_INFO_PKG && !samearch($arch, $pkg->{"Architecture"});
     foreach my $field (@fields) {
         my $val;
         if (exists $pkg->{$field}) {

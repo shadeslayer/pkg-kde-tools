@@ -3,6 +3,10 @@ pkg-kde-tools (0.15.13) UNRELEASED; urgency=medium
   [ Maximiliano Curia ]
   * Fix "Useless use of \E at" warning in dhmk.pl.
 
+  [ Pino Toscano ]
+  * debcontrol2cmake.pl: filter out binary packages not belonging to the build
+    architecture.
+
  -- Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>  Tue, 14 Jan 2014 12:49:44 -0300
 
 pkg-kde-tools (0.15.12) unstable; urgency=low
