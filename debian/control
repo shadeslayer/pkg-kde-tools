@@ -3,7 +3,7 @@ Section: devel
 Priority: extra
 Maintainer: Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>
 Build-Depends: debhelper (>= 9), libdpkg-perl (>= 1.15.6~), cmake (>= 2.6.4)
-Standards-Version: 3.9.4
+Standards-Version: 3.9.5
 Uploaders: Sune Vuorela <sune@debian.org>,
            Modestas Vainius <modax@debian.org>,
            Maximiliano Curia <maxy@debian.org>,

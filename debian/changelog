@@ -2,6 +2,7 @@ pkg-kde-tools (0.15.13) UNRELEASED; urgency=medium
 
   [ Maximiliano Curia ]
   * Fix "Useless use of \E at" warning in dhmk.pl.
+  * Bump Standards-Version to 3.9.5, no further changes needed.
 
   [ Pino Toscano ]
   * debcontrol2cmake.pl: filter out binary packages not belonging to the build
