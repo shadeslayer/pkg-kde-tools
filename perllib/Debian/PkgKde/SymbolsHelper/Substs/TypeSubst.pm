@@ -161,7 +161,7 @@ sub new {
 
 sub _expand {
     my ($self, $arch) = @_;
-    return ($arch =~ /amd64|ia64|alpha|s390|sparc64|ppc64|mips64|mips64el/) ? "m" : "j";
+    return ($arch =~ /^(amd64|ia64|alpha|s390|s390x|sparc64|ppc64|ppc64el|mips64|mips64el|arm64)$/) ? 'm' : 'j';
 }
 
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::ssize_t;
@@ -180,7 +180,7 @@ sub new {
 
 sub _expand {
     my ($self, $arch) = @_;
-    return ($arch =~ /amd64|ia64|alpha|s390|sparc64|ppc64|mips64|mips64el/) ? 'l' : 'i';
+    return ($arch =~ /^(amd64|ia64|alpha|s390|s390x|sparc64|ppc64|ppc64el|mips64|mips64el|arm64)$/) ? 'l' : 'i';
 }
 
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::int64_t;
@@ -199,7 +199,7 @@ sub new {
 
 sub _expand {
     my ($self, $arch) = @_;
-    return ($arch =~ /amd64|ia64|alpha|s390x|sparc64|ppc64|mips64|mips64el/) ? 'l' : 'x';
+    return ($arch =~ /^(amd64|ia64|alpha|s390x|sparc64|ppc64|ppc64el|mips64|mips64el|arm64)$/) ? 'l' : 'x';
 }
 
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::uint64_t;
@@ -218,7 +218,7 @@ sub new {
 
 sub _expand {
     my ($self, $arch) = @_;
-    return ($arch =~ /amd64|ia64|alpha|s390x|sparc64|ppc64|mips64|mips64el/) ? 'm' : 'y';
+    return ($arch =~ /^(amd64|ia64|alpha|s390x|sparc64|ppc64|ppc64el|mips64|mips64el|arm64)$/) ? 'm' : 'y';
 }
 
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::qptrdiff;
@@ -237,7 +237,7 @@ sub new {
 
 sub _expand {
     my ($self, $arch) = @_;
-    return ($arch =~ /amd64|ia64|alpha|s390x|sparc64|ppc64|mips64|mips64el/) ? 'x' : 'i';
+    return ($arch =~ /^(amd64|ia64|alpha|s390x|sparc64|ppc64|ppc64el|mips64|mips64el|arm64)$/) ? 'x' : 'i';
 }
 
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::quintptr;
@@ -256,7 +256,7 @@ sub new {
 
 sub _expand {
     my ($self, $arch) = @_;
-    return ($arch =~ /amd64|ia64|alpha|s390x|sparc64|ppc64|mips64|mips64el/) ? 'y' : 'j';
+    return ($arch =~ /^(amd64|ia64|alpha|s390x|sparc64|ppc64|ppc64el|mips64|mips64el|arm64)$/) ? 'y' : 'j';
 }
 
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::intptr_t;
@@ -275,7 +275,7 @@ sub new {
 
 sub _expand {
     my ($self, $arch) = @_;
-    return ($arch =~ /amd64|ia64|alpha|s390x|sparc64|ppc64|mips64|mips64el/) ? 'l' : 'i';
+    return ($arch =~ /^(amd64|ia64|alpha|s390x|sparc64|ppc64|ppc64el|mips64|mips64el|arm64)$/) ? 'l' : 'i';
 }
 
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst::qreal;
@@ -294,7 +294,7 @@ sub new {
 
 sub _expand {
     my ($self, $arch) = @_;
-    return ($arch =~ /(arm|sh4)/) ? 'f' : 'd';
+    return ($arch =~ /^(arm|armeb|armel|armhf|sh4)$/) ? 'f' : 'd';
 }
 
 package Debian::PkgKde::SymbolsHelper::Substs::TypeSubst;

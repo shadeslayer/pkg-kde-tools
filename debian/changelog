@@ -1,5 +1,10 @@
 pkg-kde-tools (0.15.14) UNRELEASED; urgency=medium
 
+  [ William Grant ]
+  * perllib/Debian/PkgKde/SymbolsHelper/Substs/TypeSubst.pm:
+    - Anchor architecture matches to the ends of the string, to avoid
+      erroneously mapping qreal to float on arm64.
+    - Add arm64 and ppc64el to the 64-bit matches.
 
  -- Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>  Sat, 03 May 2014 10:12:14 +0400
 
