@@ -13,6 +13,7 @@ Vcs-Browser: http://anonscm.debian.org/gitweb/?p=pkg-kde/pkg-kde-tools.git;a=sum
 
 Package: pkg-kde-tools
 Architecture: all
+Multi-Arch: foreign
 Depends: ${perl:Depends}, ${misc:Depends}, libdpkg-perl (>= 1.15.6~)
 Recommends: dpkg-dev (>= 1.15.6~), libwww-perl
 Suggests: debhelper (>= 7.3.16), cdbs

@@ -6,6 +6,9 @@ pkg-kde-tools (0.15.14) UNRELEASED; urgency=medium
       erroneously mapping qreal to float on arm64.
     - Add arm64 and ppc64el to the 64-bit matches (Closes: #744173).
 
+  [ Helmut Grohne ]
+  * Mark binary pkg-kde-tools as M-A:foreign. (Closes: #751338).
+
  -- Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>  Sat, 03 May 2014 10:12:14 +0400
 
 pkg-kde-tools (0.15.13) unstable; urgency=medium
