@@ -1,4 +1,4 @@
-pkg-kde-tools (0.15.14) UNRELEASED; urgency=medium
+pkg-kde-tools (0.15.14) unstable; urgency=medium
 
   [ William Grant ]
   * perllib/Debian/PkgKde/SymbolsHelper/Substs/TypeSubst.pm:
@@ -9,7 +9,7 @@ pkg-kde-tools (0.15.14) UNRELEASED; urgency=medium
   [ Helmut Grohne ]
   * Mark binary pkg-kde-tools as M-A:foreign. (Closes: #751338).
 
- -- Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>  Sat, 03 May 2014 10:12:14 +0400
+ -- Lisandro Damián Nicanor Pérez Meyer <lisandro@debian.org>  Sat, 12 Jul 2014 15:45:14 -0300
 
 pkg-kde-tools (0.15.13) unstable; urgency=medium
 
