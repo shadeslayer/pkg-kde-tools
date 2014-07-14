@@ -1,12 +1,11 @@
-pkg-kde-tools (0.15.15) UNRELEASED; urgency=medium
+pkg-kde-tools (0.15.15) unstable; urgency=medium
 
-  [ Lisandro Damián Nicanor Pérez Meyer ]
   * The fix for #744173 required to convert non-anchored regexps to anchored
     ones. The problem with this is that kfreebsd-amd64 was no longer matched.
     Fix it by adding kfreebsd-amd64 in the lists where amd64 appears, as
     they both share the same sizes (Closes: #754765).
 
- -- Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>  Sun, 13 Jul 2014 23:00:10 -0300
+ -- Lisandro Damián Nicanor Pérez Meyer <lisandro@debian.org>  Sun, 13 Jul 2014 23:21:12 -0300
 
 pkg-kde-tools (0.15.14) unstable; urgency=medium
 
