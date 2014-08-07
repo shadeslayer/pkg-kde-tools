@@ -54,11 +54,7 @@ endif
 
 # Since cmake 2.6.2 or higher is required from now on, enable relative paths to
 # get more ccache hits.
-$(call set_command_options,dh_auto_configure, += "-u-DCMAKE_USE_RELATIVE_PATHS=ON \
-                                                  -DCMAKE_INSTALL_QTPLUGINDIR=qt5/plugins \
-                                                  -DCMAKE_INSTALL_QTPLUGINDIR=qt5/imports \
-                                                  -DCMAKE_INSTALL_QMLDIR=qt5/qml \
-                                                  -DCMAKE_INSTALL_SYSCONFDIR=/etc")
+$(call set_command_options,dh_auto_configure, += "-u-DCMAKE_USE_RELATIVE_PATHS=ON")
 
 # Run dh_sameversiondep
 run_dh_sameversiondep:
