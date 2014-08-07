@@ -93,7 +93,7 @@ install_to_doc-html_package:
 	        echo Building $$pkg HTML docs...; \
 	        mkdir -p $(dqk_doc-html_dir)/usr/share/doc/kde/HTML/en/$$pkg; \
 	        cd $(dqk_doc-html_dir)/usr/share/doc/kde/HTML/en/$$pkg; \
-	        meinproc4 $(dqk_destdir)/usr/share/doc/kde/HTML/en/$$pkg/index.docbook; \
+	        meinproc5 $(dqk_destdir)/usr/share/doc/kde/HTML/en/$$pkg/index.docbook; \
 	    done; \
 	    for pkg in $(DOC_HTML_PRUNE) ; do \
 	        rm -rf $(dqk_doc-html_dir)/usr/share/doc/kde/HTML/en/$$pkg; \
