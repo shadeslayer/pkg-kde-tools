@@ -19,20 +19,20 @@
         return 0;
     }
     unless (ensure_debhelper_version(7, 3, 16)) {
-        error "debhelper addon 'kde' requires debhelper 7.3.16 or later";
+        error "debhelper addon 'kf5' requires debhelper 7.3.16 or later";
     }
 
     1;
 }
 
-# Build with kde buildsystem by default
-add_command_options("dh_auto_configure", "--buildsystem=kde");
-add_command_options("dh_auto_build", "--buildsystem=kde");
-add_command_options("dh_auto_test", "--buildsystem=kde");
-add_command_options("dh_auto_install", "--buildsystem=kde");
-add_command_options("dh_auto_clean", "--buildsystem=kde");
+# Build with kf5 buildsystem by default
+add_command_options("dh_auto_configure", "--buildsystem=kf5");
+add_command_options("dh_auto_build", "--buildsystem=kf5");
+add_command_options("dh_auto_test", "--buildsystem=kf5");
+add_command_options("dh_auto_install", "--buildsystem=kf5");
+add_command_options("dh_auto_clean", "--buildsystem=kf5");
 
-# Exclude kde documentation from dh_compress by default
+# Exclude kf5 documentation from dh_compress by default
 add_command_options("dh_compress",
     qw(-X.dcl -X.docbook -X-license -X.tag -X.sty -X.el));
 
