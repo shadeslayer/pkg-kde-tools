@@ -57,7 +57,7 @@ endif
 $(call set_command_options,dh_auto_configure, += "-u-DCMAKE_USE_RELATIVE_PATHS=ON \
                                                   -DCMAKE_INSTALL_QTPLUGINDIR=qt5/plugins \
                                                   -DCMAKE_INSTALL_QTPLUGINDIR=qt5/imports \
-                                                  -DCMAKE_INSTALL_LIBDIR=qt5/qml \
+                                                  -DCMAKE_INSTALL_QMLDIR=qt5/qml \
                                                   -DCMAKE_INSTALL_SYSCONFDIR=/etc")
 
 # Run dh_sameversiondep
