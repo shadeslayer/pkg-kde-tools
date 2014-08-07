@@ -1,0 +1,89 @@
+# Standard target commands are defined here.
+# File format is:
+# target: prerequisite_target(s) ...
+# 	command1
+# 	command2
+# 	command3
+# 	...
+# Use $targetname in place of a command to insert commands from the previously
+# defined target.
+configure:
+	dh_testdir
+	dh_auto_configure
+
+build: configure
+	dh_testdir
+	dh_auto_build
+	dh_auto_test
+
+build-indep: configure
+	$build
+
+build-arch: configure
+	$build
+
+clean:
+	dh_testdir
+	dh_auto_clean
+	dh_clean
+
+install: build
+	dh_testroot
+	dh_prep
+	dh_installdirs
+	dh_auto_install
+
+	dh_install
+	dh_installdocs
+	dh_installchangelogs
+	dh_installexamples
+	dh_installman
+
+	dh_installcatalogs
+	dh_installcron
+	dh_installdebconf
+	dh_installemacsen
+	dh_installifupdown
+	dh_installinfo
+	dh_installinit
+	dh_installmenu
+	dh_installmime
+	dh_installmodules
+	dh_installlogcheck
+	dh_installlogrotate
+	dh_installpam
+	dh_installppp
+	dh_installudev
+	dh_installwm
+	dh_installxfonts
+	dh_bugfiles
+	dh_lintian
+	dh_gconf
+	dh_icons
+	dh_perl
+	dh_usrlocal
+
+	dh_link
+	dh_compress
+	dh_fixperms
+
+install-indep: build-indep
+	$install
+
+install-arch: build-arch
+	$install
+
+binary-indep: install-indep
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary-arch: install-arch
+	dh_strip
+	dh_makeshlibs
+	dh_shlibdeps
+	$binary-indep
+
+binary: install
+	$binary-arch
