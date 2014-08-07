@@ -14,7 +14,7 @@ dqk_upstream_version ?= $(shell dpkg-parsechangelog | sed -n '/^Version:/{ s/^Ve
 dqk_destdir = $(CURDIR)/debian/tmp
 
 # We want to use kde and pkgkde-symbolshelper plugins by default
-dh := --with=kde,pkgkde-symbolshelper $(dh)
+dh := --with=kf5,pkgkde-symbolshelper $(dh)
 
 # dqk_disable_policy_check lists distributions for which policy check should be
 # disabled
