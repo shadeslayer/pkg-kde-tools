@@ -4,7 +4,7 @@
 # Copyright: © 2009 Modestas Vainius
 # License: GPL-2+
 
-package Debian::Debhelper::Buildsystem::kde;
+package Debian::Debhelper::Buildsystem::kf5;
 
 use strict;
 use warnings;

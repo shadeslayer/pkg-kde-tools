@@ -1,5 +1,5 @@
 {
-    package Debian::Debhelper::Sequence::kde;
+    package Debian::Debhelper::Sequence::kf5;
     use Debian::Debhelper::Dh_Version;
     use Debian::Debhelper::Dh_Lib qw(error);
 
