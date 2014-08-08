@@ -32,6 +32,9 @@ add_command_options("dh_auto_test", "--buildsystem=kf5");
 add_command_options("dh_auto_install", "--buildsystem=kf5");
 add_command_options("dh_auto_clean", "--buildsystem=kf5");
 
+# Omit libkdeinit5_* from dh_makeshlibs by default
+add_command_options("dh_makeshlibs", "-Xusr/lib/libkdeinit5_*");
+
 # Exclude kf5 documentation from dh_compress by default
 add_command_options("dh_compress",
     qw(-X.dcl -X.docbook -X-license -X.tag -X.sty -X.el));
