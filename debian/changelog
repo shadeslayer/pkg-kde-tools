@@ -1,3 +1,10 @@
+pkg-kde-tools (0.15.15ubuntu1) UNRELEASED; urgency=medium
+
+  * Merge with debian, remaining changes:
+    - TBD
+
+ -- Rohan Garg <rohangarg@kubuntu.org>  Wed, 20 Aug 2014 15:29:02 +0200
+
 pkg-kde-tools (0.15.15) unstable; urgency=medium
 
   * The fix for #744173 required to convert non-anchored regexps to anchored
