@@ -1,0 +1,22 @@
+
+Tagging
+=======
+
+The distribution name in debian/changelog should always be UNRELEASED
+until the package is uploaded.
+
+Before uploading set the distribution name and create a tag:
+- debchange -r --distribution <NAME>
+- bzr commit
+- bzr tag ubuntu/<VERSION>
+- bzr push
+
+
+Merging
+=======
+
+Merging a new version from Debian:
+
+- bzr merge -r debian/<VERSION> lp:~kubuntu-packagers/pkg-kde-tools/debian
+- bzr commit
+- bzr push

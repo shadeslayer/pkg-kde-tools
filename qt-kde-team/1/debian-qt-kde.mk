@@ -31,7 +31,7 @@ DEB_BUILD_PARALLEL = yes
 # breakage in the old packaging (esp. kde4libs).
 DEB_CMAKE_KDE4_FLAGS += \
     -DKDE4_BUILD_TESTS=false \
-    -DKDE_DISTRIBUTION_TEXT="Debian packages" \
+    -DKDE_DISTRIBUTION_TEXT="Kubuntu packages" \
     -DCMAKE_SKIP_RPATH:BOOL=OFF \
     -DKDE4_USE_ALWAYS_FULL_RPATH=false \
     -DCONFIG_INSTALL_DIR=/usr/share/kde4/config \
