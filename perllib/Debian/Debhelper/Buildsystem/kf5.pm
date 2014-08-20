@@ -1,5 +1,5 @@
-# A debhelper build system class for building KDE 4 packages.
-# It is based on cmake class but passes KDE 4 flags by default.
+# A debhelper build system class for building KDE Frameworks 5 packages.
+# It is based on cmake class but passes Frameworks 5 flags by default.
 #
 # Copyright: © 2009 Modestas Vainius
 # License: GPL-2+
@@ -8,7 +8,7 @@ package Debian::Debhelper::Buildsystem::kf5;
 
 use strict;
 use warnings;
-use Debian::Debhelper::Dh_Lib qw(error);
+use Debian::Debhelper::Dh_Lib qw(error dpkg_architecture_value);
 use Dpkg::Version qw();
 
 use base 'Debian::Debhelper::Buildsystem::cmake';
@@ -44,6 +44,7 @@ sub get_kf5_flags {
 
     # Unescape flags using shell
     $flags = `$^X -w -Mstrict -e 'print join("\\x1e", \@ARGV);' -- $escaped_flags`;
+    $flags = $flags . " -DECM_MKSPECS_INSTALL_DIR=usr/lib/" . dpkg_architecture_value('DEB_HOST_MULTIARCH') . "/qt5/mkspecs/modules/";
     return split("\x1e", $flags);
 }
 
