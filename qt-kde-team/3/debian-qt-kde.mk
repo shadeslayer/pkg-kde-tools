@@ -52,10 +52,6 @@ ifneq (,$(findstring yes, $(dqk_link_with_no_undefined)))
     endif
 endif
 
-# Since cmake 2.6.2 or higher is required from now on, enable relative paths to
-# get more ccache hits.
-$(call set_command_options,dh_auto_configure, += "-u-DCMAKE_USE_RELATIVE_PATHS=ON")
-
 # Run dh_sameversiondep
 run_dh_sameversiondep:
 	dh_sameversiondep
