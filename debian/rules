@@ -4,3 +4,43 @@ include qt-kde-team/2/dhmk.mk
 
 override_dh_install:
 	$(overridden_command) --list-missing
+
+# KDE branch to use. Various scripts are coming from kdesdk or other parts of
+# KDE, those will preferrably be fetched from the branch (still taking into
+# account the revision from below).
+KDEBRANCH=v4.13.0
+
+KDEGIT=git://anongit.kde.org
+TARGET=kubuntu/libexec
+CPTARGET=../kubuntu/libexec
+EXPORT=export -r$(SVNREV) --force
+
+# Note that for git we use single branch shallow clone of the git tags. This is
+# about as fast as it gets with git.
+syncl10ninternal:
+	svn $(EXPORT) svn://anonsvn.kde.org/home/kde/branches/stable/l10n-kde4/scripts/createdesktopcontext.pl $(TARGET)/createdesktopcontext.pl
+	svn $(EXPORT) svn://anonsvn.kde.org/home/kde/branches/stable/l10n-kde4/scripts/extract-messages.sh $(TARGET)/extract-messages.sh
+	svn $(EXPORT) svn://anonsvn.kde.org/home/kde/branches/stable/l10n-kde4/scripts/extract-xml.sh $(TARGET)/extract-xml.sh
+	svn $(EXPORT) svn://anonsvn.kde.org/home/kde/branches/stable/l10n-kde4/scripts/msgsplit $(TARGET)/msgsplit
+	@echo "Working on kde-dev-scripts"
+	git clone --branch $(KDEBRANCH) --depth 1 --single-branch $(KDEGIT)/kde-dev-scripts.git && \
+	  cd kde-dev-scripts && \
+	    cp extractattr $(CPTARGET) && \
+	    cp extractrc   $(CPTARGET)
+	@echo "Working on kdelibs"
+	git clone --branch $(KDEBRANCH) --depth 1 --single-branch $(KDEGIT)/kdelibs.git && \
+	  cd kdelibs && \
+	    cp kdeui/preparetips $(CPTARGET)
+
+syncl10nclean:
+	rm -rf kde-dev-scripts
+	rm -rf kdelibs
+
+# Clean git directories before and after to prevent problems.
+syncl10n: syncl10nclean syncl10ninternal syncl10nclean
+
+# ...also clean git directories as part of regular clean.
+override_dh_auto_clean: syncl10nclean
+	dh_auto_clean
+
+.PHONY: override_dh_auto_clean syncl10n syncl10nclean syncl10ninternal 

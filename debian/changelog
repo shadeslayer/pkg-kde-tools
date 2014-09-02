@@ -1,9 +1,21 @@
-pkg-kde-tools (0.15.15ubuntu1) UNRELEASED; urgency=medium
+pkg-kde-tools (0.15.15ubuntu1) utopic; urgency=medium
 
   * Merge with debian, remaining changes:
-    - TBD
+    - Add kf5 debhelper module for KDE Frameworks 5 (perllib/Debian/Debhelper/*/kf5.pm)
+    - Add scripts to build KDE Frameworks 5 & Plasma 5 (qt-kde-team/3/*)
+    - qt-kde-team/1/debian-qt-kde.mk: distribution text = "Kubuntu packages"
+    - debian/rules: add rules to sync l10n
+    - add debian/KUBUNTU-BZR-WORKFLOW
+    - Add l10n scripts in kubuntu/
+    - debian/install: install kubuntu/ files
+    - qt-kde-team/{1,2}/policy.mk: remove maintainer checking
+    - qt-kde-team/2/debian-qt-kde.mk: run list-missing after the binary target
+    - qt-kde-team/2/list-missing.mk: print marker before and after list-missing
+      output for script parsing
+    - Add qt-kde-team/2/lintian.mk and call it in qt-kde-team/2/debian-qt-kde.mk
+    - Depend on python and docbook-to-man, recommend lintian
 
- -- Rohan Garg <rohangarg@kubuntu.org>  Wed, 20 Aug 2014 15:29:02 +0200
+ -- Rohan Garg <rohangarg@kubuntu.org>  Tue, 02 Sep 2014 16:00:34 +0200
 
 pkg-kde-tools (0.15.15) unstable; urgency=medium
 

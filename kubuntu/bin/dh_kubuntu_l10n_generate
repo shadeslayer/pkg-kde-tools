@@ -1,0 +1,62 @@
+#!/bin/sh
+
+# Env
+# KUBUNTU_L10N_FORCE_RUN:: force running regardless of what ma be detected otherwise
+# KUBUNTU_L10N_NO_DESKTOP:: don't process desktop files
+
+if [ -z "$KUBUNTU_L10N_FORCE_RUN" ]; then
+   if ! grep -q '^Purpose: PRIMARY' /CurrentlyBuilding ||
+      ! grep -q 'X[[:alpha:]]*-Ubuntu-Use-Langpack: yes' debian/control; then
+      echo "No primary archive build or not using langpack -> not generating l10n content."
+      exit 0
+   fi
+else
+    echo "Forcing l10n run"
+fi
+
+libpath=/usr/lib/kubuntu-l10n/
+export PATH=$libpath/libexec:$PATH
+
+################################### Messages ###################################
+
+# Generating translation templates for general messages as well as those
+# extractable from XML files.
+echo "extract-messages & extract-xml"
+mkdir -p po
+extract-messages.sh
+extract-xml.sh
+if [ -n "$(ls -A po/)" ]; then
+  for file in po/*pot; do
+      sed "s/charset=CHARSET/charset=UTF-8/" -i $file;
+  done
+fi
+
+################################### Desktop ####################################
+
+if [ -n "$KUBUNTU_L10N_NO_DESKTOP" ]; then
+    echo "no desktop file processing"
+    exit 0
+fi
+
+echo "finddesktopfiles & createdesktopcontext"
+
+if [ -z ${KUBUNTU_DESKTOP_POT} ]; then
+    KUBUNTU_DESKTOP_POT=`dpkg-parsechangelog  | grep Source: | cut -d: -f2 | tr -d ' '`
+fi
+
+finddesktopfiles LIST
+sed /\.pc/d LIST -i
+
+createdesktopcontext.pl --file-list=LIST --base-dir=. > desktop.${KUBUNTU_DESKTOP_POT}.tmp
+msguniq --to-code=UTF-8 --no-wrap -o desktop.${KUBUNTU_DESKTOP_POT} desktop.${KUBUNTU_DESKTOP_POT}.tmp 2>/dev/null
+msgsplit desktop.${KUBUNTU_DESKTOP_POT}
+
+mv desktop.${KUBUNTU_DESKTOP_POT} po/desktop_${KUBUNTU_DESKTOP_POT}.pot
+rm -f desktop.${KUBUNTU_DESKTOP_POT} desktop.${KUBUNTU_DESKTOP_POT}.tmp
+
+# add translation domain to files
+for file in `cat LIST`; do
+    echo X-Ubuntu-Gettext-Domain=desktop_${KUBUNTU_DESKTOP_POT} >> ${file}
+done
+
+rm -f LIST

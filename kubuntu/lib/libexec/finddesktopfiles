@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Find all desktop file styled translatable files.
+# This is somewhat based on KDE's findfiles script (in particular the find call).
+#
+# http://websvn.kde.org/trunk/l10n-kde4/scripts/findfiles?view=log
+
+if test -z "$1"; then
+  echo "call: $0 <filename>"
+  exit
+fi
+
+filelist=$1
+
+rm -f "$filelist"_* $filelist
+
+: > $filelist
+
+find $dir \( -name \*.directory -o -name \*.desktop -o -name \*.desktop.cmake -o -name \*.kimap -o -name \*.themerc -o -name \*.kcsrc -o -name \*.setdlg -o -name index.theme -o -name \*.notifyrc -o -name \*.protocol -o -name \*.profile -o -name \*.actions \) -a \( -type f -o -type l \) >> $filelist
+
+sort -o $filelist -u $filelist

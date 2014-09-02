@@ -17,3 +17,6 @@ usr/share/man/man1/pkgkde-vcs.1
 usr/share/perl5/Debian/Debhelper/
 usr/share/perl5/Debian/PkgKde*
 usr/share/pkg-kde-tools/
+
+kubuntu/bin/* usr/bin/
+kubuntu/lib/* usr/lib/kubuntu-l10n/
