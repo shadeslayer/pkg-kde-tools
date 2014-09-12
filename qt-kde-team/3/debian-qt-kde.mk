@@ -93,6 +93,8 @@ install_to_doc-html_package:
 	fi
 $(foreach t,install-indep install,post_$(t)_dh_install): install_to_doc-html_package
 
+post_binary: list-missing lintian
+
 .PHONY: run_dh_sameversiondep cleanup_manpages install_to_doc-html_package
 
 endif # ifneq ($(dhmk_override_info_mode),yes)
