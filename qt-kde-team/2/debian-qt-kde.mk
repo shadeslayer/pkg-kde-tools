@@ -24,6 +24,9 @@ include $(dqk_dir)policy.mk
 # Support list-missing target
 include $(dqk_dir)list-missing.mk
 
+# Support lintian target
+include $(dqk_dir)lintian.mk
+
 # KDE packages are parallel safe. Add --parallel to dh_auto_% commands
 $(call set_command_options,dh_auto_%, += --parallel)
 
