@@ -8,7 +8,7 @@ package Debian::Debhelper::Buildsystem::kf5;
 
 use strict;
 use warnings;
-use Debian::Debhelper::Dh_Lib qw(error dpkg_architecture_value);
+use Debian::Debhelper::Dh_Lib qw(error);
 use Dpkg::Version qw();
 
 use base 'Debian::Debhelper::Buildsystem::cmake';
