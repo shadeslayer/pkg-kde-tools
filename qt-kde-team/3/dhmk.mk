@@ -106,6 +106,8 @@ $(foreach t,$(dhmk_indeparch_targets),debian/dhmk_$(t)-arch):  export DH_INTERNA
 
 # Create debian/dhmk_{action} targets.
 # NOTE: dhmk_run_{target}_commands are defined below
+# NOTE: the string "$*" target is done is parsed by automation scripts,
+#       please don't change it without prior discussion
 $(foreach t,$(dhmk_standard_targets),debian/dhmk_$(t)): debian/dhmk_%:
 	$(MAKE) -f $(dhmk_top_makefile) dhmk_run_$*_commands DHMK_TARGET="$*"
 	$(if $(filter $*,$(dhmk_stamped_targets)),touch $@)
